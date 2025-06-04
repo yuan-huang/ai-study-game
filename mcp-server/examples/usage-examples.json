@@ -1,0 +1,407 @@
+{
+  "version": "2.0.0",
+  "title": "游戏MCP服务器使用示例",
+  "description": "完整的游戏开发MCP服务器功能示例",
+  
+  "图片生成示例": {
+    "工具名": "generate_game_image",
+    "基础用法": {
+      "prompt": "一个勇敢的战士站在城堡前",
+      "style": "pixel_art",
+      "size": "512x512"
+    },
+    "高级用法": [
+      {
+        "描述": "写实风格的魔法师",
+        "prompt": "一个穿着蓝色长袍的魔法师正在施法，背景是神秘的魔法塔",
+        "style": "realistic",
+        "size": "1024x1024"
+      },
+      {
+        "描述": "动漫风格的公主",
+        "prompt": "美丽的公主穿着华丽的粉色礼服，在花园中微笑",
+        "style": "anime",
+        "size": "512x512"
+      }
+    ]
+  },
+
+  "对话音效生成示例": {
+    "工具名": "generate_dialogue_audio",
+    "技术": "Gemini 2.5 Flash Preview TTS",
+    "API密钥": "使用GEMINI_API_KEY",
+    "NPC对话": {
+      "text": "欢迎来到我的店铺！需要什么武器吗？",
+      "character": "merchant",
+      "emotion": "happy",
+      "language": "zh-CN"
+    },
+    "角色配音": [
+      {
+        "描述": "战士角色 - 愤怒的战斗呐喊",
+        "text": "敌人就在前方！准备战斗！",
+        "character": "warrior",
+        "emotion": "angry",
+        "language": "zh-CN",
+        "speed": 1.2,
+        "pitch": 2
+      },
+      {
+        "描述": "法师角色 - 神秘的咒语",
+        "text": "古老的魔法即将苏醒，感受力量的召唤吧！",
+        "character": "mage",
+        "emotion": "calm",
+        "language": "zh-CN",
+        "speed": 0.9,
+        "pitch": -2
+      },
+      {
+        "描述": "公主角色 - 温柔的感谢",
+        "text": "谢谢你救了我，勇敢的英雄。",
+        "character": "princess",
+        "emotion": "calm",
+        "language": "zh-CN",
+        "speed": 0.8
+      },
+      {
+        "描述": "反派角色 - 邪恶的威胁",
+        "text": "你们这些愚蠢的冒险者，将在我的力量面前颤抖！",
+        "character": "villain",
+        "emotion": "angry",
+        "language": "zh-CN",
+        "speed": 0.9,
+        "pitch": -5
+      }
+    ],
+    "系统提示": [
+      {
+        "描述": "游戏胜利提示",
+        "text": "恭喜！任务完成！",
+        "character": "narrator",
+        "emotion": "happy",
+        "language": "zh-CN"
+      },
+      {
+        "描述": "游戏失败提示",
+        "text": "游戏结束，请重新开始。",
+        "character": "narrator",
+        "emotion": "serious",
+        "language": "zh-CN",
+        "speed": 0.9
+      },
+      {
+        "描述": "等级提升提示",
+        "text": "等级提升！你变得更加强大了！",
+        "character": "narrator",
+        "emotion": "excited",
+        "language": "zh-CN",
+        "speed": 1.1
+      }
+    ],
+    "多语言示例": [
+      {
+        "描述": "英文战士对话 - 英雄气概",
+        "text": "For honor and glory! We shall not surrender!",
+        "character": "warrior",
+        "emotion": "heroic",
+        "language": "en-US",
+        "gender": "male"
+      },
+      {
+        "描述": "日文公主对话 - 温柔感谢",
+        "text": "ありがとうございます、勇者様。",
+        "character": "princess",
+        "emotion": "happy",
+        "language": "ja-JP",
+        "gender": "female"
+      },
+      {
+        "描述": "韩文商人对话",
+        "text": "어서오세요! 무엇을 찾고 계신가요?",
+        "character": "merchant",
+        "emotion": "happy",
+        "language": "ko-KR",
+        "gender": "male"
+      }
+    ],
+    "语音风格测试": [
+      {
+        "描述": "测试不同语速",
+        "text": "这是语速测试，听听不同的语速效果。",
+        "character": "narrator",
+        "emotion": "neutral",
+        "language": "zh-CN",
+        "speed": 0.5
+      },
+      {
+        "描述": "测试音调变化",
+        "text": "这是音调测试，听听不同的音调效果。",
+        "character": "narrator",
+        "emotion": "neutral",
+        "language": "zh-CN",
+        "pitch": 10
+      }
+    ]
+  },
+
+  "背景音乐生成示例": {
+    "工具名": "generate_game_music",
+    "主题音乐": {
+      "prompt": "史诗般的冒险主题，展现英雄的旅程和希望",
+      "musicType": "theme",
+      "genre": "orchestral",
+      "mood": "epic",
+      "duration": 60,
+      "tempo": "medium",
+      "instruments": ["小提琴", "大提琴", "圆号", "定音鼓"],
+      "isLooping": true
+    },
+    "战斗音乐": [
+      {
+        "描述": "Boss战音乐",
+        "prompt": "紧张激烈的Boss战，充满危险和挑战",
+        "musicType": "battle",
+        "genre": "orchestral",
+        "mood": "intense",
+        "duration": 120,
+        "tempo": "fast",
+        "instruments": ["铜管", "打击乐", "弦乐"],
+        "isLooping": true
+      },
+      {
+        "描述": "电子风格战斗音乐",
+        "prompt": "未来感的机甲战斗，科技与力量的碰撞",
+        "musicType": "battle",
+        "genre": "electronic",
+        "mood": "intense",
+        "duration": 90,
+        "tempo": "very_fast",
+        "isLooping": true
+      }
+    ],
+    "环境音乐": [
+      {
+        "描述": "森林探索音乐",
+        "prompt": "神秘的古老森林，充满未知的发现和魔法",
+        "musicType": "exploration",
+        "genre": "ambient",
+        "mood": "mysterious",
+        "duration": 180,
+        "tempo": "slow",
+        "instruments": ["长笛", "竖琴", "环境音效"],
+        "isLooping": true
+      },
+      {
+        "描述": "城镇氛围音乐",
+        "prompt": "热闹的中世纪城镇，人来人往的和谐生活",
+        "musicType": "ambient",
+        "genre": "folk",
+        "mood": "peaceful",
+        "duration": 300,
+        "tempo": "medium",
+        "instruments": ["木吉他", "小提琴", "笛子"],
+        "isLooping": true
+      }
+    ],
+    "特殊场景音乐": [
+      {
+        "描述": "胜利庆祝音乐",
+        "prompt": "英雄凯旋归来，全城为之庆祝",
+        "musicType": "victory",
+        "genre": "orchestral",
+        "mood": "joyful",
+        "duration": 45,
+        "tempo": "medium",
+        "instruments": ["铜管", "弦乐", "合唱"],
+        "isLooping": false
+      },
+      {
+        "描述": "游戏主菜单音乐",
+        "prompt": "简洁优雅的主菜单背景音乐，体现游戏的整体风格",
+        "musicType": "menu",
+        "genre": "cinematic",
+        "mood": "peaceful",
+        "duration": 30,
+        "tempo": "slow",
+        "isLooping": true
+      }
+    ]
+  },
+
+  "MongoDB数据库示例": {
+    "插入数据": {
+      "工具名": "mongodb_insert",
+      "示例": [
+        {
+          "描述": "插入玩家数据",
+          "collection": "players",
+          "data": {
+            "playerName": "英雄001",
+            "level": 15,
+            "class": "warrior",
+            "equipment": ["steel_sword", "iron_armor"],
+            "stats": {
+              "hp": 120,
+              "mp": 50,
+              "attack": 85,
+              "defense": 70
+            }
+          }
+        },
+        {
+          "描述": "批量插入怪物数据",
+          "collection": "monsters",
+          "data": [
+            {
+              "name": "哥布林",
+              "level": 5,
+              "hp": 30,
+              "attack": 15,
+              "drops": ["coin", "cloth"]
+            },
+            {
+              "name": "巨魔",
+              "level": 20,
+              "hp": 200,
+              "attack": 45,
+              "drops": ["rare_gem", "troll_hide"]
+            }
+          ]
+        }
+      ]
+    },
+    "查询数据": {
+      "工具名": "mongodb_find",
+      "示例": [
+        {
+          "描述": "查找高级玩家",
+          "collection": "players",
+          "query": { "level": { "$gte": 10 } },
+          "limit": 5,
+          "sort": { "level": -1 }
+        },
+        {
+          "描述": "查找特定职业",
+          "collection": "players",
+          "query": { "class": "mage" },
+          "limit": 10
+        }
+      ]
+    }
+  },
+
+  "综合使用场景": {
+    "创建完整的NPC": {
+      "步骤1": "生成NPC形象",
+      "generate_game_image": {
+        "prompt": "友善的老铁匠，穿着皮革围裙，在铁匠铺工作",
+        "style": "realistic",
+        "size": "512x512"
+      },
+      "步骤2": "录制NPC对话 (Gemini TTS)",
+      "generate_dialogue_audio": {
+        "text": "欢迎！我是这里最好的铁匠，需要修理装备吗？",
+        "character": "merchant",
+        "emotion": "happy",
+        "language": "zh-CN",
+        "speed": 1.0,
+        "pitch": 0
+      },
+      "步骤3": "保存NPC数据",
+      "mongodb_insert": {
+        "collection": "npcs",
+        "data": {
+          "name": "铁匠汤姆",
+          "type": "blacksmith",
+          "location": "town_center",
+          "services": ["repair", "upgrade", "craft"],
+          "dialogue": ["欢迎！我是这里最好的铁匠，需要修理装备吗？"],
+          "voiceConfig": {
+            "character": "merchant",
+            "emotion": "happy",
+            "language": "zh-CN"
+          }
+        }
+      }
+    },
+    "创建游戏关卡": {
+      "步骤1": "生成关卡背景音乐",
+      "generate_game_music": {
+        "prompt": "黑暗地牢的探索，充满危险和未知",
+        "musicType": "exploration",
+        "genre": "ambient",
+        "mood": "dark",
+        "duration": 240,
+        "isLooping": true
+      },
+      "步骤2": "生成战斗音乐",
+      "generate_game_music": {
+        "prompt": "地牢中的激烈战斗，生死攸关的时刻",
+        "musicType": "battle",
+        "genre": "orchestral",
+        "mood": "intense",
+        "duration": 90,
+        "isLooping": true
+      },
+      "步骤3": "生成Boss对话",
+      "generate_dialogue_audio": {
+        "text": "愚蠢的冒险者，你们敢闯入我的领域！",
+        "character": "villain",
+        "emotion": "angry",
+        "language": "zh-CN",
+        "speed": 0.8,
+        "pitch": -8
+      },
+      "步骤4": "保存关卡数据",
+      "mongodb_insert": {
+        "collection": "levels",
+        "data": {
+          "name": "黑暗地牢",
+          "difficulty": "hard",
+          "music": {
+            "exploration": "dungeon_exploration.mp3",
+            "battle": "dungeon_battle.mp3"
+          },
+          "enemies": ["skeleton", "zombie", "dark_wizard"],
+          "rewards": ["magic_scroll", "gold", "experience"],
+          "bossDialogue": {
+            "text": "愚蠢的冒险者，你们敢闯入我的领域！",
+            "audioFile": "boss_dialogue.mp3"
+          }
+        }
+      }
+    }
+  },
+
+  "配置说明": {
+    "环境变量": {
+      "GEMINI_API_KEY": "Gemini API密钥，用于图片生成和对话音效(TTS)",
+      "LYRIA_API_KEY": "Lyria API密钥，用于音乐生成（当API发布时）",
+      "MONGODB_URI": "MongoDB连接字符串，默认: mongodb://localhost:27017/swl"
+    },
+    "Gemini TTS功能": {
+      "模型": "gemini-2.5-flash-preview-tts",
+      "支持语言": ["zh-CN", "en-US", "ja-JP", "ko-KR"],
+      "支持角色": ["warrior", "mage", "rogue", "merchant", "guard", "princess", "villain", "narrator"],
+      "支持情感": ["neutral", "happy", "sad", "angry", "excited", "calm", "serious", "heroic"],
+      "语速范围": "0.25 - 4.0x",
+      "音调范围": "-20 到 +20",
+      "最大文本长度": "5000字符",
+      "输出格式": "MP3",
+      "采样率": "24000Hz"
+    },
+    "推荐工作流": [
+      "1. 使用图片生成创建游戏资源",
+      "2. 使用Gemini TTS为角色配音",
+      "3. 使用背景音乐营造氛围",
+      "4. 使用数据库存储所有游戏数据",
+      "5. 综合所有元素创建完整游戏体验"
+    ],
+    "注意事项": [
+      "所有服务都使用GEMINI_API_KEY，无需额外配置Google Cloud",
+      "Gemini TTS目前为预览版，功能可能有所变化",
+      "音频文件会保存到./generated_audio/目录",
+      "建议为不同角色设置不同的语音参数"
+    ]
+  }
+} 
