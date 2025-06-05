@@ -1,7 +1,7 @@
 import { User, Seed } from '../types';
 
 // API响应接口
-interface ApiResponse<T = any> {
+export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
   message?: string;
@@ -31,11 +31,7 @@ async function request<T>(
             throw new Error(data.message || '请求失败');
         }
 
-        return {
-            success: true,
-            data,
-            message: data.message,
-        };
+        return data; // 直接返回服务器响应的数据结构
     } catch (error) {
         return {
             success: false,
@@ -46,9 +42,9 @@ async function request<T>(
 
 // 认证相关API
 export const authApi = {
-    // 登录
+    // 登录 - 适应返回格式: { success: true, data: { user: User, token?: string } }
     login: (data: { username: string; grade: number; subjects: string[] }) =>
-        request<{ user: User; token: string }>('/auth/login', {
+        request<{ user: User; sessionId?: string }>('/auth/login', {
             method: 'POST',
             body: JSON.stringify(data),
         }),
@@ -81,63 +77,4 @@ export const seedApi = {
                 method: 'POST',
             }
         ),
-};
-
-// 游戏进度接口
-interface GameProgress {
-  userId: string;
-  level: number;
-  score: number;
-  completedChallenges: string[];
-  lastUpdated: Date;
-}
-
-// 游戏进度API服务
-export class GameProgressApiService {
-  constructor() {
-    // Implementation of GameProgressApiService
-  }
-
-  // 保存游戏进度
-  async saveProgress(data: Partial<GameProgress>): Promise<ApiResponse<GameProgress>> {
-    // Implementation of saveProgress method
-  }
-
-  // 获取游戏进度
-  async getProgress(): Promise<ApiResponse<GameProgress>> {
-    // Implementation of getProgress method
-  }
-
-  // 更新游戏进度
-  async updateProgress(data: Partial<GameProgress>): Promise<ApiResponse<GameProgress>> {
-    // Implementation of updateProgress method
-  }
-}
-
-// API服务实例
-export const gameProgressApi = new GameProgressApiService();
-
-// 用户API服务
-export class UserApiService {
-  constructor() {
-    // Implementation of UserApiService
-  }
-
-  // 用户登录
-  async login(data: LoginRequest): Promise<ApiResponse<LoginResponse>> {
-    // Implementation of login method
-  }
-
-  // 获取用户信息
-  async getUserInfo(): Promise<ApiResponse<UserInfo>> {
-    // Implementation of getUserInfo method
-  }
-
-  // 更新用户信息
-  async updateUserInfo(data: Partial<UserInfo>): Promise<ApiResponse<UserInfo>> {
-    // Implementation of updateUserInfo method
-  }
-}
-
-// API服务实例
-export const userApi = new UserApiService(); 
+}; 

@@ -1,40 +1,55 @@
 import { Scene } from 'phaser';
+import { BaseStyle, BaseComponentConfig, TextStyle } from '../utils/types';
+import UIPlugin from 'phaser3-rex-plugins/templates/ui/ui-plugin.js';
 
-interface GameButtonConfig {
-    x: number;
-    y: number;
-    width?: number;
-    height?: number;
+interface ButtonStyle extends BaseStyle {
+    hoverColor: number;
+    activeColor: number;
+}
+
+interface ButtonConfig extends BaseComponentConfig {
     text: string;
-    textStyle?: Phaser.Types.GameObjects.Text.TextStyle;
-    backgroundColor?: number;
-    backgroundAlpha?: number;
-    hoverColor?: number;
-    activeColor?: number;
-    borderColor?: number;
-    borderWidth?: number;
-    borderRadius?: number;
-    padding?: { x: number; y: number };
+    textStyle?: TextStyle;
+    style?: Partial<ButtonStyle>;
     onClick?: () => void;
     onHover?: () => void;
     onOut?: () => void;
 }
 
-const DEFAULT_TEXT_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
+const DEFAULT_TEXT_STYLE: TextStyle = {
     fontSize: '18px',
     fontFamily: 'Microsoft YaHei',
     color: '#ffffff',
     fontStyle: 'bold'
 };
 
-export class GameButton extends Phaser.GameObjects.Container {
+const DEFAULT_STYLE: ButtonStyle = {
+    backgroundColor: 0x4CAF50,
+    backgroundAlpha: 1,
+    hoverColor: 0x45a049,
+    activeColor: 0x3d8b40,
+    borderColor: 0x45a049,
+    borderWidth: 2,
+    borderRadius: 25,
+    textColor: '#ffffff',
+    fontSize: '18px',
+    fontFamily: 'Microsoft YaHei',
+    padding: { x: 20, y: 10 }
+};
+
+interface RequiredButtonConfig extends Required<Omit<ButtonConfig, 'style' | 'textStyle'>> {
+    style: ButtonStyle;
+    textStyle: TextStyle;
+}
+
+export class Button extends Phaser.GameObjects.Container {
     private background: Phaser.GameObjects.Graphics;
     private text: Phaser.GameObjects.Text;
-    private config: Required<GameButtonConfig>;
+    private config: RequiredButtonConfig;
     private isHovered: boolean = false;
     private isPressed: boolean = false;
 
-    constructor(scene: Scene, config: GameButtonConfig) {
+    constructor(scene: Scene, config: ButtonConfig) {
         super(scene, config.x, config.y);
 
         // 设置默认配置
@@ -42,14 +57,7 @@ export class GameButton extends Phaser.GameObjects.Container {
             width: 200,
             height: 50,
             text: config.text,
-            backgroundColor: 0x4CAF50,
-            backgroundAlpha: 1,
-            hoverColor: 0x45a049,
-            activeColor: 0x3d8b40,
-            borderColor: 0x45a049,
-            borderWidth: 2,
-            borderRadius: 25,
-            padding: { x: 20, y: 10 },
+            style: { ...DEFAULT_STYLE, ...(config.style || {}) },
             textStyle: { ...DEFAULT_TEXT_STYLE, ...config.textStyle },
             onClick: config.onClick || (() => {}),
             onHover: config.onHover || (() => {}),
@@ -94,23 +102,23 @@ export class GameButton extends Phaser.GameObjects.Container {
         this.background.clear();
 
         // 设置颜色
-        let color = this.config.backgroundColor;
+        let color = this.config.style.backgroundColor;
         if (this.isPressed) {
-            color = this.config.activeColor;
+            color = this.config.style.activeColor;
         } else if (this.isHovered) {
-            color = this.config.hoverColor;
+            color = this.config.style.hoverColor;
         }
 
         // 绘制背景
-        this.background.fillStyle(color, this.config.backgroundAlpha);
-        if (this.config.borderWidth > 0) {
-            this.background.lineStyle(this.config.borderWidth, this.config.borderColor);
+        this.background.fillStyle(color, this.config.style.backgroundAlpha);
+        if (this.config.style.borderWidth > 0) {
+            this.background.lineStyle(this.config.style.borderWidth, this.config.style.borderColor);
         }
 
         // 绘制圆角矩形
         const width = this.config.width;
         const height = this.config.height;
-        const radius = this.config.borderRadius;
+        const radius = this.config.style.borderRadius;
 
         this.background.beginPath();
         this.background.moveTo(-width / 2 + radius, -height / 2);
@@ -124,7 +132,7 @@ export class GameButton extends Phaser.GameObjects.Container {
         this.background.arc(-width / 2 + radius, -height / 2 + radius, radius, Math.PI, -Math.PI / 2);
         this.background.closePath();
         this.background.fillPath();
-        if (this.config.borderWidth > 0) {
+        if (this.config.style.borderWidth > 0) {
             this.background.strokePath();
         }
 
@@ -198,13 +206,13 @@ export class GameButton extends Phaser.GameObjects.Container {
         this.text.setText(text);
     }
 
-    public setTextStyle(style: Partial<Phaser.Types.GameObjects.Text.TextStyle>): void {
+    public setTextStyle(style: Partial<TextStyle>): void {
         this.config.textStyle = { ...this.config.textStyle, ...style };
         this.text.setStyle(this.config.textStyle);
     }
 
-    public setBackgroundColor(color: number): void {
-        this.config.backgroundColor = color;
+    public setStyle(style: Partial<ButtonStyle>): void {
+        this.config.style = { ...this.config.style, ...style };
         this.drawButton();
     }
 } 

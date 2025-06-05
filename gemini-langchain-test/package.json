@@ -1,0 +1,25 @@
+{
+  "name": "gemini-langchain-test",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node chatDemo.js",
+    "test": "node testFetch.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@google/genai": "^1.4.0",
+    "@langchain/community": "^0.0.30",
+    "@langchain/core": "^0.1.0",
+    "dotenv": "^16.4.0",
+    "socks-proxy-agent": "^8.0.5",
+    "https-proxy-agent": "^7.0.6",
+    "node-fetch": "^3.3.2",
+    "openai": "^5.1.0",
+
+  }
+}

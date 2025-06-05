@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { User } from '../models/User';
 import { logger } from '../utils/logger';
+import crypto from 'crypto';
 
 const router = express.Router();
 
@@ -29,6 +30,9 @@ router.post('/login', [
     // 查找或创建用户
     let user = await User.findOne({ username });
     
+    // 生成随机32位字符串作为sessionId
+    const sessionId = crypto.randomBytes(16).toString('hex');
+    
     if (!user) {
       // 创建新用户
       user = new User({
@@ -38,7 +42,8 @@ router.post('/login', [
         displayName: username,
         school: profile?.school,
         className: profile?.className,
-        gender: profile?.gender || '男孩'
+        gender: profile?.gender || '男孩',
+        sessionId: sessionId
       });
       await user.save();
       logger.info(`新用户注册: ${username}`);
@@ -46,6 +51,8 @@ router.post('/login', [
       // 更新用户信息
       user.grade = grade;
       user.subjects = subjects;
+      user.sessionId = sessionId;
+
       if (profile) {
         if (profile.school) user.school = profile.school;
         if (profile.className) user.className = profile.className;
@@ -64,6 +71,7 @@ router.post('/login', [
       logger.info(`用户登录: ${username}`);
     }
 
+
     res.json({
       success: true,
       data: {
@@ -81,7 +89,8 @@ router.post('/login', [
           gender: user.gender,
           inventory: user.inventory,
           gameProgress: user.gameProgress
-        }
+        },
+        sessionId: sessionId
       }
     });
 

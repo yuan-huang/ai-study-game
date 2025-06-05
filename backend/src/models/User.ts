@@ -26,6 +26,7 @@ export interface IUser extends mongoose.Document {
   };
   createdAt: Date;
   updatedAt: Date;
+  sessionId: string;
 }
 
 const userSchema = new mongoose.Schema({
@@ -51,7 +52,8 @@ const userSchema = new mongoose.Schema({
   loginHistory: {
     lastLogin: { type: Date, default: Date.now },
     loginCount: { type: Number, default: 0 }
-  }
+  },
+  sessionId: { type: String, required: false }
 }, {
   timestamps: true
 });
