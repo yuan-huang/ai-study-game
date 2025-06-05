@@ -22,6 +22,16 @@ export default defineConfig({
         changeOrigin: true,
         ws: true
       }
+    },
+    host: true
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          phaser: ['phaser']
+        }
+      }
     }
   }
 }); 

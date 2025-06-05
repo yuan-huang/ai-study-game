@@ -44,6 +44,12 @@ export interface Seed {
   planted_at?: Date;
   status: 'seed' | 'growing' | 'mature' | 'harvested';
   current_stage: number;
+  description: string;
+  position?: {
+    x: number;
+    y: number;
+  };
+  tasks: Task[];
 }
 
 export interface GrowthStage {
@@ -52,19 +58,18 @@ export interface GrowthStage {
 }
 
 export interface Task {
-  type: 'watering' | 'fertilizing' | 'pest_control' | 'harvest';
+  id: string;
+  type: string;
+  description: string;
   completed: boolean;
-  score?: number;
+  requirements: {
+    time?: number;
+    score?: number;
+  };
 }
 
 // 游戏场景类型
-export interface GameScene {
-  id: string;
-  name: string;
-  type: 'garden' | 'entertainment';
-  background: string;
-  objects: GameObject[];
-}
+export type GameScene = 'login' | 'garden' | 'study' | 'shop' | 'inventory';
 
 export interface GameObject {
   id: string;

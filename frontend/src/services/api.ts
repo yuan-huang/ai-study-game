@@ -1,120 +1,87 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
-import { UserInfo } from '../types/user';
+import { User, Seed } from '../types';
 
 // API响应接口
 interface ApiResponse<T = any> {
   success: boolean;
-  data: T;
+  data?: T;
   message?: string;
 }
 
-// 登录请求接口
-interface LoginRequest {
-  username: string;
-  grade: number;
-  subjects: string[];
-  profile: {
-    school?: string;
-    className?: string;
-    gender: string;
-  };
-}
+// API基础配置
+const API_BASE_URL = '/api';
 
-// 登录响应接口
-interface LoginResponse {
-  user: UserInfo;
-  token: string;
-}
+// 创建通用请求函数
+async function request<T>(
+    endpoint: string,
+    options: RequestInit = {}
+): Promise<ApiResponse<T>> {
+    try {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${localStorage.getItem('token')}`,
+                ...options.headers,
+            },
+        });
 
-// 基础API服务类
-export class BaseApiService {
-  protected api: AxiosInstance;
+        const data = await response.json();
 
-  constructor(baseURL: string = '/api') {
-    this.api = axios.create({
-      baseURL,
-      timeout: 10000,
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-
-    // 请求拦截器
-    this.api.interceptors.request.use(
-      (config) => {
-        // 从localStorage获取token
-        const token = localStorage.getItem('token');
-        if (token && config.headers) {
-          config.headers.Authorization = `Bearer ${token}`;
+        if (!response.ok) {
+            throw new Error(data.message || '请求失败');
         }
-        return config;
-      },
-      (error) => {
-        return Promise.reject(error);
-      }
-    );
 
-    // 响应拦截器
-    this.api.interceptors.response.use(
-      (response) => {
-        return response.data;
-      },
-      (error) => {
-        if (error.response) {
-          // 处理401未授权
-          if (error.response.status === 401) {
-            localStorage.removeItem('token');
-            window.location.href = '/login';
-          }
-          return Promise.reject(error.response.data);
-        }
-        return Promise.reject(error);
-      }
-    );
-  }
-
-  // 通用GET请求
-  protected async get<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    return this.api.get(url, config);
-  }
-
-  // 通用POST请求
-  protected async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    return this.api.post(url, data, config);
-  }
-
-  // 通用PUT请求
-  protected async put<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    return this.api.put(url, data, config);
-  }
-
-  // 通用DELETE请求
-  protected async delete<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    return this.api.delete(url, config);
-  }
+        return {
+            success: true,
+            data,
+            message: data.message,
+        };
+    } catch (error) {
+        return {
+            success: false,
+            message: error instanceof Error ? error.message : '网络错误',
+        };
+    }
 }
 
-// 用户API服务
-export class UserApiService extends BaseApiService {
-  constructor() {
-    super('/api/users');
-  }
+// 认证相关API
+export const authApi = {
+    // 登录
+    login: (data: { username: string; grade: number; subjects: string[] }) =>
+        request<{ user: User; token: string }>('/auth/login', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
 
-  // 用户登录
-  async login(data: LoginRequest): Promise<ApiResponse<LoginResponse>> {
-    return this.post<LoginResponse>('/login', data);
-  }
+    // 登出
+    logout: () =>
+        request('/auth/logout', {
+            method: 'POST',
+        }),
+};
 
-  // 获取用户信息
-  async getUserInfo(): Promise<ApiResponse<UserInfo>> {
-    return this.get<UserInfo>('/me');
-  }
+// 种子相关API
+export const seedApi = {
+    // 获取用户的种子列表
+    getUserSeeds: (userId: string) =>
+        request<Seed[]>(`/seeds/user/${userId}`),
 
-  // 更新用户信息
-  async updateUserInfo(data: Partial<UserInfo>): Promise<ApiResponse<UserInfo>> {
-    return this.put<UserInfo>('/me', data);
-  }
-}
+    // 种植种子
+    plantSeed: (seedId: string, position: { x: number; y: number }) =>
+        request<Seed>(`/seeds/${seedId}/plant`, {
+            method: 'POST',
+            body: JSON.stringify({ position }),
+        }),
+
+    // 完成任务
+    completeTask: (seedId: string, taskType: string) =>
+        request<{ rewards: { experience: number; coins: number } }>(
+            `/seeds/${seedId}/tasks/${taskType}/complete`,
+            {
+                method: 'POST',
+            }
+        ),
+};
 
 // 游戏进度接口
 interface GameProgress {
@@ -126,27 +93,51 @@ interface GameProgress {
 }
 
 // 游戏进度API服务
-export class GameProgressApiService extends BaseApiService {
+export class GameProgressApiService {
   constructor() {
-    super('/api/progress');
+    // Implementation of GameProgressApiService
   }
 
   // 保存游戏进度
   async saveProgress(data: Partial<GameProgress>): Promise<ApiResponse<GameProgress>> {
-    return this.post<GameProgress>('/', data);
+    // Implementation of saveProgress method
   }
 
   // 获取游戏进度
   async getProgress(): Promise<ApiResponse<GameProgress>> {
-    return this.get<GameProgress>('/');
+    // Implementation of getProgress method
   }
 
   // 更新游戏进度
   async updateProgress(data: Partial<GameProgress>): Promise<ApiResponse<GameProgress>> {
-    return this.put<GameProgress>('/', data);
+    // Implementation of updateProgress method
   }
 }
 
 // API服务实例
-export const userApi = new UserApiService();
-export const gameProgressApi = new GameProgressApiService(); 
+export const gameProgressApi = new GameProgressApiService();
+
+// 用户API服务
+export class UserApiService {
+  constructor() {
+    // Implementation of UserApiService
+  }
+
+  // 用户登录
+  async login(data: LoginRequest): Promise<ApiResponse<LoginResponse>> {
+    // Implementation of login method
+  }
+
+  // 获取用户信息
+  async getUserInfo(): Promise<ApiResponse<UserInfo>> {
+    // Implementation of getUserInfo method
+  }
+
+  // 更新用户信息
+  async updateUserInfo(data: Partial<UserInfo>): Promise<ApiResponse<UserInfo>> {
+    // Implementation of updateUserInfo method
+  }
+}
+
+// API服务实例
+export const userApi = new UserApiService(); 
