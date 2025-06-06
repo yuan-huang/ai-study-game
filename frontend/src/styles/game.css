@@ -43,6 +43,16 @@
   object-fit: contain;
 }
 
+/* 确保Phaser游戏画布中的交互元素能正确显示光标 */
+#game-container canvas {
+  cursor: inherit !important;
+}
+
+/* 当Phaser设置手型光标时的样式 */
+.phaser-cursor-pointer {
+  cursor: pointer !important;
+}
+
 /* 答题区域动画 */
 @keyframes fadeIn {
   from {
