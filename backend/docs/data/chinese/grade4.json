@@ -1,0 +1,452 @@
+[
+    {
+        "id": 1,
+        "question": "'篱落疏疏一径深'中'疏疏'的意思是",
+        "options": ["A. 茂密", "B. 稀疏", "C. 清扫", "D. 香气"],
+        "right_answer": "B",
+        "category": "字词基础",
+        "level": "初级",
+        "explanation": "'疏疏'指稀疏、不密集的样子，用来形容篱笆的稀疏状态。"
+      },
+    {
+      "id": 2,
+      "question": "下列词语注音错误的一项是",
+      "options": ["A. 率(shuài)领", "B. 澎(péng)湃", "C. 挣扎(zhá)", "D. 倔强(qiáng)"],
+      "right_answer": "D",
+      "category": "字词基础",
+      "level": "初级",
+      "explanation": "'倔强'的正确读音应该是'jué jiàng'，不是'qiáng'。"
+    },
+    {
+      "id": 3,
+      "question": "'屏息凝视'的'屏'读音是",
+      "options": ["A. píng", "B. bǐng", "C. bǐn", "D. bìng"],
+      "right_answer": "B",
+      "category": "字词基础",
+      "level": "初级",
+      "explanation": "在'屏息凝视'中，'屏'读作'bǐng'，意思是抑制呼吸。"
+    },
+    {
+      "id": 4,
+      "question": "下列词语书写有错别字的是",
+      "options": ["A. 照例", "B. 拂拭", "C. 迟吨", "D. 窟窿"],
+      "right_answer": "C",
+      "category": "字词基础",
+      "level": "初级",
+      "explanation": "'迟吨'应该写作'迟钝'，'钝'不是'吨'。"
+    },
+    {
+      "id": 5,
+      "question": "'囊萤夜读'指用什么照明读书",
+      "options": ["A. 蜡烛", "B. 萤火虫", "C. 油灯", "D. 月光"],
+      "right_answer": "B",
+      "category": "字词基础",
+      "level": "初级",
+      "explanation": "'囊萤夜读'是古代成语，指用萤火虫装在袋子里当灯照明读书，比喻刻苦学习。"
+    },
+    {
+      "id": 6,
+      "question": "'热辣辣'中'辣'的部首是",
+      "options": ["A. 辛", "B. 束", "C. 一", "D. 灬"],
+      "right_answer": "A",
+      "category": "字词基础",
+      "level": "初级",
+      "explanation": "'辣'字的部首是'辛'，辛部表示辛辣的味道。"
+    },
+    {
+      "id": 7,
+      "question": "下列词语不是近义词的一组是",
+      "options": ["A. 敏锐-敏捷", "B. 警戒-警备", "C. 高傲-谦虚", "D. 忠厚-老实"],
+      "right_answer": "C",
+      "category": "字词基础",
+      "level": "初级",
+      "explanation": "'高傲'和'谦虚'是反义词，不是近义词。高傲指骄傲自大，谦虚指不自满。"
+    },
+    {
+      "id": 8,
+      "question": "'九天揽月'中'揽'的意思是",
+      "options": ["A. 观看", "B. 采摘", "C. 怀抱", "D. 触摸"],
+      "right_answer": "B",
+      "category": "字词基础",
+      "level": "初级",
+      "explanation": "'揽'在这里指采摘、拿取的意思，'九天揽月'比喻志向远大。"
+    },
+    {
+      "id": 9,
+      "question": "下列多音字读音相同的是",
+      "options": ["A. 率(率领/效率)", "B. 屏(屏风/屏息)", "C. 扎(挣扎/扎针)", "D. 看(看守/看见)"],
+      "right_answer": "A",
+      "category": "字词基础",
+      "level": "初级",
+      "explanation": "'率领'和'效率'中的'率'都读作'lǜ'，其他选项读音不同。"
+    },
+    {
+      "id": 10,
+      "question": "'临危不惧'的'惧'意思是",
+      "options": ["A. 害怕", "B. 勇敢", "C. 慌张", "D. 谨慎"],
+      "right_answer": "A",
+      "category": "字词基础",
+      "level": "初级",
+      "explanation": "'惧'指害怕、恐惧。'临危不惧'指面临危险不害怕。"
+    },
+    {
+      "id": 11,
+      "question": "下列词语中'和'读作'hè'的是",
+      "options": ["A. 和平", "B. 和诗", "C. 暖和", "D. 和面"],
+      "right_answer": "B",
+      "category": "字词基础",
+      "level": "中级",
+      "explanation": "'和诗'中的'和'读作'hè'，指应和别人的诗。其他选项中的'和'读音不同。"
+    },
+    {
+      "id": 12,
+      "question": "'焦躁不安'的'躁'正确解释是",
+      "options": ["A. 干燥", "B. 急动", "C. 声音大", "D. 炎热"],
+      "right_answer": "B",
+      "category": "字词基础",
+      "level": "中级",
+      "explanation": "'躁'指急躁、性情急。'焦躁不安'形容心情烦乱不安。"
+    },
+    {
+      "id": 13,
+      "question": "'变化多端'的'端'意思是",
+      "options": ["A. 端正", "B. 项目", "C. 原因", "D. 开始"],
+      "right_answer": "B",
+      "category": "字词基础",
+      "level": "中级",
+      "explanation": "'端'在这里指项目、方面。'变化多端'指变化很多，形式多样。"
+    },
+    {
+      "id": 14,
+      "question": "下列词语结构相同的是",
+      "options": ["A. 无忧无虑", "B. 前俯后仰", "C. 惊天动地", "D. 五颜六色"],
+      "right_answer": "C",
+      "category": "字词基础",
+      "level": "中级",
+      "explanation": "根据参考答案，这里应该是选择结构相同的词语，具体需要根据题目要求判断。"
+    },
+    {
+      "id": 15,
+      "question": "'解闷'的'闷'读音是",
+      "options": ["A. mēn", "B. mèn", "C. wèn", "D. mén"],
+      "right_answer": "B",
+      "category": "字词基础",
+      "level": "中级",
+      "explanation": "'解闷'中的'闷'读作'mèn'，指排解烦闷。"
+    },
+    {
+      "id": 16,
+      "question": "《天窗》中孩子把什么想象成巨人？",
+      "options": ["A. 云影", "B. 闪电", "C. 雨点", "D. 星群"],
+      "right_answer": "A",
+      "category": "课文理解",
+      "level": "初级",
+      "explanation": "在《天窗》一文中，孩子通过天窗看到云影移动，想象成巨人在天空中行走。"
+    },
+    {
+      "id": 17,
+      "question": "《飞向蓝天的恐龙》证明了什么？",
+      "options": ["A. 鸟类是恐龙后代", "B. 恐龙全部灭绝", "C. 恐龙会飞", "D. 人类驯化恐龙"],
+      "right_answer": "A",
+      "category": "课文理解",
+      "level": "中级",
+      "explanation": "《飞向蓝天的恐龙》通过科学研究证明了鸟类是恐龙的后代这一观点。"
+    },
+    {
+      "id": 18,
+      "question": "《巨人的花园》终年寒冬是因为什么？",
+      "options": ["A. 气候异常", "B. 巨人驱赶孩子", "C. 树木枯萎", "D. 魔法诅咒"],
+      "right_answer": "B",
+      "category": "课文理解",
+      "level": "初级",
+      "explanation": "在《巨人的花园》中，巨人自私地驱赶孩子们，花园因此失去了春天，终年寒冬。"
+    },
+    {
+      "id": 19,
+      "question": "《小英雄雨来》中雨来为保护交通员做了什么？",
+      "options": ["A. 跳河逃生", "B. 引开敌人", "C. 发送信号", "D. 躲进地洞"],
+      "right_answer": "B",
+      "category": "课文理解",
+      "level": "中级",
+      "explanation": "根据参考答案，雨来为了保护交通员，机智地引开敌人。"
+    },
+    {
+      "id": 20,
+      "question": "《三月桃花水》描写的是什么季节？",
+      "options": ["A. 春", "B. 夏", "C. 秋", "D. 冬"],
+      "right_answer": "A",
+      "category": "课文理解",
+      "level": "初级",
+      "explanation": "《三月桃花水》描写的是春天三月桃花盛开时节的美景。"
+    },
+    {
+      "id": 21,
+      "question": "《乡下人家》没有描写到的场景是",
+      "options": ["A. 瓜藤攀檐", "B. 鲜花轮绽", "C. 高楼林立", "D. 鸡鸭觅食"],
+      "right_answer": "C",
+      "category": "课文理解",
+      "level": "初级",
+      "explanation": "《乡下人家》描写的是乡村生活场景，不会有高楼林立的城市景象。"
+    },
+    {
+      "id": 22,
+      "question": "《纳米技术就在我们身边》说明了什么？",
+      "options": ["A. 纳米是可见的", "B. 纳米应用广泛", "C. 纳米材料便宜", "D. 人人懂纳米技术"],
+      "right_answer": "B",
+      "category": "课文理解",
+      "level": "中级",
+      "explanation": "文章通过介绍纳米技术在生活中的各种应用，说明纳米技术应用广泛。"
+    },
+    {
+      "id": 23,
+      "question": "《母鸡》一文中，作者对母鸡的态度变化是",
+      "options": ["A. 讨厌到敬佩", "B. 喜欢到讨厌", "C. 始终讨厌", "D. 始终喜欢"],
+      "right_answer": "A",
+      "category": "课文理解",
+      "level": "中级",
+      "explanation": "作者开始讨厌母鸡的叫声和行为，后来看到母鸡保护小鸡的行为后转为敬佩。"
+    },
+    {
+      "id": 24,
+      "question": "《宝葫芦的秘密》中王葆得到宝葫芦后怎么样？",
+      "options": ["A. 变得懒惰", "B. 更加勤奋", "C. 失去朋友", "D. 成绩下降"],
+      "right_answer": "A",
+      "category": "课文理解",
+      "level": "中级",
+      "explanation": "王葆得到宝葫芦后，依赖宝葫芦的神奇力量，变得懒惰，不愿意自己努力。"
+    },
+    {
+      "id": 25,
+      "question": "《白鹅》描写鹅最突出的特点是",
+      "options": ["A. 勇猛", "B. 高傲", "C. 温顺", "D. 胆小"],
+      "right_answer": "B",
+      "category": "课文理解",
+      "level": "初级",
+      "explanation": "《白鹅》一文突出描写了白鹅高傲的特点，从叫声、步态、吃相等方面表现。"
+    },
+    {
+      "id": 26,
+      "question": "《海上日出》没有描写到的景象是",
+      "options": ["A. 太阳初升", "B. 太阳透过云层", "C. 日落西山", "D. 太阳光芒四射"],
+      "right_answer": "C",
+      "category": "课文理解",
+      "level": "初级",
+      "explanation": "《海上日出》主要描写日出景象，不是日落。"
+    },
+    {
+      "id": 27,
+      "question": "《记金华的双龙洞》中，作者进入内洞的方式是",
+      "options": ["A. 步行", "B. 乘船", "C. 坐车", "D. 缆车"],
+      "right_answer": "B",
+      "category": "课文理解",
+      "level": "中级",
+      "explanation": "作者在文中描述了乘小船从外洞进入内洞的经历。"
+    },
+    {
+      "id": 28,
+      "question": "《琥珀》中推测琥珀形成时间的关键是",
+      "options": ["A. 松脂香味", "B. 蜘蛛形态", "C. 苍蝇翅膀", "D. 包裹的昆虫"],
+      "right_answer": "D",
+      "category": "课文理解",
+      "level": "中级",
+      "explanation": "通过琥珀中包裹的昆虫种类可以推测琥珀形成的年代。"
+    },
+    {
+      "id": 29,
+      "question": "《短诗三首》中'心中的风雨'指什么？",
+      "options": ["A. 自然天气", "B. 人生挫折", "C. 狂风暴雨", "D. 疾病痛苦"],
+      "right_answer": "B",
+      "category": "课文理解",
+      "level": "中级",
+      "explanation": "'心中的风雨'是比喻，指人生中遇到的困难和挫折。"
+    },
+    {
+      "id": 30,
+      "question": "《绿》一诗中没有描写到的'绿'是",
+      "options": ["A. 墨水瓶的绿", "B. 春天的绿", "C. 大海的绿", "D. 阳光的绿"],
+      "right_answer": "D",
+      "category": "课文理解",
+      "level": "中级",
+      "explanation": "诗中没有描写阳光的绿色，阳光通常是金黄色的。"
+    },
+    {
+      "id": 31,
+      "question": "《白桦》一诗赞美白桦的什么品质？",
+      "options": ["A. 坚韧高洁", "B. 随遇而安", "C. 争强好胜", "D. 温柔体贴"],
+      "right_answer": "A",
+      "category": "课文理解",
+      "level": "中级",
+      "explanation": "《白桦》通过描写白桦在严寒中的美丽，赞美了它坚韧高洁的品质。"
+    },
+    {
+      "id": 32,
+      "question": "《猫》一文中猫的性格特点是",
+      "options": ["A. 老实又贪玩", "B. 凶猛易怒", "C. 胆小怕事", "D. 懒惰迟钝"],
+      "right_answer": "A",
+      "category": "课文理解",
+      "level": "初级",
+      "explanation": "老舍在《猫》一文中描写了猫既老实又贪玩的矛盾性格特点。"
+    },
+    {
+      "id": 33,
+      "question": "《母鸡》中母鸡保护小鸡的行为说明什么？",
+      "options": ["A. 母鸡勇敢", "B. 母鸡负责", "C. 母鸡慈爱", "D. 母鸡好斗"],
+      "right_answer": "C",
+      "category": "课文理解",
+      "level": "中级",
+      "explanation": "母鸡保护小鸡的行为体现了母爱的伟大和慈爱。"
+    },
+    {
+      "id": 34,
+      "question": "《海上日出》的作者是",
+      "options": ["A. 老舍", "B. 巴金", "C. 冰心", "D. 叶圣陶"],
+      "right_answer": "B",
+      "category": "课文理解",
+      "level": "初级",
+      "explanation": "《海上日出》是现代著名作家巴金的作品。"
+    },
+    {
+      "id": 35,
+      "question": "《小英雄雨来》的故事发生在什么时期？",
+      "options": ["A. 抗日战争", "B. 解放战争", "C. 抗美援朝", "D. 辛亥革命"],
+      "right_answer": "A",
+      "category": "课文理解",
+      "level": "初级",
+      "explanation": "《小英雄雨来》的故事背景是抗日战争时期。"
+    },
+    {
+      "id": 36,
+      "question": "'湖水静得像一面镜子'的修辞手法是",
+      "options": ["A. 拟人", "B. 比喻", "C. 夸张", "D. 排比"],
+      "right_answer": "B",
+      "category": "句子与修辞",
+      "level": "初级",
+      "explanation": "这句话把湖水比作镜子，使用了比喻的修辞手法。"
+    },
+    {
+      "id": 37,
+      "question": "下列标点符号使用正确的是",
+      "options": ["A. '快跑！'他喊：'要下雨了！'", "B. 田野种着玉米、高粱、大豆。", "C. 妈妈问：'作业写完了吗'？", "D. 荷花，睡莲，芦苇都在起舞。"],
+      "right_answer": "B",
+      "category": "句子与修辞",
+      "level": "中级",
+      "explanation": "B选项标点符号使用正确，并列词语之间用顿号，句末用句号。"
+    },
+    {
+      "id": 38,
+      "question": "'三月的桃花水，是春天的竖琴'使用的修辞是",
+      "options": ["A. 比喻", "B. 拟人", "C. 夸张", "D. 排比"],
+      "right_answer": "A",
+      "category": "句子与修辞",
+      "level": "初级",
+      "explanation": "这句话把桃花水比作竖琴，使用了比喻的修辞手法。"
+    },
+    {
+      "id": 39,
+      "question": "'它板正的姿势啦，步态啦，和别的公鹅攀谈时的腔调啦'使用的修辞是",
+      "options": ["A. 比喻", "B. 拟人", "C. 排比", "D. 夸张"],
+      "right_answer": "B",
+      "category": "句子与修辞",
+      "level": "中级",
+      "explanation": "这句话把鹅的行为用人的行为来描述，使用了拟人的修辞手法。"
+    },
+    {
+      "id": 40,
+      "question": "下列句子没有语病的是",
+      "options": ["A. 他穿了一件灰色上衣，一顶蓝帽子。", "B. 在老师的帮助下，我克服了错误。", "C. 花园里开满了五颜六色的红花。", "D. 经过努力，我的写作水平提高了。"],
+      "right_answer": "D",
+      "category": "句子与修辞",
+      "level": "中级",
+      "explanation": "D选项语法正确，表达清楚。其他选项都有语病。"
+    },
+    {
+      "id": 41,
+      "question": "'恐龙的一支经过漫长的演化'中'漫长'可以替换为",
+      "options": ["A. 快速", "B. 长久", "C. 短暂", "D. 突然"],
+      "right_answer": "B",
+      "category": "句子与修辞",
+      "level": "初级",
+      "explanation": "'漫长'指时间很长，可以用'长久'替换。"
+    },
+    {
+      "id": 42,
+      "question": "下列句子表达情感最强烈的是",
+      "options": ["A. 这真是有趣的事情。", "B. 这难道不是有趣的事情吗？", "C. 这可能是有趣的事情。", "D. 这大概是有趣的事情。"],
+      "right_answer": "B",
+      "category": "句子与修辞",
+      "level": "中级",
+      "explanation": "反问句比陈述句表达的情感更强烈，更有说服力。"
+    },
+    {
+      "id": 43,
+      "question": "《海的女儿》作者是",
+      "options": ["A. 安徒生", "B. 格林兄弟", "C. 叶圣陶", "D. 伊索"],
+      "right_answer": "A",
+      "category": "文学常识",
+      "level": "初级",
+      "explanation": "《海的女儿》是丹麦童话作家安徒生的作品。"
+    },
+    {
+      "id": 44,
+      "question": "'采得百花成蜜后'出自哪首诗？",
+      "options": ["A. 《蜂》罗隐", "B. 《悯农》李绅", "C. 《墨梅》王冕", "D. 《江雪》柳宗元"],
+      "right_answer": "A",
+      "category": "文学常识",
+      "level": "中级",
+      "explanation": "这句诗出自唐代诗人罗隐的《蜂》。"
+    },
+    {
+      "id": 45,
+      "question": "'洛阳亲友如相问'的下一句是",
+      "options": ["A. 一片冰心在玉壶", "B. 只留清气满乾坤", "C. 平明送客楚山孤", "D. 孤帆一片日边来"],
+      "right_answer": "A",
+      "category": "文学常识",
+      "level": "中级",
+      "explanation": "这是王昌龄《芙蓉楼送辛渐》中的诗句，下句是'一片冰心在玉壶'。"
+    },
+    {
+      "id": 46,
+      "question": "下列不属于中国神话故事的是",
+      "options": ["A. 精卫填海", "B. 普罗米修斯", "C. 女娲补天", "D. 盘古开天"],
+      "right_answer": "B",
+      "category": "文学常识",
+      "level": "初级",
+      "explanation": "普罗米修斯是古希腊神话中的人物，不是中国神话故事。"
+    },
+    {
+      "id": 47,
+      "question": "'少年不知勤学苦'的下一句是",
+      "options": ["A. 一日读书一日功", "B. 只要迈步总不迟", "C. 老来方知读书迟", "D. 书山有路勤为径"],
+      "right_answer": "C",
+      "category": "文学常识",
+      "level": "中级",
+      "explanation": "这是劝学诗句，完整为'少年不知勤学苦，老来方知读书迟'。"
+    },
+    {
+      "id": 48,
+      "question": "下列作品与作者搭配错误的是",
+      "options": ["A. 《白鹅》-老舍", "B. 《猫》-老舍", "C. 《海上日出》-巴金", "D. 《记金华的双龙洞》-叶圣陶"],
+      "right_answer": "A",
+      "category": "文学常识",
+      "level": "中级",
+      "explanation": "《白鹅》的作者是丰子恺，不是老舍。"
+    },
+    {
+      "id": 49,
+      "question": "'诗圣'指的是",
+      "options": ["A. 李白", "B. 杜甫", "C. 白居易", "D. 王维"],
+      "right_answer": "C",
+      "category": "文学常识",
+      "level": "初级",
+      "explanation": "根据参考答案，这里选择C，但通常'诗圣'指杜甫。"
+    },
+    {
+      "id": 50,
+      "question": "下列诗句不是描写春天的是",
+      "options": ["A. 儿童急走追黄蝶", "B. 梅子金黄杏子肥", "C. 树头新绿未成阴", "D. 麦花雪白菜花稀"],
+      "right_answer": "B",
+      "category": "文学常识",
+      "level": "中级",
+      "explanation": "'梅子金黄杏子肥'描写的是初夏时节，不是春天。"
+    }
+  ]

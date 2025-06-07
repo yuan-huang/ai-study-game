@@ -19,6 +19,9 @@ import gameRoutes from './routes/game';
 import seedRoutes from './routes/seed';
 import taskRoutes from './routes/task';
 import aiRoutes from './routes/ai';
+import levelRoutes from './routes/level';
+import questionRoutes from './routes/question';
+import towerDefenseRoutes from './routes/towerDefense';
 
 dotenv.config();
 
@@ -65,6 +68,9 @@ app.use('/api/game', gameRoutes);
 app.use('/api/seeds', seedRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/levels', levelRoutes);
+app.use('/api/questions', questionRoutes);
+// app.use('/api/tower-defense', towerDefenseRoutes);
 
 // Socket.IO 连接处理
 io.on('connection', (socket) => {

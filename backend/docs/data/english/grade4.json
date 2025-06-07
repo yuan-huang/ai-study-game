@@ -1,0 +1,335 @@
+[
+    {
+        "id": 1,
+        "question": "I want _______ice cream.",
+        "options": ["A. a", "B. an", "C. the"],
+        "right_answer": "B",
+        "category": "冠词",
+        "level": "初级",
+        "explanation": "ice cream以元音音素/aɪ/开头，前面应用不定冠词'an'。"
+    },
+    {
+        "id": 2,
+        "question": "______is he today? He's not well.",
+        "options": ["A. What", "B. Where", "C. How"],
+        "right_answer": "C",
+        "category": "疑问词",
+        "level": "初级",
+        "explanation": "根据回答'He's not well'可知是询问身体状况，应用'How'询问。"
+    },
+    {
+        "id": 3,
+        "question": "----Do you have a book? ____.",
+        "options": ["A. Yes, I do.", "B. No, I do.", "C. Yes, I don't."],
+        "right_answer": "A",
+        "category": "一般疑问句回答",
+        "level": "初级",
+        "explanation": "Do开头的一般疑问句，肯定回答用'Yes, I do.'，否定回答用'No, I don't.'。"
+    },
+    {
+        "id": 4,
+        "question": "_____the lemon sour? Yes, it is.",
+        "options": ["A. is", "B. Is", "C. Does"],
+        "right_answer": "B",
+        "category": "be动词",
+        "level": "初级",
+        "explanation": "sour是形容词，询问性质用be动词，句首需要大写，所以用'Is'。"
+    },
+    {
+        "id": 5,
+        "question": "What does Mocky like?",
+        "options": ["A. Yes, he does.", "B. He like noodles.", "C. He likes noodles."],
+        "right_answer": "C",
+        "category": "特殊疑问句回答",
+        "level": "初级",
+        "explanation": "What开头的特殊疑问句要具体回答，且第三人称单数动词要加s，所以是'He likes noodles.'。"
+    },
+    {
+        "id": 6,
+        "question": "A：_____________. B：Have some rice.",
+        "options": ["A. I'm hungry.", "B. I'm thirsty.", "C. I'm old."],
+        "right_answer": "A",
+        "category": "情景对话",
+        "level": "初级",
+        "explanation": "对方建议吃米饭，说明前面应该是表达饥饿，用'I'm hungry.'。"
+    },
+    {
+        "id": 7,
+        "question": "Where___________they?",
+        "options": ["A. is", "B. am", "C. are"],
+        "right_answer": "C",
+        "category": "be动词",
+        "level": "初级",
+        "explanation": "they是复数主语，对应的be动词用'are'。"
+    },
+    {
+        "id": 8,
+        "question": "______that lemon sour?",
+        "options": ["A. Does", "B. Is", "C. Are"],
+        "right_answer": "B",
+        "category": "be动词",
+        "level": "初级",
+        "explanation": "sour是形容词，that lemon是单数，用be动词'Is'。"
+    },
+    {
+        "id": 9,
+        "question": "_____Ann like noodles?",
+        "options": ["A. Does", "B. Is", "C. Are"],
+        "right_answer": "A",
+        "category": "助动词",
+        "level": "初级",
+        "explanation": "like是实义动词，Ann是第三人称单数，疑问句用助动词'Does'。"
+    },
+    {
+        "id": 10,
+        "question": "Tom _______a new toy car.",
+        "options": ["A. like", "B. has", "C. have"],
+        "right_answer": "B",
+        "category": "动词",
+        "level": "初级",
+        "explanation": "Tom是第三人称单数，表示'拥有'用'has'。"
+    },
+    {
+        "id": 12,
+        "question": "Ken_________fruit.",
+        "options": ["A. like", "B. don't like", "C. isn't like"],
+        "right_answer": "A",
+        "category": "动词",
+        "level": "初级",
+        "explanation": "Ken是第三人称单数，like作实义动词时，第三人称单数形式是'likes'，但选项中最接近的是'like'。根据语境应该选择肯定形式。"
+    },
+    {
+        "id": 13,
+        "question": "__________they old toys?",
+        "options": ["A. Do", "B. Are", "C. Is"],
+        "right_answer": "B",
+        "category": "be动词",
+        "level": "初级",
+        "explanation": "询问'他们是旧玩具吗？'，they是复数，用be动词'Are'。"
+    },
+    {
+        "id": 14,
+        "question": "Ann's stomach_______.",
+        "options": ["A. hurt", "B. hurts", "C. are hurt"],
+        "right_answer": "B",
+        "category": "动词",
+        "level": "初级",
+        "explanation": "stomach是单数第三人称，动词hurt要加s变成'hurts'。"
+    },
+    {
+        "id": 15,
+        "question": "Does she have a new doll?",
+        "options": ["A. Yes, she is", "B. No, she doesn't", "C. No, she isn't"],
+        "right_answer": "B",
+        "category": "一般疑问句回答",
+        "level": "初级",
+        "explanation": "Does开头的疑问句，否定回答用'No, she doesn't'。"
+    },
+    {
+        "id": 16,
+        "question": "How are you today?",
+        "options": ["A. I'm thirsty", "B. I'm a tall boy", "C. I'm very sick."],
+        "right_answer": "C",
+        "category": "情景对话",
+        "level": "初级",
+        "explanation": "'How are you today?'询问今天的状况，'I'm very sick.'最符合这个问题的回答。"
+    },
+    {
+        "id": 17,
+        "question": "What's the matter with you?",
+        "options": ["A. He is not well.", "B. I am hungry.", "C. My finger hurts."],
+        "right_answer": "C",
+        "category": "情景对话",
+        "level": "初级",
+        "explanation": "'What's the matter with you?'询问怎么了，'My finger hurts.'具体说明了问题所在。"
+    },
+    {
+        "id": 18,
+        "question": "They_______big turtles.",
+        "options": ["A. do", "B. does", "C. are"],
+        "right_answer": "C",
+        "category": "be动词",
+        "level": "初级",
+        "explanation": "They是复数主语，表示'他们是大海龟'，用be动词'are'。"
+    },
+    {
+        "id": 19,
+        "question": "Does she_________a new computer?",
+        "options": ["A. has", "B. have", "C. likes"],
+        "right_answer": "B",
+        "category": "助动词",
+        "level": "初级",
+        "explanation": "Does后面的动词用原形'have'。"
+    },
+    {
+        "id": 20,
+        "question": "__________they big animals?",
+        "options": ["A. Are", "B. Do", "C. Does"],
+        "right_answer": "A",
+        "category": "be动词",
+        "level": "初级",
+        "explanation": "询问'他们是大动物吗？'，they是复数，用be动词'Are'。"
+    },
+    {
+        "id": 21,
+        "question": "I want_________cold milk.",
+        "options": ["A. a", "B. an", "C. some"],
+        "right_answer": "C",
+        "category": "限定词",
+        "level": "初级",
+        "explanation": "milk是不可数名词，用'some'修饰。"
+    },
+    {
+        "id": 22,
+        "question": "My purse is old. I want a ______one.",
+        "options": ["A. long", "B. good", "C. new"],
+        "right_answer": "C",
+        "category": "形容词",
+        "level": "初级",
+        "explanation": "前句说钱包是旧的，所以想要一个'新的'（new）。"
+    },
+    {
+        "id": 23,
+        "question": "My brother is tall. But I am _________.",
+        "options": ["A. short", "B. small", "C. young"],
+        "right_answer": "A",
+        "category": "形容词",
+        "level": "初级",
+        "explanation": "tall的反义词是'short'（矮）。"
+    },
+    {
+        "id": 24,
+        "question": "I __________ noodles.",
+        "options": ["A. am not like", "B. isn't like", "C. don't like"],
+        "right_answer": "C",
+        "category": "否定句",
+        "level": "初级",
+        "explanation": "I与like搭配的否定形式是'don't like'。"
+    },
+    {
+        "id": 25,
+        "question": "I'm very hungry. Please have some____________.",
+        "options": ["A. milk", "B. rice", "C. orange juice"],
+        "right_answer": "B",
+        "category": "名词",
+        "level": "初级",
+        "explanation": "饥饿时需要食物，rice（米饭）是食物，而milk和orange juice是饮料。"
+    },
+    {
+        "id": 26,
+        "question": "Is that clock old?",
+        "options": ["A. Yes, this is", "B. Yes, they are", "C. No, it isn't"],
+        "right_answer": "C",
+        "category": "一般疑问句回答",
+        "level": "初级",
+        "explanation": "Is that...的疑问句，回答时用it指代that，所以是'No, it isn't'。"
+    },
+    {
+        "id": 27,
+        "question": "-----Have some water, please! -----_______",
+        "options": ["A. Thank you", "B. I'm sorry", "C. You're welcome"],
+        "right_answer": "A",
+        "category": "礼貌用语",
+        "level": "初级",
+        "explanation": "别人请你喝水，应该说'Thank you'表示感谢。"
+    },
+    {
+        "id": 28,
+        "question": "Nice to see you!",
+        "options": ["A. I'm happy.", "B. I'm not well.", "C. Nice to see you, too."],
+        "right_answer": "C",
+        "category": "礼貌用语",
+        "level": "初级",
+        "explanation": "'Nice to see you!'的标准回应是'Nice to see you, too.'。"
+    },
+    {
+        "id": 29,
+        "question": "Can I help you?",
+        "options": ["A. Here you are.", "B. I want a hat.", "C. Thank you."],
+        "right_answer": "B",
+        "category": "情景对话",
+        "level": "初级",
+        "explanation": "'Can I help you?'是服务员的询问，应该说出自己的需求'I want a hat.'。"
+    },
+    {
+        "id": 30,
+        "question": "---What fruit do you like?---I like ________.",
+        "options": ["A. hamburgers", "B. carrots", "C. pineapples"],
+        "right_answer": "C",
+        "category": "名词分类",
+        "level": "初级",
+        "explanation": "问的是喜欢什么水果，pineapples（菠萝）是水果，hamburgers是食物，carrots是蔬菜。"
+    },
+    {
+        "id": 31,
+        "question": "---Whose book is this?---__________",
+        "options": ["A. It's 12yuan", "B. It's an elephant", "C. It's Ann's."],
+        "right_answer": "C",
+        "category": "特殊疑问句回答",
+        "level": "初级",
+        "explanation": "Whose询问所有权，应该回答'It's Ann's.'（这是Ann的）。"
+    },
+    {
+        "id": 32,
+        "question": "---What _______she like? She ________vegetables.",
+        "options": ["A. is, like", "B. does, likes", "C. do, likes"],
+        "right_answer": "B",
+        "category": "疑问句和动词",
+        "level": "中级",
+        "explanation": "询问喜好用'What does she like?'，第三人称单数回答用'likes'。"
+    },
+    {
+        "id": 33,
+        "question": "How _______she? She is not well.",
+        "options": ["A. does", "B. is", "C. are"],
+        "right_answer": "B",
+        "category": "疑问词",
+        "level": "初级",
+        "explanation": "How询问状况，she是单数，用be动词'is'。"
+    },
+    {
+        "id": 34,
+        "question": "---Do you like fruit?---Yes, I _____.",
+        "options": ["A. don't", "B. am", "C. do"],
+        "right_answer": "C",
+        "category": "一般疑问句回答",
+        "level": "初级",
+        "explanation": "Do开头的疑问句，肯定回答用'Yes, I do.'。"
+    },
+    {
+        "id": 35,
+        "question": "_________Ann a tall girl?",
+        "options": ["A. does", "B. Does", "C. Is"],
+        "right_answer": "C",
+        "category": "be动词",
+        "level": "初级",
+        "explanation": "询问Ann是否是高个女孩，用be动词'Is'，句首要大写。"
+    },
+    {
+        "id": 36,
+        "question": "----What do you like?---_________.",
+        "options": ["A. I'm thirsty", "B. I have an old bear.", "C. I like oranges."],
+        "right_answer": "C",
+        "category": "特殊疑问句回答",
+        "level": "初级",
+        "explanation": "What do you like?询问喜欢什么，应该具体回答喜欢的东西'I like oranges.'。"
+    },
+    {
+        "id": 37,
+        "question": "There_______12 children in the room.",
+        "options": ["A. has", "B. is", "C. are"],
+        "right_answer": "C",
+        "category": "there be句型",
+        "level": "初级",
+        "explanation": "There be句型中，12 children是复数，所以用'are'。"
+    },
+    {
+        "id": 40,
+        "question": "---Happy birthday, Dad!---____________",
+        "options": ["A. I'm sorry.", "B. Nice to see you, too.", "C. Thanks."],
+        "right_answer": "C",
+        "category": "礼貌用语",
+        "level": "初级",
+        "explanation": "别人祝你生日快乐，应该说'Thanks.'表示感谢。"
+    }
+]

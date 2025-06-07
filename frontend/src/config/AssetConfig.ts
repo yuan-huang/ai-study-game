@@ -123,53 +123,76 @@ export const GameAssets: SceneAssets = {
 
     // 塔防关卡资源
     TowerDefense: [
+        //frontend\public\images\ui\main-ui\towerDefense-bg.jpeg
         {
-            key: 'tower-defense-bg',
-            path: '/images/game/tower-defense/background.png',
+            key: 'towerDefense-bg',
+            path: '/images/ui/main-ui/towerDefense-bg.jpeg',
             type: AssetType.IMAGE
         },
+        // frontend\public\images\ui\entities\tower-arrow.png
         {
-            key: 'tower-base',
-            path: '/images/game/tower-defense/tower-base.png',
+            key: 'tower-arrow',
+            path: '/images/ui/entities/tower-arrow.png',
             type: AssetType.IMAGE
         },
+        // frontend\public\images\ui\entities\tower-cannon.png
         {
-            key: 'tower-turret',
-            path: '/images/game/tower-defense/tower-turret.png',
+            key: 'tower-rocket',
+            path: '/images/ui/entities/tower-rocket.png',
             type: AssetType.IMAGE
         },
+        // frontend\public\images\ui\entities\tower-freeze.png
         {
-            key: 'tower-upgrade',
-            path: '/images/game/tower-defense/tower-upgrade.png',
+            key: 'tower-freeze',
+            path: '/images/ui/entities/tower-freeze.png',
             type: AssetType.IMAGE
         },
+        // frontend\public\images\ui\entities\tower-laser.png
         {
-            key: 'monster',
-            path: '/images/game/tower-defense/monster-sprite.png',
-            type: AssetType.SPRITE,
-            frameConfig: {
-                frameWidth: 64,
-                frameHeight: 64,
-                startFrame: 0,
-                endFrame: 23
-            }
-        },
-        {
-            key: 'projectile',
-            path: '/images/game/tower-defense/projectile.png',
+            key: 'tower-laser',
+            path: '/images/ui/entities/tower-laser.png',
             type: AssetType.IMAGE
         },
+        //frontend\public\images\ui\entities\tower-nomarl.png
         {
-            key: 'explosion',
-            path: '/images/game/tower-defense/explosion.png',
-            type: AssetType.SPRITE,
-            frameConfig: {
-                frameWidth: 64,
-                frameHeight: 64,
-                startFrame: 0,
-                endFrame: 15
-            }
-        }
+            key: 'tower-poison',
+            path: '/images/ui/entities/tower-poison.png',
+            type: AssetType.IMAGE
+        },
+
+    ],
+
+    Monster: [
+        //frontend\public\images\ui\entities\monster-gluttonous.png
+        {
+            key: 'monster-gluttonous',
+            path: '/images/ui/entities/monster-gluttonous.png',
+            type: AssetType.IMAGE
+        },
+        //frontend\public\images\ui\entities\monster-grumpy.png
+        {
+            key: 'monster-grumpy',
+            path: '/images/ui/entities/monster-grumpy.png',
+            type: AssetType.IMAGE
+        },
+        //frontend\public\images\ui\entities\monster-lazy.png
+        {
+            key: 'monster-lazy',
+            path: '/images/ui/entities/monster-lazy.png',
+            type: AssetType.IMAGE
+        },
+        //frontend\public\images\ui\entities\monster-messy.png
+        {
+            key: 'monster-messy',   
+            path: '/images/ui/entities/monster-messy.png',
+            type: AssetType.IMAGE
+        },
+        //frontend\public\images\ui\entities\monster-prankster.png
+        {
+            key: 'monster-prankster',
+            path: '/images/ui/entities/monster-prankster.png',
+            type: AssetType.IMAGE
+        },
     ],
 
     // 图片选择关卡资源

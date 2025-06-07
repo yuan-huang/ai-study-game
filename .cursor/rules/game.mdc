@@ -1,0 +1,14 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+frontend 工程是前端
+|--src
+|--- types 定义类型
+|--docs 存放各功能的文档说明
+
+
+backend 后端工程
+|--docs 存放各功能的文档说明
+

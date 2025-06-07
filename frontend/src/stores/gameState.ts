@@ -1,4 +1,4 @@
-import { authApi, seedApi } from '../services/api';
+import { authApi, seedApi } from '../api/api';
 
 interface UserData {
     id: string;

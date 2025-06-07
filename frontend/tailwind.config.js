@@ -20,6 +20,12 @@ export default {
           900: '#0c4a6e',
         },
       },
+      fontFamily: {
+        'puhuiti': ['Alibaba-PuHuiTi', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        'suhei': ['Alibaba-Sans', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        'dongfang': ['Alibaba-Dongfang', 'serif'],
+        'sans': ['Alibaba-PuHuiTi', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Helvetica Neue', 'Arial', 'sans-serif'],
+      },
     },
   },
   plugins: [],

@@ -68,7 +68,13 @@ export class LoginScene extends BaseScene {
         this.checkLoginCache().then(hasCache => {
             if (hasCache) {
                 // 如果有缓存，直接进入游戏
-                this.scene.start('MainScene');
+                // this.scene.start('MainScene');
+                this.scene.start('TowerDefenseSceneRefactored',{
+                        userLevel: 1,
+                        category: '字词基础',
+                        grade: 4,
+                        subject: 'chinese'
+                });
                 return;
             }
             

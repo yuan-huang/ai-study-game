@@ -1,4 +1,8 @@
 import { KnowledgeGarden } from './types/main';
+import { fontManager } from './utils/fontManager';
+import { FontTest } from './components/FontTest';
+import { PhaserFontConfig } from './config/PhaserFontConfig';
+import './index.css';
 
 // 防止默认的拖拽、选择等行为
 document.addEventListener('DOMContentLoaded', () => {
@@ -13,8 +17,28 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // 等待DOM完全加载后初始化游戏
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
     console.log('🌐 页面完全加载，开始初始化游戏');
+    
+    // 首先加载字体
+    console.log('🔤 开始加载阿里开源字体...');
+    try {
+        // 1. 加载基础字体文件
+        await fontManager.loadAlibabaPuHuiTi();
+        fontManager.applyFontsToCSS();
+        
+        // 2. 初始化Phaser字体配置
+        await PhaserFontConfig.initializeGameFonts();
+        
+        console.log('✅ 字体加载完成');
+        
+
+        
+    } catch (error) {
+        console.warn('⚠️ 字体加载失败，使用降级方案:', error);
+        FontTest.showFontStatus('阿里巴巴普惠体', false);
+        FontTest.showFontStatus('Phaser字体配置', false);
+    }
     
     // 清理已存在的游戏容器
     const existingContainer = document.getElementById('game-container');

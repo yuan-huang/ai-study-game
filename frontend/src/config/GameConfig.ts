@@ -4,6 +4,8 @@ import { LoginScene } from '../scenes/LoginScene';
 import UIPlugin from 'phaser3-rex-plugins/templates/ui/ui-plugin.js';
 import { MainScene } from '../scenes/MainScene';
 import { LevelSelectScene } from '../scenes/LevelSelectScene';
+import { TowerDefenseScene } from '../scenes/levels/TowerDefenseScene';
+import { TowerDefenseSceneRefactored } from '@/scenes/levels/TowerDefenseSceneRefactored';
 
 const isDev = import.meta.env.DEV;
 
@@ -49,6 +51,8 @@ export const GameConfig: Types.Core.GameConfig = {
         LoadingScene,
         MainScene,
         LevelSelectScene,
+        TowerDefenseScene,
+        TowerDefenseSceneRefactored,
         // MainMenuScene
         // 其他场景将在这里添加
     ],
@@ -85,6 +89,8 @@ export const GameConfig: Types.Core.GameConfig = {
                 (canvas.style as any).webkitUserSelect = 'none';
                 console.log('✅ Canvas样式设置完成');
             }
+            
+
         }
     }
 };

@@ -66,7 +66,7 @@ export class MainScene extends BaseScene {
                 color: '#ffffff',
                 backgroundColor: 'rgba(0, 0, 0, 0.7)',
                 padding: { x: 10, y: 6 },
-                fontFamily: 'Arial, sans-serif'
+                fontFamily: 'Alibaba-PuHuiTi, Arial, sans-serif'
             }
         ).setOrigin(0.5, 0.5).setDepth(100);
 
@@ -90,7 +90,7 @@ export class MainScene extends BaseScene {
                 color: '#ffffff',
                 backgroundColor: 'rgba(0, 0, 0, 0.7)',
                 padding: { x: 10, y: 6 },
-                fontFamily: 'Arial, sans-serif'
+                fontFamily: 'Alibaba-PuHuiTi, Arial, sans-serif'
             }
         ).setOrigin(0.5, 0.5).setDepth(100);
 
@@ -114,7 +114,7 @@ export class MainScene extends BaseScene {
                 color: '#ffffff',
                 backgroundColor: 'rgba(0, 0, 0, 0.7)',
                 padding: { x: 10, y: 6 },
-                fontFamily: 'Arial, sans-serif'
+                fontFamily: 'Alibaba-PuHuiTi, Arial, sans-serif'
             }
         ).setOrigin(0.5, 0.5).setDepth(100);
 
@@ -139,7 +139,7 @@ export class MainScene extends BaseScene {
                 color: '#ffffff',
                 backgroundColor: 'rgba(0, 0, 0, 0.7)',
                 padding: { x: 10, y: 6 },
-                fontFamily: 'Arial, sans-serif'
+                fontFamily: 'Alibaba-PuHuiTi, Arial, sans-serif'
             }
         ).setOrigin(0.5, 0.5).setDepth(100);
 
@@ -156,16 +156,16 @@ export class MainScene extends BaseScene {
         .setInteractive({ cursor: 'pointer' });
         
         // 添加永久学科名称标签
-        this.add.text(
+        this.createText(
             knowledgeFlower.x,
             knowledgeFlower.y + knowledgeFlower.height * 0.12,
             '知识花园',
+            'LABEL_TEXT',
             {
-                fontSize: '24px',
+                fontSize: 24,
                 color: '#ffffff',
                 backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                padding: { x: 10, y: 6 },
-                fontFamily: 'Arial, sans-serif'
+                padding: { x: 10, y: 6 }
             }
         ).setOrigin(0.5, 0.5).setDepth(100);
 
@@ -194,7 +194,11 @@ export class MainScene extends BaseScene {
         this.effectManager.addBuildingInteraction(curiousTree, 'curious', '好奇树');
         this.effectManager.addBuildingInteraction(knowledgeFlower, 'knowledge', '知识花园');
         this.effectManager.addSpriteInteraction(sprite);
+        
+
     }
+    
+
 
 } 
 
