@@ -113,31 +113,12 @@ export const GameAssets: SceneAssets = {
 
     // 关卡选择场景资源
     LevelSelect: [
+        //frontend\public\images\ui\level-select\level-select-bg.png
         {
-            key: 'level-map-bg',
-            path: '/images/ui/level-select/level-map-bg.png',
+            key: 'level-select-bg',
+            path: '/images/ui/level-select/level-select-bg.png',
             type: AssetType.IMAGE
         },
-        {
-            key: 'level-node',
-            path: '/images/ui/level-select/level-node.png',
-            type: AssetType.IMAGE
-        },
-        {
-            key: 'level-node-completed',
-            path: '/images/ui/level-select/level-node-completed.png',
-            type: AssetType.IMAGE
-        },
-        {
-            key: 'level-node-locked',
-            path: '/images/ui/level-select/level-node-locked.png',
-            type: AssetType.IMAGE
-        },
-        {
-            key: 'level-line',
-            path: '/images/ui/level-select/level-line.png',
-            type: AssetType.IMAGE
-        }
     ],
 
     // 塔防关卡资源

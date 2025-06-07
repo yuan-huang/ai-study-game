@@ -162,7 +162,7 @@ export class BuildingEffect {
     /**
      * 创建名称标签
      */
-    private createNameTag(
+    public createNameTag(
         building: Phaser.GameObjects.Image,
         subject: string,
         subjectName: string

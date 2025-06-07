@@ -1,13 +1,13 @@
-import { Scene } from 'phaser';
 import { ImageQuizLevelData } from '@/config/GameConfig';
 import { getAssetPath } from '@/config/AssetConfig';
+import { BaseScene } from '../BaseScene';
 
-export class ImageQuizScene extends Scene {
+export class ImageQuizScene extends BaseScene {
     private levelConfig!: ImageQuizLevelData;
     private currentQuestion: number = 0;
 
     constructor() {
-        super({ key: 'ImageQuizScene' });
+        super('ImageQuizScene');
     }
 
     init(data: { levelConfig: ImageQuizLevelData }) {

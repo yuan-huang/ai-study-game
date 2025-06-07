@@ -65,26 +65,9 @@ window.addEventListener('load', () => {
                     canvas.style.touchAction = 'none';
                     canvas.tabIndex = 1; // 确保Canvas可以接收焦点
                     
-                    // 添加原生事件测试
-                    canvas.addEventListener('mouseenter', () => {
-                        console.log('🔍 原生事件: 鼠标进入Canvas');
-                    });
-                    
-                    canvas.addEventListener('mousemove', (e) => {
-                        // 限制日志频率
-                        if (!(window as any).lastMouseLog || Date.now() - (window as any).lastMouseLog > 2000) {
-                            console.log(`🔍 原生事件: 鼠标移动 (${e.offsetX}, ${e.offsetY})`);
-                            (window as any).lastMouseLog = Date.now();
-                        }
-                    });
-                    
-                    canvas.addEventListener('click', (e) => {
-                        console.log(`🔍 原生事件: 点击 (${e.offsetX}, ${e.offsetY})`);
-                    });
-                    
+
                     // 强制聚焦到Canvas
                     canvas.focus();
-                    console.log('✅ Canvas事件监听器已添加');
                 } else {
                     console.error('❌ 未找到Canvas元素');
                 }

@@ -4,7 +4,7 @@ import { SpriteEffect } from './SpriteEffect';
 
 export class EffectManager {
     private scene: Scene;
-    private buildingEffect: BuildingEffect;
+    public buildingEffect: BuildingEffect;
     private spriteEffect: SpriteEffect;
 
     constructor(scene: Scene) {
@@ -22,6 +22,7 @@ export class EffectManager {
         subjectName: string
     ) {
         this.buildingEffect.addBuildingInteraction(building, subject, subjectName);
+
     }
 
     /**
@@ -29,6 +30,7 @@ export class EffectManager {
      */
     addSpriteInteraction(sprite: Phaser.GameObjects.Image) {
         this.spriteEffect.addSpriteInteraction(sprite);
+
     }
 
     /**

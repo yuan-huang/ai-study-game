@@ -1,12 +1,12 @@
-import { Scene } from 'phaser';
 import { TowerDefenseLevelData } from '@/config/GameConfig';
 import { getAssetPath } from '@/config/AssetConfig';
+import { BaseScene } from '../BaseScene';
 
-export class TowerDefenseScene extends Scene {
+export class TowerDefenseScene extends BaseScene {
     private levelConfig!: TowerDefenseLevelData;
 
     constructor() {
-        super({ key: 'TowerDefenseScene' });
+        super('TowerDefenseScene');
     }
 
     init(data: { levelConfig: TowerDefenseLevelData }) {

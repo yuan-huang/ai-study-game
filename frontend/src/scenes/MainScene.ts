@@ -1,12 +1,12 @@
-import { Scene } from 'phaser';
 import { getAssetPath } from '@/config/AssetConfig';
 import { EffectManager } from '@/effects';
+import { BaseScene } from './BaseScene';
 
-export class MainScene extends Scene {
+export class MainScene extends BaseScene {
     private effectManager!: EffectManager;
 
     constructor() {
-        super({ key: 'MainScene' });
+        super('MainScene');
     }
     
     init() {
@@ -45,6 +45,8 @@ export class MainScene extends Scene {
         const bg = this.add.image(0, 0, 'main-bg')
             .setOrigin(0, 0);
 
+
+
         // 添加建筑
         // 语文 右中
         const chineseBuilding = this.add.image(
@@ -53,6 +55,22 @@ export class MainScene extends Scene {
             'chinese-building'
         ).setScale(0.4)
         .setInteractive({ cursor: 'pointer' });
+        
+        // 添加永久学科名称标签
+        this.add.text(
+            chineseBuilding.x,
+            chineseBuilding.y + chineseBuilding.height * 0.2,
+            '语文塔',
+            {
+                fontSize: '24px',
+                color: '#ffffff',
+                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                padding: { x: 10, y: 6 },
+                fontFamily: 'Arial, sans-serif'
+            }
+        ).setOrigin(0.5, 0.5).setDepth(100);
+
+
 
         // 数学 右上
         const mathBuilding = this.add.image(
@@ -61,6 +79,22 @@ export class MainScene extends Scene {
             'math-building'
         ).setScale(0.3)
         .setInteractive({ cursor: 'pointer' });
+        
+        // 添加永久学科名称标签
+        this.add.text(
+            mathBuilding.x,
+            mathBuilding.y + mathBuilding.height * 0.1,
+            '数学塔',
+            {
+                fontSize: '24px',
+                color: '#ffffff',
+                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                padding: { x: 10, y: 6 },
+                fontFamily: 'Arial, sans-serif'
+            }
+        ).setOrigin(0.5, 0.5).setDepth(100);
+
+
 
         // 英语建筑 左边
         const englishBuilding = this.add.image(
@@ -69,6 +103,23 @@ export class MainScene extends Scene {
             'english-building'
         ).setScale(0.35)
         .setInteractive({ cursor: 'pointer' });
+        
+        // 添加永久学科名称标签
+        this.add.text(
+            englishBuilding.x,
+            englishBuilding.y + englishBuilding.height * 0.1,
+            '英语塔',
+            {
+                fontSize: '24px',
+                color: '#ffffff',
+                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                padding: { x: 10, y: 6 },
+                fontFamily: 'Arial, sans-serif'
+            }
+        ).setOrigin(0.5, 0.5).setDepth(100);
+
+
+
 
         // 好奇树 中间
         const curiousTree = this.add.image(
@@ -77,6 +128,24 @@ export class MainScene extends Scene {
             'curious-tree'
         ).setScale(0.5)
         .setInteractive({ cursor: 'pointer' });
+        
+        // 添加永久学科名称标签
+        this.add.text(
+            curiousTree.x,
+            curiousTree.y + curiousTree.height * 0.2,
+            '好奇树',
+            {
+                fontSize: '24px',
+                color: '#ffffff',
+                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                padding: { x: 10, y: 6 },
+                fontFamily: 'Arial, sans-serif'
+            }
+        ).setOrigin(0.5, 0.5).setDepth(100);
+
+
+
+
 
         // 知识花
         const knowledgeFlower = this.add.image(
@@ -85,6 +154,20 @@ export class MainScene extends Scene {
             'knowledge-flower'
         ).setScale(0.4)
         .setInteractive({ cursor: 'pointer' });
+        
+        // 添加永久学科名称标签
+        this.add.text(
+            knowledgeFlower.x,
+            knowledgeFlower.y + knowledgeFlower.height * 0.12,
+            '知识花园',
+            {
+                fontSize: '24px',
+                color: '#ffffff',
+                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                padding: { x: 10, y: 6 },
+                fontFamily: 'Arial, sans-serif'
+            }
+        ).setOrigin(0.5, 0.5).setDepth(100);
 
         // 精灵 左下
         const sprite = this.add.image(
@@ -105,11 +188,13 @@ export class MainScene extends Scene {
         sprite.setData('originalScale', 0.5);
 
         // 使用效果管理器添加交互效果
-        this.effectManager.addBuildingInteraction(chineseBuilding, 'chinese', '语文');
-        this.effectManager.addBuildingInteraction(mathBuilding, 'math', '数学');
-        this.effectManager.addBuildingInteraction(englishBuilding, 'english', '英语');
-        this.effectManager.addBuildingInteraction(curiousTree, 'curious', '好奇');
-        this.effectManager.addBuildingInteraction(knowledgeFlower, 'knowledge', '知识');
+        this.effectManager.addBuildingInteraction(chineseBuilding, 'chinese', '语文塔');
+        this.effectManager.addBuildingInteraction(mathBuilding, 'math', '数学塔');
+        this.effectManager.addBuildingInteraction(englishBuilding, 'english', '英语塔');
+        this.effectManager.addBuildingInteraction(curiousTree, 'curious', '好奇树');
+        this.effectManager.addBuildingInteraction(knowledgeFlower, 'knowledge', '知识花园');
         this.effectManager.addSpriteInteraction(sprite);
     }
+
 } 
+

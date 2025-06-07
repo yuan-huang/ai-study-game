@@ -1,0 +1,57 @@
+/* 游戏光标样式 */
+
+/* 默认自定义光标 */
+.custom-cursor {
+    cursor: url('/images/ui/base/cursor-arrow.svg') 12 12, auto !important;
+}
+
+/* 悬停光标 */
+.hover-cursor {
+    cursor: pointer !important;
+}
+
+/* 抓取光标 */
+.grab-cursor {
+    cursor: grab !important;
+}
+
+/* 抓取中光标 */
+.grabbing-cursor {
+    cursor: grabbing !important;
+}
+
+/* 等待光标 */
+.wait-cursor {
+    cursor: wait !important;
+}
+
+/* 文本选择光标 */
+.text-cursor {
+    cursor: text !important;
+}
+
+/* 游戏容器光标样式 */
+.game-container {
+    cursor: url('/images/ui/base/cursor-arrow.svg') 12 12, auto !important;
+}
+
+.game-container * {
+    cursor: inherit !important;
+}
+
+/* 为确保在不同设备上的兼容性，提供后备样式 */
+@media (max-width: 768px) {
+    .custom-cursor,
+    .game-container {
+        cursor: auto !important;
+    }
+}
+
+/* 高DPI显示器优化 */
+@media (-webkit-min-device-pixel-ratio: 2),
+       (min-resolution: 2dppx) {
+    .custom-cursor,
+    .game-container {
+        cursor: url('/images/ui/base/cursor-arrow.svg') 12 12, auto !important;
+    }
+} 

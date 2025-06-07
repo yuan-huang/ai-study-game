@@ -1,6 +1,7 @@
 import { Scene } from 'phaser';
 
 export class BaseScene extends Scene {
+
     constructor(key: string) {
         super(key);
     }
@@ -8,6 +9,8 @@ export class BaseScene extends Scene {
     init(data?: any): void {
         // 场景初始化逻辑
         console.log(`Initializing scene: ${this.scene.key}`);
+        
+
     }
 
     preload(): void {
@@ -38,9 +41,13 @@ export class BaseScene extends Scene {
             padding: { x: 10, y: 5 }
         });
         
-        button.setInteractive({ useHandCursor: true })
-            .on('pointerover', () => button.setStyle({ color: '#ff0' }))
-            .on('pointerout', () => button.setStyle({ color: '#fff' }))
+        button.setInteractive()
+            .on('pointerover', () => {
+                button.setStyle({ color: '#ff0' });
+            })
+            .on('pointerout', () => {
+                button.setStyle({ color: '#fff' });
+            })
             .on('pointerdown', onClick);
 
         return button;

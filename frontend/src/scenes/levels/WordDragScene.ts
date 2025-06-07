@@ -1,13 +1,13 @@
-import { Scene } from 'phaser';
 import { WordDragLevelData } from '@/config/GameConfig';
 import { getAssetPath } from '@/config/AssetConfig';
+import { BaseScene } from '../BaseScene';
 
-export class WordDragScene extends Scene {
+export class WordDragScene extends BaseScene {
     private levelConfig!: WordDragLevelData;
     private draggedWord: Phaser.GameObjects.Text | null = null;
 
     constructor() {
-        super({ key: 'WordDragScene' });
+        super('WordDragScene');
     }
 
     init(data: { levelConfig: WordDragLevelData }) {

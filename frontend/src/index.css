@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./styles/cursor.css";
 
 /* 基础样式 */
 @layer base {

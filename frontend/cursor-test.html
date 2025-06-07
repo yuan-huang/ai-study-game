@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 光标效果测试页面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        /* 光标样式定义 */
+        .custom-cursor {
+            cursor: url('public/images/ui/base/cursor-arrow.svg') 12 12, auto !important;
+        }
+
+        .custom-cursor-simple {
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><path d="M0 0 L15 12 L7 14 Z" fill="red"/></svg>') 16 16, auto !important;
+        }
+
+        .hover-cursor {
+            cursor: pointer !important;
+        }
+
+        .grab-cursor {
+            cursor: grab !important;
+        }
+
+        .grabbing-cursor {
+            cursor: grabbing !important;
+        }
+
+        .wait-cursor {
+            cursor: wait !important;
+        }
+
+        .text-cursor {
+            cursor: text !important;
+        }
+
+        /* 测试区域样式 */
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .test-area {
+            background: #f8f9fa;
+            border: 3px solid #e9ecef;
+            border-radius: 10px;
+            padding: 25px;
+            text-align: center;
+            transition: all 0.3s ease;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .test-area:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            border-color: #007bff;
+        }
+
+        .test-area h3 {
+            color: #495057;
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+
+        .test-area p {
+            color: #6c757d;
+            line-height: 1.5;
+        }
+
+        /* 状态指示器 */
+        .status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            max-width: 300px;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .status.success {
+            background: rgba(40, 167, 69, 0.9);
+        }
+
+        .status.error {
+            background: rgba(220, 53, 69, 0.9);
+        }
+
+        /* 特殊测试区域 */
+        .big-test-area {
+            background: linear-gradient(45deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+            color: #333;
+            padding: 40px;
+            border-radius: 15px;
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        .drag-area {
+            background: #fff3cd;
+            border: 2px dashed #ffc107;
+            padding: 30px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .draggable-item {
+            display: inline-block;
+            background: #007bff;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            margin: 10px;
+            user-select: none;
+            transition: transform 0.2s;
+        }
+
+        .draggable-item:hover {
+            transform: scale(1.05);
+        }
+
+        /* 文件信息面板 */
+        .info-panel {
+            background: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 5px;
+        }
+
+        .info-panel h3 {
+            color: #0056b3;
+            margin-bottom: 15px;
+        }
+
+        .info-panel code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: #e83e8c;
+        }
+
+        /* 测试按钮 */
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .test-button:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .test-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .status {
+                position: relative;
+                top: auto;
+                right: auto;
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 光标效果测试页面</h1>
+            <p>移动鼠标到不同区域查看光标变化效果</p>
+        </div>
+
+        <div class="content">
+            <!-- 状态指示器 -->
+            <div id="status" class="status">
+                🔄 正在加载测试页面...
+            </div>
+
+            <!-- 主要测试区域 -->
+            <div class="test-grid">
+                <div class="test-area custom-cursor" data-cursor="custom">
+                    <h3>🎯 自定义SVG光标（游戏文件）</h3>
+                    <p>使用游戏SVG文件的光标</p>
+                    <small>cursor-arrow.svg (561KB)</small>
+                </div>
+
+                <div class="test-area custom-cursor-simple" data-cursor="simple">
+                    <h3>🔴 简化自定义光标</h3>
+                    <p>使用内嵌SVG的红色箭头光标</p>
+                    <small>data:image/svg</small>
+                </div>
+
+                <div class="test-area hover-cursor" data-cursor="hover">
+                    <h3>👆 悬停指针光标</h3>
+                    <p>这里显示标准的手型指针</p>
+                    <small>pointer</small>
+                </div>
+
+                <div class="test-area grab-cursor" data-cursor="grab">
+                    <h3>✋ 抓取光标</h3>
+                    <p>这里显示抓取手型光标</p>
+                    <small>grab</small>
+                </div>
+
+                <div class="test-area text-cursor" data-cursor="text">
+                    <h3>📝 文本选择光标</h3>
+                    <p>这里显示文本编辑光标</p>
+                    <small>text</small>
+                </div>
+
+                <div class="test-area wait-cursor" data-cursor="wait">
+                    <h3>⏳ 等待光标</h3>
+                    <p>这里显示等待/加载光标</p>
+                    <small>wait</small>
+                </div>
+            </div>
+
+            <!-- 大面积测试区域 -->
+            <div class="big-test-area custom-cursor-simple">
+                <h2>🌟 大面积简化光标测试区域</h2>
+                <p>使用简化红色箭头光标，测试光标的连续性和稳定性</p>
+                <button class="test-button hover-cursor">点击测试按钮</button>
+                <button class="test-button wait-cursor">等待状态按钮</button>
+            </div>
+
+            <!-- 拖拽测试区域 -->
+            <div class="drag-area grab-cursor">
+                <h3>🎯 拖拽交互测试</h3>
+                <div class="draggable-item grabbing-cursor" draggable="true">
+                    📦 可拖拽项目 1
+                </div>
+                <div class="draggable-item grabbing-cursor" draggable="true">
+                    📦 可拖拽项目 2
+                </div>
+                <p>尝试拖拽上面的项目，观察光标变化</p>
+            </div>
+
+            <!-- 文件路径信息 -->
+            <div class="info-panel">
+                <h3>📁 光标测试信息</h3>
+                <h4>🎮 游戏SVG光标:</h4>
+                <p><strong>文件路径:</strong> <code>public/images/ui/base/cursor-arrow.svg</code></p>
+                <p><strong>文件大小:</strong> <code>561.5KB</code></p>
+                <p><strong>问题:</strong> 文件可能过大或格式复杂</p>
+                
+                <h4 style="margin-top: 20px;">🔴 简化测试光标:</h4>
+                <p><strong>类型:</strong> <code>data:image/svg+xml 内嵌SVG</code></p>
+                <p><strong>大小:</strong> <code>很小，直接嵌入CSS</code></p>
+                <p><strong>优势:</strong> 加载快，兼容性好</p>
+                
+                <h4 style="margin-top: 20px;">🔧 调试建议:</h4>
+                <ol style="margin-left: 20px; line-height: 1.8;">
+                    <li>检查简化光标是否正常显示（红色箭头）</li>
+                    <li>如果简化光标正常，说明浏览器支持自定义光标</li>
+                    <li>游戏SVG文件可能需要优化或转换格式</li>
+                    <li>考虑将大SVG文件转换为更小的PNG文件</li>
+                    <li>或者优化SVG文件，减少路径复杂度</li>
+                </ol>
+            </div>
+
+            <!-- 测试说明 -->
+            <div style="background: #f8f9fa; padding: 25px; border-radius: 10px; margin-top: 30px;">
+                <h3 style="color: #495057; margin-bottom: 15px;">📋 测试结果分析</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                    <div>
+                        <h4>✅ 如果简化光标显示正常</h4>
+                        <ul style="color: #28a745; line-height: 1.8;">
+                            <li>浏览器支持自定义光标</li>
+                            <li>CSS语法正确</li>
+                            <li>问题出在SVG文件本身</li>
+                            <li>建议优化或替换SVG文件</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4>❌ 如果所有自定义光标都不显示</h4>
+                        <ul style="color: #dc3545; line-height: 1.8;">
+                            <li>浏览器不支持自定义光标</li>
+                            <li>或者安全策略阻止</li>
+                            <li>检查浏览器设置</li>
+                            <li>尝试使用HTTPS</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4>⚠️ 如果只有游戏光标不显示</h4>
+                        <ul style="color: #ffc107; line-height: 1.8;">
+                            <li>SVG文件过大（561KB）</li>
+                            <li>SVG格式过于复杂</li>
+                            <li>文件路径错误</li>
+                            <li>建议使用PNG格式</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const status = document.getElementById('status');
+            let statusTimeout;
+
+            // 状态更新函数
+            function updateStatus(message, type = 'info', duration = 3000) {
+                clearTimeout(statusTimeout);
+                status.textContent = message;
+                status.className = `status ${type}`;
+                
+                if (duration > 0) {
+                    statusTimeout = setTimeout(() => {
+                        status.className = 'status';
+                        status.textContent = '🎮 准备就绪 - 移动鼠标测试光标';
+                    }, duration);
+                }
+            }
+
+            // 测试不同类型的光标
+            function testCursors() {
+                const paths = [
+                    'public/images/ui/base/cursor-arrow.svg',
+                    './public/images/ui/base/cursor-arrow.svg',
+                    '/images/ui/base/cursor-arrow.svg'
+                ];
+
+                let loadedPath = null;
+                let testResults = [];
+
+                // 测试SVG文件加载
+                paths.forEach((path, index) => {
+                    const img = new Image();
+                    img.onload = function() {
+                        if (!loadedPath) {
+                            loadedPath = path;
+                            testResults.push(`✅ SVG文件加载成功: ${path}`);
+                            updateStatus(`✅ 游戏SVG光标文件加载成功`, 'success', 5000);
+                        }
+                    };
+                    img.onerror = function() {
+                        testResults.push(`❌ SVG文件加载失败: ${path}`);
+                        if (index === paths.length - 1 && !loadedPath) {
+                            updateStatus('❌ 游戏SVG光标文件加载失败，但简化光标应该可用', 'error', 8000);
+                        }
+                    };
+                    img.src = path;
+                });
+
+                // 测试简化光标
+                updateStatus('🔴 简化红色箭头光标已内嵌，应该立即可用', 'success', 3000);
+            }
+
+            // 为测试区域添加交互事件
+            const testAreas = document.querySelectorAll('.test-area, .big-test-area, .drag-area');
+            testAreas.forEach(area => {
+                const cursorType = area.getAttribute('data-cursor') || 'unknown';
+                
+                area.addEventListener('mouseenter', function() {
+                    let message = `🎯 进入 ${cursorType} 光标区域`;
+                    if (cursorType === 'simple') {
+                        message += ' - 应该看到红色箭头';
+                    } else if (cursorType === 'custom') {
+                        message += ' - 应该看到游戏光标';
+                    }
+                    updateStatus(message, 'success', 2000);
+                });
+                
+                area.addEventListener('click', function() {
+                    updateStatus(`🖱️ 点击了 ${cursorType} 区域`, 'success', 2000);
+                });
+            });
+
+            // 拖拽事件处理
+            const draggableItems = document.querySelectorAll('.draggable-item');
+            draggableItems.forEach(item => {
+                item.addEventListener('dragstart', function(e) {
+                    updateStatus('🚀 开始拖拽操作', 'success', 2000);
+                    this.style.opacity = '0.5';
+                });
+                
+                item.addEventListener('dragend', function(e) {
+                    updateStatus('🎯 拖拽操作结束', 'info', 2000);
+                    this.style.opacity = '1';
+                });
+            });
+
+            // 按钮事件
+            const testButtons = document.querySelectorAll('.test-button');
+            testButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    updateStatus('🔘 测试按钮被点击', 'success', 2000);
+                });
+            });
+
+            // 定期检查光标状态
+            setInterval(() => {
+                const customArea = document.querySelector('.custom-cursor');
+                const simpleArea = document.querySelector('.custom-cursor-simple');
+                
+                if (customArea && simpleArea) {
+                    const customStyle = window.getComputedStyle(customArea);
+                    const simpleStyle = window.getComputedStyle(simpleArea);
+                    
+                    console.log('游戏光标CSS:', customStyle.cursor);
+                    console.log('简化光标CSS:', simpleStyle.cursor);
+                }
+            }, 10000);
+
+            // 页面加载完成
+            updateStatus('🎮 测试页面加载完成，正在检测光标文件...', 'success', 2000);
+            
+            // 延迟测试光标文件
+            setTimeout(testCursors, 500);
+
+            // 键盘快捷键
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'F12') {
+                    updateStatus('🔧 开发者工具打开，查看Console面板了解更多信息', 'info', 4000);
+                }
+            });
+        });
+
+        // 全局错误处理
+        window.addEventListener('error', function(e) {
+            console.error('页面错误:', e);
+            document.getElementById('status').textContent = '❌ 页面发生错误，请查看控制台';
+            document.getElementById('status').className = 'status error';
+        });
+    </script>
+</body>
+</html> 
