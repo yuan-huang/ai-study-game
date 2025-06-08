@@ -10,7 +10,7 @@ export const INITIAL_GAME_STATE: TowerDefenseGameState = {
     combo: 0,
     maxCombo: 0,
     currentWave: 1,
-    totalWaves: 1, //总波次 - 设置为1可以直接通关
+    totalWaves: 2, //总波次 - 设置为1可以直接通关
     isPlaying: false,
     isPaused: false,
     gameSpeed: 1,

@@ -2,6 +2,7 @@ import { getAssetPath } from '@/config/AssetConfig';
 import { EnemyType } from '@/types/towerDefenseScene';
 import { Monster } from '@/entities/TowerDefense/Monster';
 import { PathManager } from './PathManager';
+import { WAVE_CONFIG } from './towerConfig';
 
 export class MonsterManager {
     private scene: Phaser.Scene;
@@ -91,29 +92,8 @@ export class MonsterManager {
 
     public getWaveMonsters(wave: number): Array<{icon: string, name: string, count: number, type: string}> {
         // 波次配置 - 每波固定10个怪物
-        const waveConfig: { [key: number]: Array<{icon: string, name: string, type: string, count: number}> } = {
-            1: [
-                { icon: '🐙', name: '小怪兵', type: 'monster-normal', count: 2 } // 调试：减少怪物数量便于测试奖励
-            ],
-            2: [
-                { icon: '🐙', name: '小怪兵', type: 'monster-normal', count: 10 }
-            ],
-            3: [
-                { icon: '🐙', name: '小怪兵', type: 'monster-normal', count: 8 },
-                { icon: '👹', name: '加强兵', type: 'monster-gluttonous', count: 2 }
-            ],
-            4: [
-                { icon: '🐙', name: '小怪兵', type: 'monster-normal', count: 6 },
-                { icon: '👹', name: '加强兵', type: 'monster-gluttonous', count: 3 },
-                { icon: '🚶', name: '懒惰兵', type: 'monster-lazy', count: 1 }
-            ],
-            5: [
-                { icon: '🐙', name: '小怪兵', type: 'monster-normal', count: 6 },
-                { icon: '👹', name: '加强兵', type: 'monster-gluttonous', count: 2 },
-                { icon: '💨', name: '快速兵', type: 'monster-messy', count: 1 },
-                { icon: '👾', name: 'BOSS', type: 'monster-grumpy', count: 1 }
-            ]
-        };
+        const waveConfig: { [key: number]: Array<{icon: string, name: string, type: string, count: number}> } = 
+         WAVE_CONFIG;
         
         // 获取当前波次配置，如果超出配置范围，使用最后一波的配置
         return waveConfig[wave] || waveConfig[5];

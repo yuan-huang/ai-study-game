@@ -7,6 +7,13 @@ import { Tower } from '@/entities/TowerDefense/Tower';
 import { createText, TextStyles } from '@/config/PhaserFontConfig';
 import { saveGameCompletion, GameCompletionData, Reward } from '@/api/towerDefenseRewardApi';
 import { gameState } from '@/stores/gameState';
+import { 
+    INITIAL_GAME_STATE, 
+    GAME_AREA_CONFIG, 
+    LAYOUT_CONFIG, 
+    TIMING_CONFIG, 
+    calculateGameLayout 
+} from '@/towerDefenseManager/towerConfig';
 
 export class TowerDefenseSceneRefactored extends BaseScene {
     private gameState!: TowerDefenseGameState;
@@ -43,13 +50,13 @@ export class TowerDefenseSceneRefactored extends BaseScene {
     private waveInProgress = false;
     
     // 游戏区域大小
-    private gameAreaWidth = 1400;
-    private gameAreaHeight = 1000;
+    private gameAreaWidth = GAME_AREA_CONFIG.width;
+    private gameAreaHeight = GAME_AREA_CONFIG.height;
     
     // 布局尺寸属性
     private singlePanelHeight: number = 0;
-    private rightContainerWidth: number = 500;
-    private statusBarHeight: number = 60;
+    private rightContainerWidth: number = LAYOUT_CONFIG.rightContainerWidth;
+    private statusBarHeight: number = LAYOUT_CONFIG.statusBarHeight;
     
     // 塔按钮引用
     private towerButtons: { [key: string]: Phaser.GameObjects.Rectangle } = {};
@@ -84,22 +91,9 @@ export class TowerDefenseSceneRefactored extends BaseScene {
     }
 
     private initGameState(): void {
+        // 使用配置文件中的初始状态，但保留一些自定义设置
         this.gameState = {
-            health: 10,
-            score: 500, // 调试：增加初始积分便于建塔测试奖励 
-            combo: 0,
-            maxCombo: 0,
-            currentWave: 1,
-            totalWaves: 1, // 调试：只需要1波即可胜利
-            isPlaying: false,
-            isPaused: false,
-            gameSpeed: 1,
-            correctAnswers: 0,
-            totalQuestions: 0,
-            currentLevel: 1,
-            levelProgress: 0,
-            questionsPerLevel: 10,
-            totalLevels: 10
+            ...INITIAL_GAME_STATE,
         };
         
         // 清空题目跟踪记录
@@ -199,7 +193,7 @@ export class TowerDefenseSceneRefactored extends BaseScene {
             this.showMessage('游戏开始！准备迎接挑战！');
             
             // 开始第一波
-            this.time.delayedCall(3000, () => {
+            this.time.delayedCall(TIMING_CONFIG.gameStartDelay, () => {
                 this.startWave();
             });
             
@@ -229,22 +223,23 @@ export class TowerDefenseSceneRefactored extends BaseScene {
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
         
-        // 布局常量定义
-        this.statusBarHeight = 60;
-        this.rightContainerWidth = 700;
-        const gameContainerWidth = width - this.rightContainerWidth;
-        const mainContentHeight = height - this.statusBarHeight;
+        // 使用配置文件中的布局计算
+        const layout = calculateGameLayout(width, height);
+        
+        // 更新布局属性
+        this.statusBarHeight = LAYOUT_CONFIG.statusBarHeight;
+        this.rightContainerWidth = LAYOUT_CONFIG.rightContainerWidth;
+        this.gameAreaWidth = layout.gameAreaWidth;
+        this.gameAreaHeight = layout.gameAreaHeight;
 
         // 1. 任务状态栏容器 (顶部)
         this.statusBarContainer = this.add.container(0, 0);
 
         // 2. 左边游戏容器
         this.gameContainer = this.add.container(0, this.statusBarHeight);
-        this.gameAreaWidth = gameContainerWidth;
-        this.gameAreaHeight = mainContentHeight;
 
         // 3. 右边答题容器
-        this.rightContainer = this.add.container(gameContainerWidth, this.statusBarHeight);
+        this.rightContainer = this.add.container(layout.gameContainerWidth, this.statusBarHeight);
     }
 
     private initializeManager(): void {
@@ -361,7 +356,7 @@ export class TowerDefenseSceneRefactored extends BaseScene {
 
     private createRightPanels(): void {
         const mainContentHeight = this.cameras.main.height - this.statusBarHeight;
-        const panelSpacing = 20;
+        const panelSpacing = LAYOUT_CONFIG.singlePanelSpacing;
         
         this.singlePanelHeight = (mainContentHeight - panelSpacing * 2) / 2;
 
@@ -862,8 +857,8 @@ export class TowerDefenseSceneRefactored extends BaseScene {
             
             this.updateUI();
             
-            // 答对了直接跳到下一题，延时短一些
-            this.time.delayedCall(1500, () => {
+            // 答对了直接跳到下一题
+            this.time.delayedCall(TIMING_CONFIG.nextQuestionDelay, () => {
                 this.showNextQuestion();
             });
         } else {
@@ -931,7 +926,7 @@ export class TowerDefenseSceneRefactored extends BaseScene {
         // 开始生成敌人
         let enemyIndex = 0;
         this.enemySpawnTimer = this.time.addEvent({
-            delay: 1200,
+            delay: TIMING_CONFIG.enemySpawnInterval,
             callback: () => {
                 if (this.gameState.health <= 0 || this.gameState.isPaused) {
                     this.enemySpawnTimer?.remove();
@@ -992,7 +987,7 @@ export class TowerDefenseSceneRefactored extends BaseScene {
             this.gameState.currentWave++;
             this.updateUI();
             
-            this.time.delayedCall(5000, () => {
+            this.time.delayedCall(TIMING_CONFIG.waveCooldown, () => {
                 if (this.gameState.health > 0 && !this.gameState.isPaused) {
                     this.startWave();
                 }
@@ -1459,7 +1454,7 @@ export class TowerDefenseSceneRefactored extends BaseScene {
                 rewardContainer.add(rewardIcon);
                 
                 // 花朵悬停提示
-                // this.setupRewardIconTooltip(rewardIcon, rewardContainer, '🌸 装饰花朵\n美化你的花园空间');
+                this.setupRewardIconTooltip(rewardIcon, rewardContainer, '🌸 装饰花朵\n美化你的花园空间');
                 
                 rewardTitle = '🌸 新花朵';
                 rewardDescription = `${reward.item.subject} ${reward.item.grade}年级\n${reward.item.category}`;
@@ -1473,7 +1468,7 @@ export class TowerDefenseSceneRefactored extends BaseScene {
                 
                 // 甘露悬停提示
                 const nectarEffect = `🍯 甘露作用\n• 恢复生命值: ${reward.item.healingPower || 5}HP\n• 增强学习能力\n• 提升答题速度`;
-                // this.setupRewardIconTooltip(rewardIcon, rewardContainer, nectarEffect);
+                this.setupRewardIconTooltip(rewardIcon, rewardContainer, nectarEffect);
                 
                 rewardTitle = '🍯 甘露';
                 rewardDescription = `${reward.item.subject} ${reward.item.grade}年级\n${reward.item.category}\n恢复${reward.item.healingPower}HP`;
@@ -1495,7 +1490,7 @@ export class TowerDefenseSceneRefactored extends BaseScene {
                 rewardContainer.add(rewardIcon);
                 
                 // 默认奖励悬停提示
-                // this.setupRewardIconTooltip(rewardIcon, rewardContainer, '🎁 神秘奖励\n意外的惊喜等着你');
+                this.setupRewardIconTooltip(rewardIcon, rewardContainer, '🎁 神秘奖励\n意外的惊喜等着你');
             }
             
             const rewardTitleText = createText(
