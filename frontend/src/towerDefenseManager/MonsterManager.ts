@@ -93,7 +93,7 @@ export class MonsterManager {
         // 波次配置 - 每波固定10个怪物
         const waveConfig: { [key: number]: Array<{icon: string, name: string, type: string, count: number}> } = {
             1: [
-                { icon: '🐙', name: '小怪兵', type: 'monster-normal', count: 10 }
+                { icon: '🐙', name: '小怪兵', type: 'monster-normal', count: 2 } // 调试：减少怪物数量便于测试奖励
             ],
             2: [
                 { icon: '🐙', name: '小怪兵', type: 'monster-normal', count: 10 }

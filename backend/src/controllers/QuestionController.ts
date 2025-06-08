@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { createQuestionModel } from '../models/Question';
 import { logger } from '../utils/logger';
+import mongoose from 'mongoose';
 
 export class QuestionController {
   /**
@@ -74,7 +75,7 @@ export class QuestionController {
         { $sample: { size: countNum } },
         {
           $project: {
-            _id: 0,
+            _id: 1,
             id: 1,
             question: 1,
             options: 1,

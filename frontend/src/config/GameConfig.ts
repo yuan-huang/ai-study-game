@@ -4,7 +4,6 @@ import { LoginScene } from '../scenes/LoginScene';
 import UIPlugin from 'phaser3-rex-plugins/templates/ui/ui-plugin.js';
 import { MainScene } from '../scenes/MainScene';
 import { LevelSelectScene } from '../scenes/LevelSelectScene';
-import { TowerDefenseScene } from '../scenes/levels/TowerDefenseScene';
 import { TowerDefenseSceneRefactored } from '@/scenes/levels/TowerDefenseSceneRefactored';
 import { CuriousTreeScene } from '../scenes/curiousTree/CuriousTreeScene';
 import { GardenScene } from '../scenes/garden/GardenScene';
@@ -53,7 +52,6 @@ export const GameConfig: Types.Core.GameConfig = {
         LoadingScene,
         MainScene,
         LevelSelectScene,
-        TowerDefenseScene,
         TowerDefenseSceneRefactored,
         CuriousTreeScene,
         GardenScene,

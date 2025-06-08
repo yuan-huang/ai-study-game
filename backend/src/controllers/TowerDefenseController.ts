@@ -327,130 +327,116 @@ export class TowerDefenseController extends BaseController<ITowerDefenseDoc> {
         });
       }
 
-      const session = await mongoose.startSession();
-      session.startTransaction();
+      // 保存游戏记录
+      const gameRecord = new TowerDefenseRecord({
+        userId: new mongoose.Types.ObjectId(userId),
+        subject,
+        grade: parseInt(grade),
+        category,
+        questionIds: questionIds.map((id: string) => new mongoose.Types.ObjectId(id)),
+        wrongQuestionIds: wrongQuestionIds.map((id: string) => new mongoose.Types.ObjectId(id)),
+        completionTime,
+        score,
+        comboCount: comboCount || 0
+      });
 
-      try {
-        // 保存游戏记录
-        const gameRecord = new TowerDefenseRecord({
+      await gameRecord.save();
+
+      // 查询该用户在此组合下的通过次数
+      const completionCount = await TowerDefenseRecord.countDocuments({
+        userId: new mongoose.Types.ObjectId(userId),
+        subject,
+        grade: parseInt(grade),
+        category
+      });
+
+      let reward: any = null;
+
+      if (completionCount === 1) {
+        // 首次通过，奖励花朵
+        const flower = new Flower({
           userId: new mongoose.Types.ObjectId(userId),
           subject,
           grade: parseInt(grade),
           category,
-          questionIds: questionIds.map((id: string) => new mongoose.Types.ObjectId(id)),
-          wrongQuestionIds: wrongQuestionIds.map((id: string) => new mongoose.Types.ObjectId(id)),
-          completionTime,
-          score,
-          comboCount: comboCount || 0
+          hp: 100,
+          maxHp: 100,
+          isPlanted: false
         });
 
-        await gameRecord.save({ session });
-
-        // 查询该用户在此组合下的通过次数
-        const completionCount = await TowerDefenseRecord.countDocuments({
-          userId: new mongoose.Types.ObjectId(userId),
-          subject,
-          grade: parseInt(grade),
-          category
-        }).session(session);
-
-        let reward: any = null;
-
-        if (completionCount === 1) {
-          // 首次通过，奖励花朵
-          const flower = new Flower({
-            userId: new mongoose.Types.ObjectId(userId),
+        await flower.save();
+        reward = {
+          type: 'flower',
+          item: {
+            id: flower._id,
             subject,
             grade: parseInt(grade),
             category,
             hp: 100,
             maxHp: 100,
-            isPlanted: false
-          });
+            message: '恭喜获得新花朵！快去花园种植吧！'
+          }
+        };
 
-          await flower.save({ session });
-          reward = {
-            type: 'flower',
-            item: {
-              id: flower._id,
-              subject,
-              grade: parseInt(grade),
-              category,
-              hp: 100,
-              maxHp: 100,
-              message: '恭喜获得新花朵！快去花园种植吧！'
-            }
-          };
+        logger.info(`首次通过 年级${grade} ${category}关卡，获得花朵奖励`);
+      } else {
+        // 非首次通过，奖励甘露
+        const nectar = new Nectar({
+          userId: new mongoose.Types.ObjectId(userId),
+          subject,
+          grade: parseInt(grade),
+          category,
+          healingPower: 1
+        });
 
-          logger.info(`首次通过 年级${grade} ${category}关卡，获得花朵奖励`);
-        } else {
-          // 非首次通过，奖励甘露
-          const nectar = new Nectar({
-            userId: new mongoose.Types.ObjectId(userId),
+        await nectar.save();
+        reward = {
+          type: 'nectar',
+          item: {
+            id: nectar._id,
             subject,
             grade: parseInt(grade),
             category,
-            healingPower: 1
-          });
-
-          await nectar.save({ session });
-          reward = {
-            type: 'nectar',
-            item: {
-              id: nectar._id,
-              subject,
-              grade: parseInt(grade),
-              category,
-              healingPower: 1,
-              message: '获得甘露！可以用来恢复花朵的生命值。'
-            }
-          };
-
-          logger.info(`用户 ${userId} 再次通过 ${subject}-grade${grade}-${category}，获得甘露奖励`);
-        }
-
-        // 更新用户经验和金币
-        await User.findByIdAndUpdate(
-          userId,
-          {
-            $inc: {
-              experience: Math.floor(score / 10),
-              coins: Math.floor(score / 20)
-            }
-          },
-          { session }
-        );
-
-        await session.commitTransaction();
-
-        logger.info(`成功保存用户 ${userId} 的游戏记录并生成奖励`);
-
-        return res.status(200).json({
-          success: true,
-          message: '游戏记录保存成功',
-          data: {
-            gameRecord: {
-              id: gameRecord._id,
-              completionTime,
-              score,
-              comboCount,
-              completedAt: gameRecord.createdAt
-            },
-            reward,
-            stats: {
-              totalCompletions: completionCount,
-              experienceGained: Math.floor(score / 10),
-              coinsGained: Math.floor(score / 20)
-            }
+            healingPower: 1,
+            message: '获得甘露！可以用来恢复花朵的生命值。'
           }
-        });
+        };
 
-      } catch (error) {
-        await session.abortTransaction();
-        throw error;
-      } finally {
-        session.endSession();
+        logger.info(`用户 ${userId} 再次通过 ${subject}-grade${grade}-${category}，获得甘露奖励`);
       }
+
+      // 更新用户经验和金币
+      await User.findByIdAndUpdate(
+        userId,
+        {
+          $inc: {
+            experience: Math.floor(score / 10),
+            coins: Math.floor(score / 20)
+          }
+        }
+      );
+
+      logger.info(`成功保存用户 ${userId} 的游戏记录并生成奖励`);
+
+      return res.status(200).json({
+        success: true,
+        message: '游戏记录保存成功',
+        data: {
+          gameRecord: {
+            id: gameRecord._id,
+            completionTime,
+            score,
+            comboCount,
+            completedAt: gameRecord.createdAt
+          },
+          reward,
+          stats: {
+            totalCompletions: completionCount,
+            experienceGained: Math.floor(score / 10),
+            coinsGained: Math.floor(score / 20)
+          }
+        }
+      });
 
     } catch (error) {
       logger.error('保存游戏记录失败:', error);

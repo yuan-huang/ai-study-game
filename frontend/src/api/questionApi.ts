@@ -12,6 +12,7 @@ export type AnswerOption = 'A' | 'B' | 'C' | 'D' | string;
 
 // 题目数据接口
 export interface Question {
+    _id: any;
     id: number;
     question: string;
     options: string[];

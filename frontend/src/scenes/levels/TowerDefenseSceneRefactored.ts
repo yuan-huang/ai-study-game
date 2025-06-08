@@ -5,6 +5,8 @@ import { TowerDefenseManager } from '@/towerDefenseManager/TowerDefenseManager';
 import { Monster } from '@/entities/TowerDefense/Monster';
 import { Tower } from '@/entities/TowerDefense/Tower';
 import { createText, TextStyles } from '@/config/PhaserFontConfig';
+import { saveGameCompletion, GameCompletionData, Reward } from '@/api/towerDefenseRewardApi';
+import { gameState } from '@/stores/gameState';
 
 export class TowerDefenseSceneRefactored extends BaseScene {
     private gameState!: TowerDefenseGameState;
@@ -27,6 +29,13 @@ export class TowerDefenseSceneRefactored extends BaseScene {
     private currentQuestion: Question | null = null;
     private questionActive = false;
     private questionAnsweredIncorrectly = false; // 标记当前题目是否已经答错过
+    
+    // 题目跟踪
+    private answeredQuestionIds: string[] = []; // 记录所有回答过的题目ID
+    private wrongQuestionIds: string[] = []; // 记录回答错误的题目ID
+    
+    // 游戏完成数据
+    private completionStartTime: number = 0;
     
     // 波次管理
     private currentWaveEnemies: string[] = [];
@@ -71,16 +80,17 @@ export class TowerDefenseSceneRefactored extends BaseScene {
         }
         super.init();
         this.initGameState();
+        this.completionStartTime = Date.now();
     }
 
     private initGameState(): void {
         this.gameState = {
             health: 10,
-            score: 100, 
+            score: 500, // 调试：增加初始积分便于建塔测试奖励 
             combo: 0,
             maxCombo: 0,
             currentWave: 1,
-            totalWaves: 5,
+            totalWaves: 1, // 调试：只需要1波即可胜利
             isPlaying: false,
             isPaused: false,
             gameSpeed: 1,
@@ -91,6 +101,10 @@ export class TowerDefenseSceneRefactored extends BaseScene {
             questionsPerLevel: 10,
             totalLevels: 10
         };
+        
+        // 清空题目跟踪记录
+        this.answeredQuestionIds = [];
+        this.wrongQuestionIds = [];
     }
 
     preload(): void {
@@ -111,6 +125,14 @@ export class TowerDefenseSceneRefactored extends BaseScene {
         this.load.image('tower-freeze', getAssetPath('tower-freeze'));
         this.load.image('tower-laser', getAssetPath('tower-laser'));
         this.load.image('tower-poison', getAssetPath('tower-poison'));
+
+        // 加载奖励资源 甘露
+        this.load.image('nectar', getAssetPath('nectar'));
+
+        // 加载花朵资源
+        this.load.image('flower-chinese', getAssetPath('flower-chinese'));
+        this.load.image('flower-math', getAssetPath('flower-math'));
+        this.load.image('flower-english', getAssetPath('flower-english'));
     }
 
     async create(): Promise<void> {
@@ -799,6 +821,21 @@ export class TowerDefenseSceneRefactored extends BaseScene {
         
         const isCorrect = extractedAnswer.toUpperCase() === correctAnswer.toUpperCase();
         
+        // 记录题目ID
+        if (this.currentQuestion._id !== undefined) {
+            const questionId = this.currentQuestion._id.toString();
+            
+            // 只有在第一次回答时才记录到answeredQuestionIds
+            if (!this.questionAnsweredIncorrectly) {
+                this.answeredQuestionIds.push(questionId);
+            }
+            
+            // 如果答错了，记录到错误题目ID列表
+            if (!isCorrect && !this.wrongQuestionIds.includes(questionId)) {
+                this.wrongQuestionIds.push(questionId);
+            }
+        }
+        
         if (isCorrect) {
             // 如果这是重新选择后的正确答案
             if (this.questionAnsweredIncorrectly) {
@@ -965,15 +1002,62 @@ export class TowerDefenseSceneRefactored extends BaseScene {
         }
     }
 
-    private onLevelComplete(): void {
+    private async onLevelComplete(): Promise<void> {
         this.showMessage('关卡完成!');
         
-        this.time.delayedCall(3000, () => {
-            this.scene.start('LevelSelectScene', {
+        // 暂停游戏，防止继续操作
+        this.gameState.isPaused = true;
+        
+        // 清除所有延迟调用和定时器
+        this.time.removeAllEvents();
+        if (this.enemySpawnTimer) {
+            this.enemySpawnTimer.remove();
+            this.enemySpawnTimer = undefined;
+        }
+        
+        console.log('关卡完成，准备获取奖励...');
+        
+        try {
+            // 准备游戏完成数据
+            const completionData: GameCompletionData = {
+                userId: gameState.userId, // 从游戏状态获取真实userId
                 subject: this.userConfig.subject,
-                grade: this.userConfig.grade
+                grade: this.userConfig.grade,
+                category: this.userConfig.category,
+                questionIds: this.answeredQuestionIds, // 所有回答过的题目ID
+                wrongQuestionIds: this.wrongQuestionIds, // 错误题目ID
+                completionTime: Date.now() - this.completionStartTime,
+                score: this.gameState.score,
+                comboCount: this.gameState.maxCombo
+            };
+            
+            // 输出题目收集数据用于调试
+            console.log('游戏完成数据:', {
+                总题目数: this.answeredQuestionIds.length,
+                回答的题目IDs: this.answeredQuestionIds,
+                错误题目数: this.wrongQuestionIds.length,
+                错误题目IDs: this.wrongQuestionIds,
+                正确率: this.gameState.totalQuestions > 0 ? 
+                    Math.round((this.gameState.correctAnswers / this.gameState.totalQuestions) * 100) + '%' : '0%'
             });
-        });
+            
+            // 调用API保存通关记录并获取奖励
+            const response = await saveGameCompletion(completionData);
+            
+            // 显示奖励对话框
+            this.showVictoryDialog(response.reward, response.stats);
+            
+        } catch (error) {
+            console.error('保存通关记录失败:', error);
+            this.showMessage('保存记录失败，但游戏已完成！');
+            
+            // 即使保存失败，也显示完成对话框让用户确认
+            this.showVictoryDialog(null, {
+                totalCompletions: 0,
+                experienceGained: 0,
+                coinsGained: 0
+            });
+        }
     }
 
     private updateUI(): void {
@@ -1210,6 +1294,484 @@ export class TowerDefenseSceneRefactored extends BaseScene {
         this.scene.start('LevelSelectScene', {
             subject: this.userConfig.subject,
             grade: this.userConfig.grade
+        });
+    }
+
+    private showVictoryDialog(reward: Reward | null = null, stats: any = null): void {
+        const width = this.cameras.main.width;
+        const height = this.cameras.main.height;
+        
+        // 创建遮罩层
+        const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7);
+        overlay.setDepth(1000);
+        overlay.setInteractive(); // 阻止点击穿透
+        
+        // 创建胜利对话框容器
+        const victoryDialog = this.add.container(width / 2, height / 2);
+        victoryDialog.setDepth(1001);
+        
+        // 对话框背景
+        const dialogWidth = 900;
+        const dialogHeight = 600;
+        const dialogBg = this.add.rectangle(0, 0, dialogWidth, dialogHeight, 0xffffff, 1);
+        dialogBg.setStrokeStyle(4, 0xffd700);
+        dialogBg.setRounded(20);
+        victoryDialog.add(dialogBg);
+        
+        // 标题
+        const titleBg = this.add.rectangle(0, -250, dialogWidth - 20, 80, 0x4caf50, 1);
+        titleBg.setRounded(15);
+        victoryDialog.add(titleBg);
+        
+        const title = createText(
+            this, 
+            0, 
+            -250, 
+            '🎉 通关成功！', 
+            'TITLE_LARGE',
+            {
+                fontSize: 48,
+                color: '#ffffff',
+                fontStyle: 'bold'
+            }
+        ).setOrigin(0.5);
+        victoryDialog.add(title);
+        
+        // 主内容区域布局：左边统计信息，右边奖励
+        const gameStatsContainer = this.add.container(-220, -30);
+        const rewardContainer = this.add.container(220, -30);
+
+        // 左边统计信息标题
+        const statsTitleBg = this.add.rectangle(0, -100, 300, 40, 0x2196f3, 1);
+        statsTitleBg.setRounded(10);
+        gameStatsContainer.add(statsTitleBg);
+        
+        const statsMainTitle = createText(
+            this, 
+            0, 
+            -100, 
+            '📊 游戏统计', 
+            'TITLE_SMALL',
+            {
+                fontSize: 32,
+                color: '#ffffff',
+                fontStyle: 'bold'
+            }
+        ).setOrigin(0.5);
+        gameStatsContainer.add(statsMainTitle);
+
+        // 游戏统计数据
+        const gameStats = [
+            { icon: '🏆', label: '最终得分', value: this.gameState.score },
+            { icon: '⚡', label: '最大连击', value: this.gameState.maxCombo },
+            { icon: '📊', label: '正确率', value: `${this.gameState.totalQuestions > 0 ? 
+                Math.round((this.gameState.correctAnswers / this.gameState.totalQuestions) * 100) : 100}%` },
+            { icon: '⏱️', label: '完成时间', value: this.formatTime(Date.now() - this.completionStartTime) }
+        ];
+        
+        gameStats.forEach((stat, i) => {
+            const yPos = -40 + i * 50;
+            
+            // 统计项背景
+            const statBg = this.add.rectangle(0, yPos, 280, 40, 0xf5f5f5, 1);
+            statBg.setStrokeStyle(2, 0xe0e0e0);
+            statBg.setRounded(8);
+            gameStatsContainer.add(statBg);
+            
+            // 图标
+            const iconText = createText(
+                this, 
+                -120, 
+                yPos, 
+                stat.icon, 
+                'BODY_TEXT',
+                {
+                    fontSize: 28
+                }
+            ).setOrigin(0.5);
+            gameStatsContainer.add(iconText);
+            
+            // 标签
+            const labelText = createText(
+                this, 
+                -80, 
+                yPos, 
+                stat.label, 
+                'BODY_TEXT',
+                {
+                    fontSize: 24,
+                    color: '#555555',
+                    fontStyle: 'bold'
+                }
+            ).setOrigin(0, 0.5);
+            gameStatsContainer.add(labelText);
+            
+            // 数值
+            const valueText = createText(
+                this, 
+                120, 
+                yPos, 
+                stat.value.toString(), 
+                'NUMBER_TEXT',
+                {
+                    fontSize: 28,
+                    color: '#2196f3',
+                    fontStyle: 'bold'
+                }
+            ).setOrigin(1, 0.5);
+            gameStatsContainer.add(valueText);
+        });
+        
+
+        
+        // 奖励内容
+        if (reward) {
+            // 奖励标题
+            const rewardTitleBg = this.add.rectangle(0, -100, 300, 40, 0xe91e63, 1);
+            rewardTitleBg.setRounded(10);
+            rewardContainer.add(rewardTitleBg);
+            
+            const rewardMainTitle = createText(
+                this, 
+                0, 
+                -100, 
+                '🎁 通关奖励', 
+                'TITLE_SMALL',
+                {
+                    fontSize: 32,
+                    color: '#ffffff',
+                    fontStyle: 'bold'
+                }
+            ).setOrigin(0.5);
+            rewardContainer.add(rewardMainTitle);
+            
+            // 奖励图标和内容
+            let rewardTitle = '';
+            let rewardDescription = '';
+            let rewardColor = '#4caf50';
+            
+            if (reward.type === 'flower') {
+                // 花朵图标
+                const flowerKey = `flower-${reward.item.subject}`;
+                const rewardIcon = this.add.image(0, -20, flowerKey);
+                rewardIcon.setDisplaySize(120, 120);
+                rewardIcon.setInteractive({ useHandCursor: true });
+                rewardContainer.add(rewardIcon);
+                
+                // 花朵悬停提示
+                // this.setupRewardIconTooltip(rewardIcon, rewardContainer, '🌸 装饰花朵\n美化你的花园空间');
+                
+                rewardTitle = '🌸 新花朵';
+                rewardDescription = `${reward.item.subject} ${reward.item.grade}年级\n${reward.item.category}`;
+                rewardColor = '#e91e63';
+            } else if (reward.type === 'nectar') {
+                // 甘露图标
+                const rewardIcon = this.add.image(0, -20, 'nectar');
+                rewardIcon.setDisplaySize(120, 120);
+                rewardIcon.setInteractive({ useHandCursor: true });
+                rewardContainer.add(rewardIcon);
+                
+                // 甘露悬停提示
+                const nectarEffect = `🍯 甘露作用\n• 恢复生命值: ${reward.item.healingPower || 5}HP\n• 增强学习能力\n• 提升答题速度`;
+                // this.setupRewardIconTooltip(rewardIcon, rewardContainer, nectarEffect);
+                
+                rewardTitle = '🍯 甘露';
+                rewardDescription = `${reward.item.subject} ${reward.item.grade}年级\n${reward.item.category}\n恢复${reward.item.healingPower}HP`;
+                rewardColor = '#ff9800';
+            } else {
+                // 默认奖励图标（使用文本表示）
+                const rewardIcon = createText(
+                    this, 
+                    0, 
+                    -20, 
+                    '🎁', 
+                    'TITLE_LARGE',
+                    {
+                        fontSize: 120,
+                        color: '#4caf50'
+                    }
+                ).setOrigin(0.5);
+                rewardIcon.setInteractive({ useHandCursor: true });
+                rewardContainer.add(rewardIcon);
+                
+                // 默认奖励悬停提示
+                // this.setupRewardIconTooltip(rewardIcon, rewardContainer, '🎁 神秘奖励\n意外的惊喜等着你');
+            }
+            
+            const rewardTitleText = createText(
+                this, 
+                0, 
+                60, 
+                rewardTitle, 
+                'TITLE_SMALL',
+                {
+                    fontSize: 32,
+                    color: rewardColor,
+                    fontStyle: 'bold',
+                    align: 'center'
+                }
+            ).setOrigin(0.5);
+            rewardContainer.add(rewardTitleText);
+            
+            // const rewardDescText = createText(
+            //     this, 
+            //     0, 
+            //     100, 
+            //     rewardDescription, 
+            //     'BODY_TEXT',
+            //     {
+            //         fontSize: 24,
+            //         color: '#333333',
+            //         align: 'center',
+            //         wordWrap: { width: 280, useAdvancedWrap: true }
+            //     }
+            // ).setOrigin(0.5);
+            // rewardContainer.add(rewardDescText);
+            
+            if (reward.item.message) {
+                const rewardMessage = createText(
+                    this, 
+                    0, 
+                    150, 
+                    reward.item.message, 
+                    'BODY_TEXT',
+                    {
+                        fontSize: 32,
+                        color: '#666666',
+                        align: 'center',
+                        wordWrap: { width: 280, useAdvancedWrap: true }
+                    }
+                ).setOrigin(0.5);
+                rewardContainer.add(rewardMessage);
+            }
+        } else {
+            const noRewardText = createText(
+                this, 
+                0, 
+                120, 
+                '🎁 恭喜完成关卡！继续努力，更多奖励等着你！', 
+                'TITLE_SMALL',
+                {
+                    fontSize: 32,
+                    color: '#ff6b6b',
+                    fontStyle: 'bold',
+                    align: 'center',
+                    wordWrap: { width: dialogWidth - 40, useAdvancedWrap: true }
+                }
+            ).setOrigin(0.5);
+            victoryDialog.add(noRewardText);
+        }
+        
+        // 底部按钮区域
+        const buttonContainer = this.add.container(0, 230);
+        
+        // 按钮配置
+        const buttons = [
+            { x: -280, text: '🏠 返回主页', color: 0x2196f3, darkColor: 0x1976d2, action: 'home' },
+            { x: 0, text: '🔄 重新挑战', color: 0xff9800, darkColor: 0xf57c00, action: 'restart' },
+            { x: 280, text: '🌸 查看花园', color: 0x4caf50, darkColor: 0x388e3c, action: 'garden' }
+        ];
+        
+        buttons.forEach(buttonConfig => {
+            // 按钮背景
+            const button = this.add.rectangle(buttonConfig.x, 0, 220, 60, buttonConfig.color, 1);
+            button.setStrokeStyle(3, buttonConfig.darkColor);
+            button.setRounded(15);
+            button.setInteractive({ useHandCursor: true });
+            buttonContainer.add(button);
+            
+            // 按钮文本
+            const buttonText = createText(
+                this, 
+                buttonConfig.x, 
+                0, 
+                buttonConfig.text, 
+                'BUTTON_TEXT',
+                {
+                    fontSize: 28,
+                    fontStyle: 'bold',
+                    color: '#ffffff'
+                }
+            ).setOrigin(0.5);
+            buttonContainer.add(buttonText);
+            
+            // 悬停效果
+            button.on('pointerover', () => {
+                this.tweens.add({
+                    targets: button,
+                    scaleX: 1.05,
+                    scaleY: 1.05,
+                    duration: 200,
+                    ease: 'Power2'
+                });
+            });
+            
+            button.on('pointerout', () => {
+                this.tweens.add({
+                    targets: button,
+                    scaleX: 1,
+                    scaleY: 1,
+                    duration: 200,
+                    ease: 'Power2'
+                });
+            });
+            
+            // 点击事件
+            button.on('pointerdown', () => {
+                switch (buttonConfig.action) {
+                    case 'home':
+                        this.returnToLevelSelect();
+                        break;
+                    case 'restart':
+                        this.restartGame();
+                        break;
+                    case 'garden':
+                        this.goToGarden();
+                        break;
+                }
+            });
+        });
+        
+        // 将游戏统计和奖励容器添加到对话框中
+        victoryDialog.add(gameStatsContainer);
+        victoryDialog.add(rewardContainer);
+        victoryDialog.add(buttonContainer);
+        
+        // 显示动画
+        victoryDialog.setAlpha(0);
+        victoryDialog.setScale(0.8);
+        this.tweens.add({
+            targets: victoryDialog,
+            alpha: 1,
+            scaleX: 1,
+            scaleY: 1,
+            duration: 400,
+            ease: 'Back.Out'
+        });
+    }
+
+    private returnToLevelSelect(): void {
+        this.scene.start('LevelSelectScene', {
+            subject: this.userConfig.subject,
+            grade: this.userConfig.grade
+        });
+    }
+
+    private goToGarden(): void {
+        // TODO: 跳转到花园场景
+        this.scene.start('GardenScene', {
+            subject: this.userConfig.subject,
+            grade: this.userConfig.grade
+        });
+    }
+
+    private formatTime(timeMs: number): string {
+        const seconds = Math.floor(timeMs / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        
+        if (minutes > 0) {
+            return `${minutes}分${remainingSeconds}秒`;
+        }
+        return `${remainingSeconds}秒`;
+    }
+
+    private setupRewardIconTooltip(
+        icon: Phaser.GameObjects.Image | Phaser.GameObjects.Text, 
+        container: Phaser.GameObjects.Container, 
+        tooltipText: string
+    ): void {
+        let tooltip: Phaser.GameObjects.Container | null = null;
+        
+        // 鼠标悬停时显示提示
+        icon.on('pointerover', () => {
+            if (tooltip) return; // 如果提示已存在则不重复创建
+            
+            // 创建提示容器
+            tooltip = this.add.container(0, 200);
+            tooltip.setDepth(2000);
+            
+            // 提示背景
+            const lines = tooltipText.split('\n');
+            const maxLineLength = Math.max(...lines.map(line => line.length));
+            const tooltipWidth = Math.max(280, maxLineLength * 16);
+            const tooltipHeight = 30 + lines.length * 28;
+            
+            const tooltipBg = this.add.rectangle(0, 0, tooltipWidth, tooltipHeight, 0x2c3e50, 0.95);
+            tooltipBg.setStrokeStyle(2, 0xffd700);
+            tooltipBg.setRounded(10);
+            tooltip.add(tooltipBg);
+            
+            // 提示文本
+            const tooltip_text = createText(
+                this,
+                0,
+                0,
+                tooltipText,
+                'BODY_TEXT',
+                {
+                    fontSize: 24,
+                    color: '#ffffff',
+                    align: 'center',
+                    fontStyle: 'bold',
+                    wordWrap: { width: tooltipWidth - 20, useAdvancedWrap: true }
+                }
+            ).setOrigin(0.5);
+            tooltip.add(tooltip_text);
+            
+            // 添加到容器
+            container.add(tooltip);
+            
+            // 出现动画
+            tooltip.setAlpha(0);
+            tooltip.setScale(0.8);
+            this.tweens.add({
+                targets: tooltip,
+                alpha: 1,
+                scaleX: 1,
+                scaleY: 1,
+                duration: 200,
+                ease: 'Back.Out'
+            });
+            
+            // 图标缩放效果
+            this.tweens.add({
+                targets: icon,
+                scaleX: 1.1,
+                scaleY: 1.1,
+                duration: 200,
+                ease: 'Power2'
+            });
+        });
+        
+        // 鼠标离开时隐藏提示
+        icon.on('pointerout', () => {
+            if (tooltip) {
+                // 消失动画
+                this.tweens.add({
+                    targets: tooltip,
+                    alpha: 0,
+                    scaleX: 0.8,
+                    scaleY: 0.8,
+                    duration: 150,
+                    ease: 'Power2',
+                    onComplete: () => {
+                        if (tooltip) {
+                            tooltip.destroy();
+                            tooltip = null;
+                        }
+                    }
+                });
+            }
+            
+            // 图标恢复原大小
+            this.tweens.add({
+                targets: icon,
+                scaleX: 1,
+                scaleY: 1,
+                duration: 200,
+                ease: 'Power2'
+            });
         });
     }
 } 

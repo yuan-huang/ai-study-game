@@ -233,6 +233,12 @@ export const GameAssets: SceneAssets = {
             path: '/images/ui/flowers/flower-marine.png',
             type: AssetType.IMAGE
         },
+        //甘露 frontend\public\images\ui\storage\sweet-dew.png
+        {
+            key: 'nectar',
+            path: '/images/ui/storage/sweet-dew.png',
+            type: AssetType.IMAGE
+        },
     ],
 
 
@@ -245,81 +251,7 @@ export const GameAssets: SceneAssets = {
             type: AssetType.IMAGE
         },
     ],
-    // 图片选择关卡资源
-    ImageQuiz: [
-        {
-            key: 'quiz-bg',
-            path: '/images/game/quiz/quiz-background.png',
-            type: AssetType.IMAGE
-        },
-        {
-            key: 'option-bg',
-            path: '/images/game/quiz/option-background.png',
-            type: AssetType.IMAGE
-        },
-        {
-            key: 'correct-icon',
-            path: '/images/game/quiz/correct-icon.png',
-            type: AssetType.IMAGE
-        },
-        {
-            key: 'wrong-icon',
-            path: '/images/game/quiz/wrong-icon.png',
-            type: AssetType.IMAGE
-        },
-        // 语文题目图片示例
-        {
-            key: 'chinese-quiz-1',
-            path: '/images/game/quiz/chinese/quiz-1.png',
-            type: AssetType.IMAGE
-        },
-        // 数学题目图片示例
-        {
-            key: 'math-quiz-1',
-            path: '/images/game/quiz/math/quiz-1.png',
-            type: AssetType.IMAGE
-        }
-    ],
 
-    // 单词拖拽关卡资源
-    WordDrag: [
-        {
-            key: 'word-drag-bg',
-            path: '/images/game/word-drag/background.png',
-            type: AssetType.IMAGE
-        },
-        {
-            key: 'word-slot',
-            path: '/images/game/word-drag/word-slot.png',
-            type: AssetType.IMAGE
-        },
-        {
-            key: 'word-bg',
-            path: '/images/game/word-drag/word-background.png',
-            type: AssetType.IMAGE
-        },
-        // 图片示例
-        {
-            key: 'apple-img',
-            path: '/images/game/word-drag/items/apple.png',
-            type: AssetType.IMAGE
-        },
-        {
-            key: 'banana-img',
-            path: '/images/game/word-drag/items/banana.png',
-            type: AssetType.IMAGE
-        },
-        {
-            key: 'orange-img',
-            path: '/images/game/word-drag/items/orange.png',
-            type: AssetType.IMAGE
-        },
-        {
-            key: 'grape-img',
-            path: '/images/game/word-drag/items/grape.png',
-            type: AssetType.IMAGE
-        }
-    ],
 
     // 通用UI资源
     UI: [
@@ -333,26 +265,6 @@ export const GameAssets: SceneAssets = {
             path: '/images/ui/common/panel-background.png',
             type: AssetType.IMAGE
         },
-        {
-            key: 'star-icon',
-            path: '/images/ui/common/star-icon.png',
-            type: AssetType.IMAGE
-        },
-        {
-            key: 'coin-icon',
-            path: '/images/ui/common/coin-icon.png',
-            type: AssetType.IMAGE
-        },
-        {
-            key: 'sound-on',
-            path: '/images/ui/common/sound-on.png',
-            type: AssetType.IMAGE
-        },
-        {
-            key: 'sound-off',
-            path: '/images/ui/common/sound-off.png',
-            type: AssetType.IMAGE
-        }
     ]
 };
 

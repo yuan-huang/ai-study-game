@@ -1,5 +1,6 @@
 import { Question, UserConfig } from '@/types/towerDefenseScene';
 import { questionApi } from '@/api/questionApi';
+import { ObjectId } from 'bson';
 
 export class QuestionManager {
     private userConfig: UserConfig;
@@ -19,6 +20,7 @@ export class QuestionManager {
                 category: this.userConfig.category,
                 count: 20
             });
+            console.log('题目加载完成',this.questionPool);
         } catch (error) {
             console.error('从API加载题目失败，使用本地生成:', error);
             // 如果API调用失败，使用本地生成
@@ -78,6 +80,7 @@ export class QuestionManager {
         Phaser.Utils.Array.Shuffle(options);
         
         return {
+            id: this.generateQuestionId(),
             question: `${a} + ${b} = ?`,
             options: options.map(o => o.toString()),
             correct: answer.toString()
@@ -120,6 +123,7 @@ export class QuestionManager {
         Phaser.Utils.Array.Shuffle(options);
         
         return {
+            id: this.generateQuestionId(),
             question: `${a} ${op} ${b} = ?`,
             options: options.map(o => o.toString()),
             correct: answer.toString()
@@ -171,6 +175,7 @@ export class QuestionManager {
         Phaser.Utils.Array.Shuffle(options);
         
         return {
+            id: this.generateQuestionId(),
             question: `${a}/${b} + ${c}/${d} = ?`,
             options: options,
             correct: answer
@@ -193,6 +198,7 @@ export class QuestionManager {
         Phaser.Utils.Array.Shuffle(options);
         
         return {
+            id: this.generateQuestionId(),
             question: `${a} + ${b} = ?`,
             options: options,
             correct: answer.toString()
@@ -216,6 +222,7 @@ export class QuestionManager {
         Phaser.Utils.Array.Shuffle(options);
         
         return {
+            id: this.generateQuestionId(),
             question: `${a} + ${b} × ${c} = ?`,
             options: options.map(o => o.toString()),
             correct: answer.toString()
@@ -241,6 +248,10 @@ export class QuestionManager {
             a = temp;
         }
         return a;
+    }
+
+    private generateQuestionId(): string {
+        return new ObjectId().toString();
     }
 
     public getNextQuestion(): Question | null {
@@ -280,7 +291,7 @@ export class QuestionManager {
             if (response.success && response.data && response.data.questions) {
                 // 转换API数据格式到本地Question类型
                 const convertedQuestions: Question[] = response.data.questions.map(apiQuestion => ({
-                    id: apiQuestion.id,
+                    _id: apiQuestion._id, // 将数字ID转换为字符串
                     question: apiQuestion.question,
                     options: apiQuestion.options,
                     explanation: apiQuestion.explanation,

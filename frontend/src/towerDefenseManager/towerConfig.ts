@@ -6,11 +6,11 @@ import { TowerDefenseGameState, TowerType, EnemyType } from '@/types/towerDefens
  */
 export const INITIAL_GAME_STATE: TowerDefenseGameState = {
     health: 10,
-    score: 100,
+    score: 100, // 调试：增加初始积分便于建塔
     combo: 0,
     maxCombo: 0,
     currentWave: 1,
-    totalWaves: 1, //总波次
+    totalWaves: 1, //总波次 - 设置为1可以直接通关
     isPlaying: false,
     isPaused: false,
     gameSpeed: 1,
