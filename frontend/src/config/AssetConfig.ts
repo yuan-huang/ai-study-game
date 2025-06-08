@@ -48,7 +48,7 @@ export const GameAssets: SceneAssets = {
     LoginScene: [
         {
             key: 'login-canvas',
-            path: '/images/ui/main-ui/login-bg.jpeg',
+            path: '/images/ui/main-ui/login-bg.jpg',
             type: AssetType.IMAGE
         },
         {
@@ -126,7 +126,7 @@ export const GameAssets: SceneAssets = {
         //frontend\public\images\ui\main-ui\towerDefense-bg.jpeg
         {
             key: 'towerDefense-bg',
-            path: '/images/ui/main-ui/towerDefense-bg.jpeg',
+            path: '/images/ui/main-ui/towerDefense-bg.png',
             type: AssetType.IMAGE
         },
         // frontend\public\images\ui\entities\tower-arrow.png
@@ -195,6 +195,56 @@ export const GameAssets: SceneAssets = {
         },
     ],
 
+    //知识之花
+    KnowledgeFlower: [
+        //frontend\public\images\ui\main-ui\garden.jpg
+        {
+            key: 'garden',
+            path: '/images/ui/main-ui/garden.jpg',
+            type: AssetType.IMAGE
+        },
+        //frontend\public\images\ui\flowers\flower-chinese.png
+        {
+            key: 'flower-chinese',
+            path: '/images/ui/flowers/flower-chinese.png',
+            type: AssetType.IMAGE
+        },
+        //frontend\public\images\ui\flowers\flower-math.png
+        {
+            key: 'flower-math',
+            path: '/images/ui/flowers/flower-math.png',
+            type: AssetType.IMAGE
+        },
+        //frontend\public\images\ui\flowers\flower-english.png      
+        {
+            key: 'flower-english',
+            path: '/images/ui/flowers/flower-english.png',
+            type: AssetType.IMAGE
+        },  
+        //frontend\public\images\ui\flowers\flower-technology.png
+        {
+            key: 'flower-technology',
+            path: '/images/ui/flowers/flower-technology.png',
+            type: AssetType.IMAGE
+        },
+        //frontend\public\images\ui\flowers\flower-marine.png
+        {
+            key: 'flower-marine',
+            path: '/images/ui/flowers/flower-marine.png',
+            type: AssetType.IMAGE
+        },
+    ],
+
+
+    // 好奇树
+    //frontend\public\images\ui\main-ui\curious-tree.jpeg
+    CuriousTree: [
+        {
+            key: 'curious-tree',
+            path: '/images/ui/main-ui/curious-tree.jpeg',
+            type: AssetType.IMAGE
+        },
+    ],
     // 图片选择关卡资源
     ImageQuiz: [
         {

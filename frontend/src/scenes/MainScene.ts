@@ -191,8 +191,11 @@ export class MainScene extends BaseScene {
         this.effectManager.addBuildingInteraction(chineseBuilding, 'chinese', '语文塔');
         this.effectManager.addBuildingInteraction(mathBuilding, 'math', '数学塔');
         this.effectManager.addBuildingInteraction(englishBuilding, 'english', '英语塔');
-        this.effectManager.addBuildingInteraction(curiousTree, 'curious', '好奇树');
-        this.effectManager.addBuildingInteraction(knowledgeFlower, 'knowledge', '知识花园');
+
+
+        this.effectManager.addCuriousTreeInteraction(curiousTree,'curious','好奇树');
+        this.effectManager.addKnowledgeFlowerInteraction(knowledgeFlower,'knowledge','知识花园');
+        
         this.effectManager.addSpriteInteraction(sprite);
         
 

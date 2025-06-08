@@ -8,6 +8,21 @@ import { UserConfig,
 } from '@/types/towerDefenseScene';
 import { Monster } from '@/entities/TowerDefense/Monster';
 import { Tower, Projectile } from '@/entities/TowerDefense/Tower';
+import { saveGameCompletion, GameCompletionData, Reward } from '@/api/towerDefenseRewardApi';
+import { 
+    INITIAL_GAME_STATE,
+    GAME_AREA_CONFIG,
+    LAYOUT_CONFIG,
+    TOWER_TYPES,
+    ENEMY_TYPES,
+    WAVE_CONFIG,
+    generateGamePath,
+    TIMING_CONFIG,
+    TOWER_COLORS,
+    getWaveMonsters,
+    calculateGameLayout
+} from '@/towerDefenseManager/towerConfig';
+import { gameState } from '@/stores/gameState';
 
 export class TowerDefenseScene extends BaseScene {
     private gameState!: TowerDefenseGameState;
@@ -34,6 +49,10 @@ export class TowerDefenseScene extends BaseScene {
     private questions: Question[] = [];
     private questionPool: Question[] = [];
     
+    // 题目跟踪
+    private answeredQuestionIds: string[] = []; // 记录所有回答过的题目ID
+    private wrongQuestionIds: string[] = []; // 记录回答错误的题目ID
+    
     // 游戏路径
     private path: Phaser.Math.Vector2[] = [];
     
@@ -49,104 +68,11 @@ export class TowerDefenseScene extends BaseScene {
     private waveInProgress = false;
     
     // 游戏区域大小
-    private gameAreaWidth = 1400;
-    private gameAreaHeight = 1000;
-    
-    // 塔类型配置
-    private towerTypes: { [key: string]: TowerType } = {
-        "tower-arrow": {
-            type: 'tower-arrow',
-            name: '箭塔',
-            cost: 50,
-            damage: 20,
-            range: 150,
-            fireRate: 1000,
-            level: 1,
-            maxLevel: 10,
-            image: getAssetPath('tower-arrow'),
-            icon: '🏹'
-        },
-        "tower-freeze": {
-            type: 'tower-freeze',
-            name: '冰冻塔',
-            cost: 70,
-            damage: 15,
-            range: 150,
-            fireRate: 1500,
-            level: 1,
-            maxLevel: 10,
-            image: getAssetPath('tower-freeze'),
-            icon: '❄️'
-        },
-        "tower-laser": {
-            type: 'tower-laser',
-            name: '激光塔',
-            cost: 100,
-            damage: 30,
-            range: 180,
-            fireRate: 800,
-            level: 1,
-            maxLevel: 10,
-            image: getAssetPath('tower-laser'),
-            icon: '⚡'
-        },
-        "tower-poison": {
-            type: 'tower-poison',
-            name: '毒塔',
-            cost: 70,
-            damage: 10,
-            range: 140,
-            fireRate: 500,
-            level: 1,
-            maxLevel: 10,
-            image: getAssetPath('tower-poison'),
-            icon: '☠️'
-        }
-    };
-    
-    // 敌人类型配置
-    private enemyTypes: { [key: string]: EnemyType } = {
-        "monster-normal": {
-            type: 'monster-normal',
-            health: 50,
-            speed: 100,
-            reward: 1,
-            image: getAssetPath('monster-normal')
-        },
-        "monster-gluttonous": {
-            type: 'monster-gluttonous',
-            health: 80,
-            speed: 80,
-            reward: 2,
-            image: getAssetPath('monster-gluttonous')
-        },
-        "monster-grumpy": {
-            type: 'monster-grumpy',
-            health: 120,
-            speed: 60,
-            reward: 3,
-            image: getAssetPath('monster-grumpy')
-        },
-        "monster-lazy": {
-            type: 'monster-lazy',
-            health: 100,
-            speed: 40,
-            reward: 3,
-            image: getAssetPath('monster-lazy')
-        },
-        "monster-messy": {
-            type: 'monster-messy',
-            health: 60,
-            speed: 120,
-            reward: 2,
-            image: getAssetPath('monster-messy')
-        }
-    };
+    private gameAreaWidth = GAME_AREA_CONFIG.width;
+    private gameAreaHeight = GAME_AREA_CONFIG.height;
     
     // 布局尺寸属性
     private singlePanelHeight: number = 0;
-    private rightContainerWidth: number = 500;
-    private statusBarHeight: number = 60;
     
     // 塔按钮引用
     private towerButtons: { [key: string]: Phaser.GameObjects.Rectangle } = {};
@@ -157,6 +83,12 @@ export class TowerDefenseScene extends BaseScene {
     
     // 游戏结束对话框
     private gameOverDialog?: Phaser.GameObjects.Container;
+    
+    // 奖励对话框
+    private rewardDialog?: Phaser.GameObjects.Container;
+    
+    // 游戏完成数据
+    private completionStartTime: number = 0;
 
     constructor() {
         super('TowerDefenseScene');
@@ -177,26 +109,15 @@ export class TowerDefenseScene extends BaseScene {
         }
         super.init();
         this.initGameState();
+        this.completionStartTime = Date.now();
     }
 
     private initGameState(): void {
-        this.gameState = {
-            health: 10,
-            score: 100,
-            combo: 0,
-            maxCombo: 0,
-            currentWave: 1,
-            totalWaves: 5,
-            isPlaying: false,
-            isPaused: false,
-            gameSpeed: 1,
-            correctAnswers: 0,
-            totalQuestions: 0,
-            currentLevel: 1,
-            levelProgress: 0,
-            questionsPerLevel: 10,
-            totalLevels: 10
-        };
+        this.gameState = { ...INITIAL_GAME_STATE };
+        
+        // 清空题目跟踪记录
+        this.answeredQuestionIds = [];
+        this.wrongQuestionIds = [];
     }
 
     preload(): void {
@@ -246,7 +167,7 @@ export class TowerDefenseScene extends BaseScene {
         this.updateUI();
         
         // 开始第一波
-        this.time.delayedCall(2000, () => {
+        this.time.delayedCall(TIMING_CONFIG.gameStartDelay, () => {
             this.startWave();
         });
     }
@@ -256,45 +177,25 @@ export class TowerDefenseScene extends BaseScene {
         const height = this.cameras.main.height;
         
         // 布局常量定义
-        this.statusBarHeight = 60; // 增加高度以适应32px字体
-        this.rightContainerWidth = 700;
-        const gameContainerWidth = width - this.rightContainerWidth;
-        const mainContentHeight = height - this.statusBarHeight;
+        const gameContainerWidth = width - LAYOUT_CONFIG.rightContainerWidth;
+        const mainContentHeight = height - LAYOUT_CONFIG.statusBarHeight;
 
         // 1. 任务状态栏容器 (顶部)
         this.statusBarContainer = this.add.container(0, 0);
 
         // 2. 左边游戏容器
-        this.gameContainer = this.add.container(0, this.statusBarHeight);
+        this.gameContainer = this.add.container(0, LAYOUT_CONFIG.statusBarHeight);
         // 设置游戏容器的可视区域
         this.gameAreaWidth = gameContainerWidth;
         this.gameAreaHeight = mainContentHeight;
 
         // 3. 右边答题容器
-        this.rightContainer = this.add.container(gameContainerWidth, this.statusBarHeight);
+        this.rightContainer = this.add.container(gameContainerWidth, LAYOUT_CONFIG.statusBarHeight);
     }
 
     private createPath(): void {
-        // 根据游戏容器的实际尺寸创建路径
-        const gameWidth = this.gameAreaWidth;
-        const gameHeight = this.gameAreaHeight;
-        
-        // 计算路径点，使其适应游戏区域
-        const pathMargin = 50;
-        const pathPoints = [
-            { x: pathMargin, y: gameHeight * 0.2 },
-            { x: gameWidth * 0.25, y: gameHeight * 0.2 },
-            { x: gameWidth * 0.25, y: gameHeight * 0.6 },
-            { x: gameWidth * 0.4, y: gameHeight * 0.6 },
-            { x: gameWidth * 0.4, y: gameHeight * 0.2 },
-            { x: gameWidth * 0.6, y: gameHeight * 0.2 },
-            { x: gameWidth * 0.6, y: gameHeight * 0.8 },
-            { x: gameWidth * 0.8, y: gameHeight * 0.8 },
-            { x: gameWidth * 0.8, y: gameHeight * 0.4 },
-            { x: gameWidth - pathMargin, y: gameHeight * 0.4 }
-        ];
-
-        this.path = pathPoints.map(point => new Phaser.Math.Vector2(point.x, point.y));
+        // 使用配置文件中的路径生成函数
+        this.path = generateGamePath(this.gameAreaWidth, this.gameAreaHeight);
     }
 
     private drawPath(): void {
@@ -344,84 +245,32 @@ export class TowerDefenseScene extends BaseScene {
         this.drawPath();
     }
 
-    private createPath(): void {
-        // 根据游戏容器的实际尺寸创建路径
-        const gameWidth = this.gameAreaWidth;
-        const gameHeight = this.gameAreaHeight;
-        
-        // 计算路径点，使其适应游戏区域
-        const pathMargin = 50;
-        const pathPoints = [
-            { x: pathMargin, y: gameHeight * 0.2 },
-            { x: gameWidth * 0.25, y: gameHeight * 0.2 },
-            { x: gameWidth * 0.25, y: gameHeight * 0.6 },
-            { x: gameWidth * 0.4, y: gameHeight * 0.6 },
-            { x: gameWidth * 0.4, y: gameHeight * 0.2 },
-            { x: gameWidth * 0.6, y: gameHeight * 0.2 },
-            { x: gameWidth * 0.6, y: gameHeight * 0.8 },
-            { x: gameWidth * 0.8, y: gameHeight * 0.8 },
-            { x: gameWidth * 0.8, y: gameHeight * 0.4 },
-            { x: gameWidth - pathMargin, y: gameHeight * 0.4 }
-        ];
-
-        this.path = pathPoints.map(point => new Phaser.Math.Vector2(point.x, point.y));
-    }
-
-    private drawPath(): void {
-        // 游戏区域背景
-        const gameBg = this.add.rectangle(0, 0, this.gameAreaWidth, this.gameAreaHeight, 0x8fbc8f, 0.3);
-        gameBg.setOrigin(0, 0);
-        gameBg.setStrokeStyle(2, 0x4a7c59, 1); // 添加边框
-        this.gameContainer.add(gameBg);
-
-        const graphics = this.add.graphics();
-        graphics.lineStyle(80, 0x8B4513, 1);
-        
-        if (this.path.length > 1) {
-            graphics.beginPath();
-            graphics.moveTo(this.path[0].x, this.path[0].y);
-            
-            for (let i = 1; i < this.path.length; i++) {
-                graphics.lineTo(this.path[i].x, this.path[i].y);
-            }
-            
-            graphics.strokePath();
-        }
-        
-        // 添加起点和终点标记
-        const startCircle = this.add.circle(this.path[0].x, this.path[0].y, 30, 0x00ff00);
-        const endCircle = this.add.circle(this.path[this.path.length - 1].x, this.path[this.path.length - 1].y, 30, 0xff0000);
-        
-        // 将路径元素添加到游戏容器
-        this.gameContainer.add([graphics, startCircle, endCircle]);
-    }
-
     private createStatusBar(): void {
         const width = this.cameras.main.width;
 
         // 状态栏背景
-        const statusBg = this.add.rectangle(width/2, this.statusBarHeight/2, width, this.statusBarHeight, 0x6c5ce7, 0.9);
+        const statusBg = this.add.rectangle(width/2, LAYOUT_CONFIG.statusBarHeight/2, width, LAYOUT_CONFIG.statusBarHeight, 0x6c5ce7, 0.9);
         
         // 生命值
-        this.healthText = this.add.text(20, this.statusBarHeight/2, `❤️ 生命值: ${this.gameState.health}`, {
+        this.healthText = this.add.text(20, LAYOUT_CONFIG.statusBarHeight/2, `❤️ 生命值: ${this.gameState.health}`, {
             fontSize: '32px',
             color: '#ffffff'
         }).setOrigin(0, 0.5);
 
         // 积分
-        this.scoreText = this.add.text(width * 0.25, this.statusBarHeight/2, `💰 积分: ${this.gameState.score}`, {
+        this.scoreText = this.add.text(width * 0.25, LAYOUT_CONFIG.statusBarHeight/2, `💰 积分: ${this.gameState.score}`, {
             fontSize: '32px',
             color: '#ffffff'
         }).setOrigin(0, 0.5);
 
         // 连击
-        this.comboText = this.add.text(width * 0.45, this.statusBarHeight/2, `⚡ 连击: ${this.gameState.combo}`, {
+        this.comboText = this.add.text(width * 0.45, LAYOUT_CONFIG.statusBarHeight/2, `⚡ 连击: ${this.gameState.combo}`, {
             fontSize: '32px',
             color: '#ffffff'
         }).setOrigin(0, 0.5);
 
         // 关卡信息
-        this.levelText = this.add.text(width * 0.65, this.statusBarHeight/2, 
+        this.levelText = this.add.text(width * 0.65, LAYOUT_CONFIG.statusBarHeight/2, 
             `第${this.gameState.currentLevel}关: ${this.userConfig.category} | ` +
             `关卡${this.gameState.currentLevel}/${this.gameState.totalLevels} | ` +
             `第${this.gameState.currentWave}波 (${this.gameState.currentWave}/${this.gameState.totalWaves})`, {
@@ -433,7 +282,7 @@ export class TowerDefenseScene extends BaseScene {
         const endButtonWidth = 120;
         const endButtonHeight = 40;
         const endButtonX = width - endButtonWidth/2 - 20;
-        const endButtonY = this.statusBarHeight/2;
+        const endButtonY = LAYOUT_CONFIG.statusBarHeight/2;
         
         const endButton = this.add.rectangle(endButtonX, endButtonY, endButtonWidth, endButtonHeight, 0xff5252, 1);
         endButton.setStrokeStyle(2, 0xd32f2f);
@@ -477,17 +326,17 @@ export class TowerDefenseScene extends BaseScene {
     }
 
     private createRightPanels(): void {
-        const mainContentHeight = this.cameras.main.height - this.statusBarHeight; // 减去状态栏高度
-        const panelSpacing = 20;
+        const mainContentHeight = this.cameras.main.height - LAYOUT_CONFIG.statusBarHeight; // 减去状态栏高度
+        const panelSpacing = LAYOUT_CONFIG.singlePanelSpacing;
         
         // 计算三个子容器的高度，平均分配
         this.singlePanelHeight = (mainContentHeight - panelSpacing * 2) / 2;
 
         // 1. 答题子容器
-        this.createQuestionPanel(10, 10, this.rightContainerWidth, this.singlePanelHeight);
+        this.createQuestionPanel(10, 10, LAYOUT_CONFIG.rightContainerWidth, this.singlePanelHeight);
         
         // 2. 塔容器  
-        this.createTowerPanel(10, this.singlePanelHeight + panelSpacing, this.rightContainerWidth, this.singlePanelHeight);
+        this.createTowerPanel(10, this.singlePanelHeight + panelSpacing, LAYOUT_CONFIG.rightContainerWidth, this.singlePanelHeight);
         
         // 3. 怪+积分容器
         // this.createWaveInfoPanel(0, (this.singlePanelHeight + panelSpacing) * 2, this.rightContainerWidth, this.singlePanelHeight);
@@ -541,16 +390,8 @@ export class TowerDefenseScene extends BaseScene {
         }).setOrigin(0.5);
         panelContainer.add(title);
         
-        // 从 towerTypes 获取塔类型配置，并定义每种塔的颜色
-        const towerColors: { [key: string]: number } = {
-            'tower-arrow': 0x8d6e63,
-            'tower-poison': 0x9c27b0,
-            'tower-freeze': 0x42a5f5,
-            'tower-laser': 0xffa726
-        };
-        
-        // 将 towerTypes 转换为数组以便排序和布局
-        const towerArray = Object.values(this.towerTypes);
+        // 将塔类型配置转换为数组以便排序和布局
+        const towerArray = Object.values(TOWER_TYPES);
         
         const buttonWidth = (width - 80) / 2;  // 增加边距
         const buttonHeight = 80; // 调整按钮高度适应单行文本
@@ -567,7 +408,7 @@ export class TowerDefenseScene extends BaseScene {
             const buttonContainer = this.add.container(btnX + buttonWidth/2, btnY + buttonHeight/2);
 
             // 背景按钮（相对于容器的坐标）
-            const buttonColor = towerColors[towerType.type] || 0x888888;
+            const buttonColor = TOWER_COLORS[towerType.type] || 0x888888;
             const button = this.add.rectangle(0, 0, buttonWidth, buttonHeight, buttonColor, 1);
             button.setStrokeStyle(3, 0x666666);
             button.setInteractive({ useHandCursor: true });
@@ -793,13 +634,13 @@ export class TowerDefenseScene extends BaseScene {
                     
                     // 计算游戏容器内的坐标
                     const gameContainerX = pointer.x;
-                    const gameContainerY = pointer.y - this.statusBarHeight;
+                    const gameContainerY = pointer.y - LAYOUT_CONFIG.statusBarHeight;
                     
                     this.placementIndicator.setPosition(pointer.x, pointer.y);
                     
                     // 更新范围指示器
                     if (this.selectedTowerType && this.rangeIndicator) {
-                        const towerType = this.towerTypes[this.selectedTowerType];
+                        const towerType = TOWER_TYPES[this.selectedTowerType];
                         this.rangeIndicator.clear();
                         this.rangeIndicator.lineStyle(3, 0xff6666, 0.6);
                         this.rangeIndicator.fillStyle(0xff6666, 0.1);
@@ -824,7 +665,7 @@ export class TowerDefenseScene extends BaseScene {
                 
                 // 检查是否在游戏区域内（需要考虑游戏容器的偏移）
                 const gameContainerX = pointer.x;
-                const gameContainerY = pointer.y - this.statusBarHeight; // 减去状态栏高度
+                const gameContainerY = pointer.y - LAYOUT_CONFIG.statusBarHeight; // 减去状态栏高度
                 
                 if (gameContainerX >= 0 && gameContainerX < this.gameAreaWidth && 
                     gameContainerY >= 0 && gameContainerY < this.gameAreaHeight) {
@@ -935,7 +776,7 @@ export class TowerDefenseScene extends BaseScene {
     }
 
     private placeTower(x: number, y: number, type: string): void {
-        const towerType = this.towerTypes[type];
+        const towerType = TOWER_TYPES[type];
         
         // 扣除积分
         this.gameState.score -= towerType.cost;
@@ -975,6 +816,7 @@ export class TowerDefenseScene extends BaseScene {
     private generateQuestions(): void {
         // 根据年级和科目生成题目
         this.questionPool = [];
+        const baseTime = Date.now();
         
         if (this.userConfig.subject === '数学') {
             // 生成数学题
@@ -995,12 +837,15 @@ export class TowerDefenseScene extends BaseScene {
                 Phaser.Utils.Array.Shuffle(options);
                 
                 this.questionPool.push({
+                    id: baseTime + i, // 生成唯一题目ID (基础时间戳+索引)
                     question: `${a} + ${b} = ?`,
                     options: options.map(o => o.toString()),
                     correct: answer.toString()
                 });
             }
         }
+        
+        console.log(`生成了 ${this.questionPool.length} 道${this.userConfig.subject}题目`);
     }
 
     private showNextQuestion(): void {
@@ -1017,6 +862,11 @@ export class TowerDefenseScene extends BaseScene {
         this.updateQuestionDisplay();
         
         this.questionActive = true;
+        
+        // 调试信息：显示当前题目ID
+        if (this.currentQuestion?.id) {
+            console.log(`显示题目 ID: ${this.currentQuestion.id}, 内容: ${this.currentQuestion.question}`);
+        }
     }
 
     private updateQuestionDisplay(): void {
@@ -1025,7 +875,7 @@ export class TowerDefenseScene extends BaseScene {
         //只要更新问题 以及 选择按钮
         this.questionPanel.removeAll(true);
 
-        const width = this.rightContainerWidth;
+        const width = LAYOUT_CONFIG.rightContainerWidth;
         const height = this.singlePanelHeight;
 
         // 面板背景
@@ -1119,6 +969,17 @@ export class TowerDefenseScene extends BaseScene {
         
         this.questionActive = false;
         
+        // 记录题目ID
+        if (this.currentQuestion.id !== undefined) {
+            const questionId = this.currentQuestion.id.toString();
+            this.answeredQuestionIds.push(questionId);
+            
+            if (answer !== this.currentQuestion.correct) {
+                // 记录错误题目ID
+                this.wrongQuestionIds.push(questionId);
+            }
+        }
+        
         if (answer === this.currentQuestion.correct) {
             // 正确答案
             this.gameState.correctAnswers++;
@@ -1142,7 +1003,7 @@ export class TowerDefenseScene extends BaseScene {
         this.updateUI();
         
         // 2秒后显示下一题
-        this.time.delayedCall(2000, () => {
+        this.time.delayedCall(TIMING_CONFIG.nextQuestionDelay, () => {
             this.showNextQuestion();
         });
     }
@@ -1170,7 +1031,7 @@ export class TowerDefenseScene extends BaseScene {
     private showTowerInfo(tower: Tower): void {
         // 计算塔在屏幕上的实际位置 (考虑游戏容器的偏移)
         const towerWorldX = tower.x;
-        const towerWorldY = tower.y + this.statusBarHeight; // 加上状态栏高度
+        const towerWorldY = tower.y + LAYOUT_CONFIG.statusBarHeight; // 加上状态栏高度
         
         // 创建信息面板
         const infoPanel = this.add.container(towerWorldX, towerWorldY - 80);
@@ -1207,36 +1068,8 @@ export class TowerDefenseScene extends BaseScene {
     }
 
     private getWaveMonsters(): Array<{icon: string, name: string, count: number, type: string}> {
-        // 根据当前波次返回怪物信息
-        const wave = this.gameState.currentWave;
-        
-        // 波次配置 - 每波固定10个怪物
-        const waveConfig: { [key: number]: Array<{icon: string, name: string, type: string, count: number}> } = {
-            1: [
-                { icon: '🐙', name: '小怪兵', type: 'monster-normal', count: 10 }
-            ],
-            2: [
-                { icon: '🐙', name: '小怪兵', type: 'monster-normal', count: 10 }
-            ],
-            3: [
-                { icon: '🐙', name: '小怪兵', type: 'monster-normal', count: 8 },
-                { icon: '👹', name: '加强兵', type: 'monster-gluttonous', count: 2 }
-            ],
-            4: [
-                { icon: '🐙', name: '小怪兵', type: 'monster-normal', count: 6 },
-                { icon: '👹', name: '加强兵', type: 'monster-gluttonous', count: 3 },
-                { icon: '🚶', name: '懒惰兵', type: 'monster-lazy', count: 1 }
-            ],
-            5: [
-                { icon: '🐙', name: '小怪兵', type: 'monster-normal', count: 6 },
-                { icon: '👹', name: '加强兵', type: 'monster-gluttonous', count: 2 },
-                { icon: '💨', name: '快速兵', type: 'monster-messy', count: 1 },
-                { icon: '👾', name: 'BOSS', type: 'monster-grumpy', count: 1 }
-            ]
-        };
-        
-        // 获取当前波次配置，如果超出配置范围，使用最后一波的配置
-        return waveConfig[wave] || waveConfig[5];
+        // 使用配置文件中的波次配置
+        return getWaveMonsters(this.gameState.currentWave);
     }
 
     private startWave(): void {
@@ -1262,7 +1095,7 @@ export class TowerDefenseScene extends BaseScene {
         // 开始生成敌人
         let enemyIndex = 0;
         this.enemySpawnTimer = this.time.addEvent({
-            delay: 1200, // 调整生成间隔为1.2秒
+            delay: TIMING_CONFIG.enemySpawnInterval, // 使用配置文件中的生成间隔
             callback: () => {
                 // 检查游戏是否结束或暂停
                 if (this.gameState.health <= 0 || this.gameState.isPaused) {
@@ -1286,7 +1119,7 @@ export class TowerDefenseScene extends BaseScene {
     }
 
     private spawnEnemy(type: string): void {
-        const enemyType = this.enemyTypes[type];
+        const enemyType = ENEMY_TYPES[type];
         
         // 创建怪物
         const monster = new Monster(this, this.path[0].x, this.path[0].y, enemyType, this.path);
@@ -1387,7 +1220,7 @@ export class TowerDefenseScene extends BaseScene {
             this.updateUI();
             
             // 5秒后开始下一波
-            this.time.delayedCall(5000, () => {
+            this.time.delayedCall(TIMING_CONFIG.waveCooldown, () => {
                 // 再次检查游戏状态
                 if (this.gameState.health > 0 && !this.gameState.isPaused) {
                     this.startWave();
@@ -1401,16 +1234,60 @@ export class TowerDefenseScene extends BaseScene {
         }
     }
 
-    private onLevelComplete(): void {
+    private async onLevelComplete(): Promise<void> {
         this.showMessage('关卡完成!');
         
-        // TODO: 保存进度，返回关卡选择界面
-        this.time.delayedCall(3000, () => {
-            this.scene.start('LevelSelectScene', {
+        // 暂停游戏，防止继续操作
+        this.gameState.isPaused = true;
+        
+        // 清除所有延迟调用和定时器，确保没有自动跳转
+        this.time.removeAllEvents();
+        if (this.enemySpawnTimer) {
+            this.enemySpawnTimer.remove();
+            this.enemySpawnTimer = undefined;
+        }
+        
+        try {
+            // 准备游戏完成数据
+            const completionData: GameCompletionData = {
+                userId: gameState.userId, // 从游戏状态获取真实userId
                 subject: this.userConfig.subject,
-                grade: this.userConfig.grade
+                grade: this.userConfig.grade,
+                category: this.userConfig.category,
+                questionIds: this.answeredQuestionIds, // 从游戏中收集的所有题目ID
+                wrongQuestionIds: this.wrongQuestionIds, // 从游戏中收集的错误题目ID
+                completionTime: Date.now() - this.completionStartTime,
+                score: this.gameState.score,
+                comboCount: this.gameState.maxCombo
+            };
+            
+            // 输出题目收集数据用于调试
+            console.log('游戏完成数据:', {
+                总题目数: this.answeredQuestionIds.length,
+                回答的题目IDs: this.answeredQuestionIds,
+                错误题目数: this.wrongQuestionIds.length,
+                错误题目IDs: this.wrongQuestionIds,
+                正确率: this.gameState.totalQuestions > 0 ? 
+                    Math.round((this.gameState.correctAnswers / this.gameState.totalQuestions) * 100) + '%' : '0%'
             });
-        });
+            
+            // 调用API保存通关记录并获取奖励
+            const response = await saveGameCompletion(completionData);
+            
+            // 显示奖励对话框
+            this.showRewardDialog(response.reward, response.stats);
+            
+        } catch (error) {
+            console.error('保存通关记录失败:', error);
+            this.showMessage('保存记录失败，但游戏已完成！');
+            
+            // 即使保存失败，也显示完成对话框让用户确认
+            this.showRewardDialog(null, {
+                totalCompletions: 0,
+                experienceGained: 0,
+                coinsGained: 0
+            });
+        }
     }
 
     private updateUI(): void {
@@ -1429,8 +1306,8 @@ export class TowerDefenseScene extends BaseScene {
 
     private updateTowerButtonStates(): void {
         // 遍历所有塔类型，根据积分更新按钮状态
-        Object.keys(this.towerTypes).forEach(towerType => {
-            const towerData = this.towerTypes[towerType];
+        Object.keys(TOWER_TYPES).forEach(towerType => {
+            const towerData = TOWER_TYPES[towerType];
             const button = this.towerButtons[towerType];
             
             if (button) {
@@ -1508,9 +1385,10 @@ export class TowerDefenseScene extends BaseScene {
         // 创建对话框容器
         this.gameOverDialog = this.add.container(width / 2, height / 2);
         
-        // 半透明背景遮罩
+        // 半透明背景遮罩 - 阻止点击穿透
         const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.7);
         overlay.setOrigin(0.5);
+        overlay.setInteractive(); // 阻止点击穿透
         this.gameOverDialog.add(overlay);
         
         // 对话框背景
@@ -1662,6 +1540,221 @@ export class TowerDefenseScene extends BaseScene {
     private exitGame(): void {
         // 返回关卡选择界面
         this.scene.start('LevelSelectScene', {
+            subject: this.userConfig.subject,
+            grade: this.userConfig.grade
+        });
+    }
+
+    private showRewardDialog(reward: Reward | null, stats: any): void {
+        const width = this.cameras.main.width;
+        const height = this.cameras.main.height;
+        
+        // 创建奖励对话框容器
+        this.rewardDialog = this.add.container(width / 2, height / 2);
+        
+        // 半透明背景遮罩 - 不可点击穿透，确保用户必须点击按钮
+        const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.7);
+        overlay.setOrigin(0.5);
+        overlay.setInteractive(); // 阻止点击穿透
+        this.rewardDialog.add(overlay);
+        
+        // 对话框背景
+        const dialogWidth = 600;
+        const dialogHeight = 480; // 增加高度以容纳更多内容
+        const dialogBg = this.add.rectangle(0, 0, dialogWidth, dialogHeight, 0xffffff, 1);
+        dialogBg.setStrokeStyle(4, 0xffd700);
+        dialogBg.setRounded(20);
+        this.rewardDialog.add(dialogBg);
+        
+        // 标题
+        const titleBg = this.add.rectangle(0, -170, dialogWidth - 20, 60, 0x4caf50, 1);
+        titleBg.setRounded(15);
+        this.rewardDialog.add(titleBg);
+        
+        const title = this.add.text(0, -170, '🎉 通关成功！', {
+            fontSize: '36px',
+            color: '#ffffff',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        this.rewardDialog.add(title);
+        
+        // 游戏统计
+        const gameStats = [
+            `🏆 最终得分: ${this.gameState.score}`,
+            `⚡ 最大连击: ${this.gameState.maxCombo}`,
+            `📊 正确率: ${this.gameState.totalQuestions > 0 ? 
+                Math.round((this.gameState.correctAnswers / this.gameState.totalQuestions) * 100) : 100}%`,
+            `⏱️ 完成时间: ${this.formatTime(Date.now() - this.completionStartTime)}`
+        ];
+        
+        gameStats.forEach((stat, i) => {
+            const statText = this.add.text(0, -100 + i * 30, stat, {
+                fontSize: '24px',
+                color: '#333333',
+                align: 'center'
+            }).setOrigin(0.5);
+            this.rewardDialog!.add(statText);
+        });
+        
+        // 奖励内容
+        if (reward) {
+            const rewardY = 20;
+            
+            // 奖励图标和文本
+            let rewardIcon = '';
+            let rewardText = '';
+            let rewardColor = '#4caf50';
+            
+            if (reward.type === 'flower') {
+                rewardIcon = '🌸';
+                rewardText = `获得新花朵！\n${reward.item.subject}年级${reward.item.grade} ${reward.item.category}`;
+                rewardColor = '#e91e63';
+            } else if (reward.type === 'nectar') {
+                rewardIcon = '🍯';
+                rewardText = `获得甘露！\n${reward.item.subject}年级${reward.item.grade} ${reward.item.category}\n恢复${reward.item.healingPower}HP`;
+                rewardColor = '#ff9800';
+            }
+            
+            const rewardIconText = this.add.text(0, rewardY - 30, rewardIcon, {
+                fontSize: '48px'
+            }).setOrigin(0.5);
+            this.rewardDialog.add(rewardIconText);
+            
+            const rewardDesc = this.add.text(0, rewardY + 20, rewardText, {
+                fontSize: '24px',
+                color: rewardColor,
+                fontStyle: 'bold',
+                align: 'center'
+            }).setOrigin(0.5);
+            this.rewardDialog.add(rewardDesc);
+            
+            const rewardMessage = this.add.text(0, rewardY + 70, reward.item.message, {
+                fontSize: '20px',
+                color: '#666666',
+                align: 'center',
+                wordWrap: { width: dialogWidth - 40, useAdvancedWrap: true }
+            }).setOrigin(0.5);
+            this.rewardDialog.add(rewardMessage);
+        } else {
+            const noRewardText = this.add.text(0, 20, '继续努力，更多奖励等着你！', {
+                fontSize: '24px',
+                color: '#666666',
+                align: 'center'
+            }).setOrigin(0.5);
+            this.rewardDialog.add(noRewardText);
+        }
+        
+        // 操作提示
+        const actionTip = this.add.text(0, 120, '请选择下一步操作：', {
+            fontSize: '22px',
+            color: '#666666',
+            fontStyle: 'bold',
+            align: 'center'
+        }).setOrigin(0.5);
+        this.rewardDialog.add(actionTip);
+        
+        // 按钮容器
+        const buttonContainer = this.add.container(0, 160);
+        
+        // 继续游戏按钮
+        const continueButton = this.add.rectangle(-120, 0, 200, 60, 0x2196f3, 1);
+        continueButton.setStrokeStyle(3, 0x1976d2);
+        continueButton.setRounded(15);
+        continueButton.setInteractive({ useHandCursor: true });
+        buttonContainer.add(continueButton);
+        
+        const continueText = this.add.text(-120, 0, '🏠 返回主页', {
+            fontSize: '24px',
+            color: '#ffffff',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        buttonContainer.add(continueText);
+        
+        // 查看花园按钮
+        const gardenButton = this.add.rectangle(120, 0, 200, 60, 0x4caf50, 1);
+        gardenButton.setStrokeStyle(3, 0x388e3c);
+        gardenButton.setRounded(15);
+        gardenButton.setInteractive({ useHandCursor: true });
+        buttonContainer.add(gardenButton);
+        
+        const gardenText = this.add.text(120, 0, '🌸 查看花园', {
+            fontSize: '24px',
+            color: '#ffffff',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        buttonContainer.add(gardenText);
+        
+        this.rewardDialog.add(buttonContainer);
+        
+        // 按钮事件
+        continueButton.on('pointerdown', () => {
+            this.returnToLevelSelect();
+        });
+        
+        gardenButton.on('pointerdown', () => {
+            this.goToGarden();
+        });
+        
+        // 悬停效果
+        [continueButton, gardenButton].forEach(button => {
+            button.on('pointerover', () => {
+                this.tweens.add({
+                    targets: button,
+                    scaleX: 1.05,
+                    scaleY: 1.05,
+                    duration: 200,
+                    ease: 'Power2'
+                });
+            });
+            
+            button.on('pointerout', () => {
+                this.tweens.add({
+                    targets: button,
+                    scaleX: 1,
+                    scaleY: 1,
+                    duration: 200,
+                    ease: 'Power2'
+                });
+            });
+        });
+        
+        // 设置对话框的深度，确保在最上层
+        this.rewardDialog.setDepth(10001);
+        
+        // 显示动画
+        this.rewardDialog.setAlpha(0);
+        this.rewardDialog.setScale(0.8);
+        this.tweens.add({
+            targets: this.rewardDialog,
+            alpha: 1,
+            scaleX: 1,
+            scaleY: 1,
+            duration: 400,
+            ease: 'Back.Out'
+        });
+    }
+
+    private formatTime(timeMs: number): string {
+        const seconds = Math.floor(timeMs / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        
+        if (minutes > 0) {
+            return `${minutes}分${remainingSeconds}秒`;
+        }
+        return `${remainingSeconds}秒`;
+    }
+
+    private returnToLevelSelect(): void {
+        this.scene.start('LevelSelectScene', {
+            subject: this.userConfig.subject,
+            grade: this.userConfig.grade
+        });
+    }
+
+    private goToGarden(): void {
+        // TODO: 跳转到花园场景
+        this.scene.start('GardenScene', {
             subject: this.userConfig.subject,
             grade: this.userConfig.grade
         });
