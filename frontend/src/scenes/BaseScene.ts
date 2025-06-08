@@ -3,6 +3,7 @@ import { PhaserFontConfig, createText, TextStyles } from '../config/PhaserFontCo
 
 export class BaseScene extends Scene {
 
+
     constructor(key: string) {
         super(key);
     }
@@ -31,6 +32,15 @@ export class BaseScene extends Scene {
         
         // 确保字体已加载
         this.ensureFontsLoaded();
+
+        // 监听场景切换事件
+        this.events.on('shutdown', this._cleanup, this);
+        this.events.on('destroy', this._cleanup, this);
+    }
+
+    private _cleanup(): void {
+        // 停止所有正在播放的音乐
+        this.sound.stopAll();
     }
 
     update(time: number, delta: number): void {
@@ -66,19 +76,49 @@ export class BaseScene extends Scene {
      */
     protected addButton(x: number, y: number, text: string, onClick: () => void): Phaser.GameObjects.Text {
         const button = createText(this, x, y, text, 'BUTTON_TEXT', {
-            fontSize: 32,
-            backgroundColor: '#000000',
-            padding: { x: 10, y: 5 }
+            fontSize: 24,
+            backgroundColor: '#4caf50',
+            padding: { x: 15, y: 8 }
         });
         
-        button.setInteractive()
+        button.setInteractive({ useHandCursor: true })
             .on('pointerover', () => {
-                button.setStyle({ color: '#ffff00' });
+                button.setStyle({ 
+                    backgroundColor: '#45a049',
+                    color: '#ffffff'
+                });
+                this.tweens.add({
+                    targets: button,
+                    scaleX: 1.05,
+                    scaleY: 1.05,
+                    duration: 150,
+                    ease: 'Power2'
+                });
             })
             .on('pointerout', () => {
-                button.setStyle({ color: '#ffffff' });
+                button.setStyle({ 
+                    backgroundColor: '#4caf50',
+                    color: '#ffffff'
+                });
+                this.tweens.add({
+                    targets: button,
+                    scaleX: 1,
+                    scaleY: 1,
+                    duration: 150,
+                    ease: 'Power2'
+                });
             })
-            .on('pointerdown', onClick);
+            .on('pointerdown', () => {
+                this.tweens.add({
+                    targets: button,
+                    scaleX: 0.95,
+                    scaleY: 0.95,
+                    duration: 100,
+                    ease: 'Power2',
+                    yoyo: true,
+                    onComplete: onClick
+                });
+            });
 
         return button;
     }

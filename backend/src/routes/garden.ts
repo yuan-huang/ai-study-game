@@ -105,4 +105,12 @@ router.get('/memory/:userId', gardenController.getGardenFlowersWithMemory.bind(g
  */
 router.get('/forget-curve/:userId/:flowerId', gardenController.getFlowerForgetCurve.bind(gardenController));
 
+/**
+ * @route GET /api/garden/subject-status/:userId
+ * @desc 获取各学科花朵状态信息（等级、HP、闯关记录等）
+ * @param userId - 用户ID
+ * @access Public
+ */
+router.get('/subject-status/:userId', gardenController.getSubjectFlowerStatus.bind(gardenController));
+
 export default router; 

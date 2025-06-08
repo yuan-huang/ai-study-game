@@ -2,7 +2,7 @@ import { getAssetPath } from '@/config/AssetConfig';
 import { EnemyType } from '@/types/towerDefenseScene';
 import { Monster } from '@/entities/TowerDefense/Monster';
 import { PathManager } from './PathManager';
-import { WAVE_CONFIG } from './towerConfig';
+import { WAVE_CONFIG } from './TowerConfig';
 
 export class MonsterManager {
     private scene: Phaser.Scene;

@@ -194,6 +194,9 @@ export class Monster extends Phaser.GameObjects.Image {
     public destroy(): void {
         this.healthBar?.destroy();
         this.healthBarBg?.destroy();
+
+
+
         super.destroy();
     }
 } 

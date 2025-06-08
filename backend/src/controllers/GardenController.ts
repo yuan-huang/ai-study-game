@@ -6,6 +6,8 @@ import { Flower } from '../models/Flower';
 import { Nectar } from '../models/Nectar';
 import { User } from '../models/User';
 import { FlowerMemoryService } from '../services/FlowerMemoryService';
+import { TowerDefenseRecord } from '../models/TowerDefenseRecord';
+import { createQuestionModel } from '../models/Question';
 import mongoose from 'mongoose';
 
 // 创建一个虚拟的文档接口用于BaseController
@@ -446,13 +448,13 @@ export class GardenController extends BaseController<IGardenDoc> {
         });
       }
 
-      // 获取所有花朵
+      // 获取所有花朵（从塔防奖励中获得）
       const flowers = await Flower.find({ userId: new mongoose.Types.ObjectId(userId) });
       
-      // 获取所有甘露
+      // 获取所有甘露（从塔防奖励中获得）
       const nectars = await Nectar.find({ userId: new mongoose.Types.ObjectId(userId) });
 
-      // 分类整理花朵
+      // 分类整理花朵：已种植的和仓库中的
       const plantedFlowers = flowers.filter(f => f.isPlanted).map(flower => ({
         id: flower._id,
         subject: flower.subject,
@@ -460,9 +462,10 @@ export class GardenController extends BaseController<IGardenDoc> {
         category: flower.category,
         hp: flower.hp,
         maxHp: flower.maxHp,
-        isPlanted: flower.isPlanted,
+        isPlanted: true,
         gardenPosition: { x: flower.gardenPositionX, y: flower.gardenPositionY },
-        plantedAt: flower.plantedAt
+        plantedAt: flower.plantedAt,
+        lastHealedAt: flower.lastHealedAt
       }));
 
       const warehouseFlowers = flowers.filter(f => !f.isPlanted).map(flower => ({
@@ -472,12 +475,13 @@ export class GardenController extends BaseController<IGardenDoc> {
         category: flower.category,
         hp: flower.hp,
         maxHp: flower.maxHp,
-        isPlanted: flower.isPlanted,
+        isPlanted: false,
         gardenPosition: null,
-        plantedAt: null
+        plantedAt: null,
+        lastHealedAt: flower.lastHealedAt
       }));
 
-      // 统计甘露
+      // 按学科分类统计甘露（便于工具栏显示）
       const nectarSummary = nectars.reduce((acc: any, nectar) => {
         const key = `${nectar.subject}-grade${nectar.grade}-${nectar.category}`;
         if (!acc[key]) {
@@ -486,13 +490,17 @@ export class GardenController extends BaseController<IGardenDoc> {
             grade: nectar.grade,
             category: nectar.category,
             totalHealingPower: 0,
-            count: 0
+            count: 0,
+            nectarIds: []
           };
         }
         acc[key].totalHealingPower += nectar.healingPower;
         acc[key].count += 1;
+        acc[key].nectarIds.push(nectar._id);
         return acc;
       }, {});
+
+      logger.info(`用户 ${userId} 花园库存: ${flowers.length}朵花 (${plantedFlowers.length}已种植, ${warehouseFlowers.length}在仓库), ${nectars.length}份甘露`);
 
       return res.status(200).json({
         success: true,
@@ -504,7 +512,13 @@ export class GardenController extends BaseController<IGardenDoc> {
           totalFlowers: flowers.length,
           totalNectars: nectars.length,
           plantedFlowersCount: plantedFlowers.length,
-          warehouseFlowersCount: warehouseFlowers.length
+          warehouseFlowersCount: warehouseFlowers.length,
+          // 额外的统计信息
+          stats: {
+            flowersBySubject: this.groupFlowersBySubject(flowers),
+            nectarsBySubject: this.groupNectarsBySubject(nectars),
+            gardenUtilization: this.calculateGardenUtilization(plantedFlowers.length)
+          }
         }
       });
 
@@ -891,5 +905,295 @@ export class GardenController extends BaseController<IGardenDoc> {
     }
     
     return recommendations;
+  }
+
+  /**
+   * 按学科分组花朵
+   */
+  private groupFlowersBySubject(flowers: any[]): Record<string, any> {
+    return flowers.reduce((acc: any, flower) => {
+      const subject = flower.subject;
+      if (!acc[subject]) {
+        acc[subject] = {
+          total: 0,
+          planted: 0,
+          warehouse: 0,
+          avgHP: 0
+        };
+      }
+      acc[subject].total++;
+      if (flower.isPlanted) {
+        acc[subject].planted++;
+      } else {
+        acc[subject].warehouse++;
+      }
+      return acc;
+    }, {});
+  }
+
+  /**
+   * 按学科分组甘露
+   */
+  private groupNectarsBySubject(nectars: any[]): Record<string, any> {
+    return nectars.reduce((acc: any, nectar) => {
+      const subject = nectar.subject;
+      if (!acc[subject]) {
+        acc[subject] = {
+          count: 0,
+          totalHealingPower: 0
+        };
+      }
+      acc[subject].count++;
+      acc[subject].totalHealingPower += nectar.healingPower;
+      return acc;
+    }, {});
+  }
+
+  /**
+   * 计算花园利用率
+   */
+  private calculateGardenUtilization(plantedCount: number): number {
+    const maxCapacity = 80; // 10x8 网格
+    return Math.round((plantedCount / maxCapacity) * 100);
+  }
+
+  /**
+   * 获取各学科花朵状态信息
+   * 根据用户年级、学科分类统计等计算花朵等级和HP
+   */
+  async getSubjectFlowerStatus(req: Request, res: Response): Promise<Response> {
+    try {
+      const { userId } = req.params;
+
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: '缺少用户ID参数'
+        });
+      }
+
+      // 1. 获取用户信息，特别是年级
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: '用户不存在'
+        });
+      }
+
+      const userGrade = user.grade;
+      const subjects = ['chinese', 'math', 'english']; // 主要学科
+
+      const subjectFlowerData = [];
+
+      for (const subject of subjects) {
+        try {
+          // 2. 查询该学科-年级下的所有分类问题，作为花的总等级
+          const QuestionModel = createQuestionModel(subject, userGrade);
+          
+          // 获取该学科下所有分类的问题统计
+          const categoryStats = await QuestionModel.aggregate([
+            {
+              $group: {
+                _id: '$category',
+                totalQuestions: { $sum: 1 },
+                avgDifficulty: { $avg: '$difficulty_score' }
+              }
+            },
+            {
+              $project: {
+                category: '$_id',
+                totalQuestions: 1,
+                avgDifficulty: { $round: ['$avgDifficulty', 1] }
+              }
+            }
+          ]);
+
+          // 计算总等级（所有分类的问题数之和）
+          const totalLevel = categoryStats.reduce((sum, cat) => sum + cat.totalQuestions, 0);
+
+          // 3. 查询当前用户在该学科下已获得的花朵，按分类统计
+          const userFlowers = await Flower.find({
+            userId: new mongoose.Types.ObjectId(userId),
+            subject: subject
+          });
+
+          // 按分类统计用户已获得的花朵
+          const userFlowersByCategory = userFlowers.reduce((acc: any, flower) => {
+            if (!acc[flower.category]) {
+              acc[flower.category] = [];
+            }
+            acc[flower.category].push(flower);
+            return acc;
+          }, {});
+
+          // 计算当前等级（用户已获得的花朵数）
+          const currentLevel = userFlowers.length;
+
+          // 计算已闯关的分类数量（有花朵的分类就算已闯关）
+          const completedCategoriesCount = Object.keys(userFlowersByCategory).length;
+          
+          // 计算总分类数量
+          const totalCategoriesCount = categoryStats.length;
+          
+          // 计算花的体积比例：已闯关分类数 / 总分类数
+          const volumeRatio = totalCategoriesCount > 0 ? completedCategoriesCount / totalCategoriesCount : 0;
+
+          // 4. 查询用户的闯关记录，用于计算记忆遗忘曲线
+          const userRecords = await TowerDefenseRecord.find({
+            userId: new mongoose.Types.ObjectId(userId),
+            subject: subject,
+            grade: userGrade
+          }).sort({ createdAt: -1 });
+
+          // 按分类统计闯关记录
+          const recordsByCategory = userRecords.reduce((acc: any, record) => {
+            if (!acc[record.category]) {
+              acc[record.category] = [];
+            }
+            acc[record.category].push(record);
+            return acc;
+          }, {});
+
+          // 5. 计算各分类的待闯关和已闯关状态
+          const categoryHPInfo: Array<{
+            分类: string;
+            hp值: number;
+            最大hp值: number;
+            上一次闯关时间?: Date | null;
+            闯关次数: number;
+            花朵数量: number;
+            问题总数: number;
+          }> = [];
+          let totalCurrentHP = 0;
+          let totalMaxHP = 0;
+
+          categoryStats.forEach(categoryStat => {
+            const category = categoryStat.category;
+            const categoryFlowers = userFlowersByCategory[category] || [];
+            const categoryRecords = recordsByCategory[category] || [];
+            
+            // 计算该分类的HP
+            let categoryCurrentHP = 0;
+            let categoryMaxHP = 0;
+            let lastPlayTime = null;
+
+            if (categoryFlowers.length > 0) {
+              // 如果有花朵，计算记忆衰减后的HP
+              categoryFlowers.forEach((flower: any) => {
+                const calculatedHP = FlowerMemoryService.calculateFlowerHP(flower);
+                categoryCurrentHP += calculatedHP;
+                categoryMaxHP += flower.maxHp;
+              });
+              
+              // 获取该分类的最后闯关时间
+              if (categoryRecords.length > 0) {
+                lastPlayTime = categoryRecords[0].createdAt;
+              }
+            }
+
+            categoryHPInfo.push({
+              分类: category,
+              hp值: categoryCurrentHP,
+              最大hp值: categoryMaxHP,
+              上一次闯关时间: lastPlayTime,
+              闯关次数: categoryRecords.length,
+              花朵数量: categoryFlowers.length,
+              问题总数: categoryStat.totalQuestions
+            });
+
+            totalCurrentHP += categoryCurrentHP;
+            totalMaxHP += categoryMaxHP;
+          });
+
+          // 6. 分析待闯关和已闯关
+          const completedCategories = categoryStats.filter(cat => 
+            userFlowersByCategory[cat.category] && userFlowersByCategory[cat.category].length > 0
+          );
+          
+          const pendingCategories = categoryStats.filter(cat => 
+            !userFlowersByCategory[cat.category] || userFlowersByCategory[cat.category].length === 0
+          );
+
+          // 7. 组装返回数据
+          subjectFlowerData.push({
+            subject: subject,
+            当前等级: currentLevel,
+            总等级: totalLevel,
+            已闯关分类数: completedCategoriesCount,
+            总分类数: totalCategoriesCount,
+            花的体积比例: volumeRatio,
+            闯关完成度: Math.round(volumeRatio * 100),
+            待闯关: pendingCategories.map(cat => ({
+              分类: cat.category,
+              问题数: cat.totalQuestions,
+              平均难度: cat.avgDifficulty
+            })),
+            已闯关: completedCategories.map(cat => ({
+              分类: cat.category,
+              问题数: cat.totalQuestions,
+              花朵数量: userFlowersByCategory[cat.category].length,
+              闯关次数: (recordsByCategory[cat.category] || []).length,
+              最后闯关时间: (recordsByCategory[cat.category] || [])[0]?.createdAt
+            })),
+            花的血量HP: {
+              当前花总的HP: Math.round(totalCurrentHP),
+              最大花总的HP: totalMaxHP,
+              HP百分比: totalMaxHP > 0 ? Math.round((totalCurrentHP / totalMaxHP) * 100) : 0,
+              category: categoryHPInfo
+            }
+          });
+
+        } catch (subjectError) {
+          logger.error(`处理学科 ${subject} 数据失败:`, subjectError);
+          // 如果某个学科处理失败，继续处理其他学科
+          subjectFlowerData.push({
+            subject: subject,
+            当前等级: 0,
+            总等级: 0,
+            已闯关分类数: 0,
+            总分类数: 0,
+            花的体积比例: 0,
+            闯关完成度: 0,
+            待闯关: [],
+            已闯关: [],
+            花的血量HP: {
+              当前花总的HP: 0,
+              最大花总的HP: 0,
+              HP百分比: 0,
+              category: []
+            },
+            error: '该学科数据处理失败'
+          });
+        }
+      }
+
+      logger.info(`用户 ${userId} 的学科花朵状态查询完成，涉及 ${subjects.length} 个学科`);
+
+      return res.status(200).json({
+        success: true,
+        message: '获取学科花朵状态成功',
+        data: {
+          userId: userId,
+          userGrade: userGrade,
+          subjectFlowers: subjectFlowerData,
+          summary: {
+            totalSubjects: subjects.length,
+            totalCurrentLevel: subjectFlowerData.reduce((sum, s) => sum + s.当前等级, 0),
+            totalMaxLevel: subjectFlowerData.reduce((sum, s) => sum + s.总等级, 0),
+            averageHPPercentage: Math.round(
+              subjectFlowerData.reduce((sum, s) => sum + s.花的血量HP.HP百分比, 0) / subjects.length
+            )
+          }
+        }
+      });
+
+    } catch (error) {
+      logger.error('获取学科花朵状态失败:', error);
+      return res.status(500).json({
+        success: false,
+        message: '获取学科花朵状态失败'
+      });
+    }
   }
 } 

@@ -41,6 +41,13 @@ export const GameAssets: SceneAssets = {
             key: 'pointer',
             path: '/images/ui/base/cursor-pointer.svg',
             type: AssetType.IMAGE
+        },
+
+        // 使用道具音效 - 通用道具使用反馈
+        {
+            key: 'mission-accomplished-sound',
+            path: '/audio/MissionAccomplishedSound.mp3',
+            type: AssetType.AUDIO
         }
     ],
 
@@ -51,20 +58,16 @@ export const GameAssets: SceneAssets = {
             path: '/images/ui/main-ui/login-bg.jpg',
             type: AssetType.IMAGE
         },
+        // 登陆界面音乐 - 登录场景背景音乐
         {
-            key: 'login-bgm',
-            path: '/audio/login-bgm.mp3',
+            key: 'landing-interface-music',
+            path: '/audio/LandingInterfaceMusic.mp3',
             type: AssetType.AUDIO
         }
     ],
     
     // 主场景资源
     MainScene: [
-        {
-            key: 'enter-game',
-            path: '/audio/bgm/enter-game.mp3',
-            type: AssetType.AUDIO
-        },
         {
             key: 'main-bg',
             path: '/images/ui/main-ui/main-canvas.jpg',
@@ -108,6 +111,12 @@ export const GameAssets: SceneAssets = {
             path: '/images/ui/sprites/sprite-fly.png',
             type: AssetType.IMAGE
         },
+        // 主城背景音乐 - 主场景背景音乐
+        {
+            key: 'main-city-bgm',
+            path: '/audio/MainCityBackgroundMusic.mp3',
+            type: AssetType.AUDIO
+        }
 
     ],
 
@@ -119,6 +128,12 @@ export const GameAssets: SceneAssets = {
             path: '/images/ui/level-select/level-select-bg.png',
             type: AssetType.IMAGE
         },
+        // 关卡背景音乐 - 关卡选择和游戏进行时的背景音乐
+        {
+            key: 'level-background-music',
+            path: '/audio/LevelBackgroundMusic.mp3',
+            type: AssetType.AUDIO
+        }
     ],
 
     // 塔防关卡资源
@@ -158,6 +173,42 @@ export const GameAssets: SceneAssets = {
             key: 'tower-poison',
             path: '/images/ui/entities/tower-poison.png',
             type: AssetType.IMAGE
+        },
+        // 防御塔攻击音效 1 - 防御塔攻击时的音效
+        {
+            key: 'defense-tower-attack-1',
+            path: '/audio/DefenseTowerAttackSound1.mp3',
+            type: AssetType.AUDIO
+        },
+        // 防御塔攻击音效 2 - 防御塔攻击时的音效
+        {
+            key: 'defense-tower-attack-2',
+            path: '/audio/DefenseTowerAttackSound2.mp3',
+            type: AssetType.AUDIO
+        },
+        // 击杀音效 - 击败怪物时的音效
+        {
+            key: 'elimination-sound',
+            path: '/audio/EliminationSoundEffect.mp3',
+            type: AssetType.AUDIO
+        },
+        // 点击音效 - 通用UI交互音效
+        {
+            key: 'click-sound',
+            path: '/audio/ClickSoundEffect.mp3',
+            type: AssetType.AUDIO
+        },
+        // 答题正确音效 - 通用答题反馈
+        {
+            key: 'correct-answer-sound',
+            path: '/audio/CorrectAnswerSoundEffect.mp3',
+            type: AssetType.AUDIO
+        },
+        // 通关音效 - 通用关卡完成音效
+        {
+            key: 'clearance-sound',
+            path: '/audio/ClearanceSoundEffect.mp3',
+            type: AssetType.AUDIO
         },
 
     ],
@@ -239,6 +290,12 @@ export const GameAssets: SceneAssets = {
             path: '/images/ui/storage/sweet-dew.png',
             type: AssetType.IMAGE
         },
+        // 知识花园背景音乐 - 知识花园场景的背景音乐
+        {
+            key: 'garden-bgm',
+            path: '/audio/KnowledgeGardenBackgroundMusic.mp3',
+            type: AssetType.AUDIO
+        }
     ],
 
 
@@ -250,6 +307,12 @@ export const GameAssets: SceneAssets = {
             path: '/images/ui/main-ui/curious-tree.jpeg',
             type: AssetType.IMAGE
         },
+        // 好奇树背景音乐 - 好奇树场景的背景音乐
+        {
+            key: 'curious-tree-bgm',
+            path: '/audio/KnowledgeGardenBackgroundMusic.mp3',
+            type: AssetType.AUDIO
+        }
     ],
 
 

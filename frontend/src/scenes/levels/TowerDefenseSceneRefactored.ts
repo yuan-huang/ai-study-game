@@ -13,7 +13,7 @@ import {
     LAYOUT_CONFIG, 
     TIMING_CONFIG, 
     calculateGameLayout 
-} from '@/towerDefenseManager/towerConfig';
+} from '@/towerDefenseManager/TowerConfig';
 
 export class TowerDefenseSceneRefactored extends BaseScene {
     private gameState!: TowerDefenseGameState;
@@ -127,6 +127,13 @@ export class TowerDefenseSceneRefactored extends BaseScene {
         this.load.image('flower-chinese', getAssetPath('flower-chinese'));
         this.load.image('flower-math', getAssetPath('flower-math'));
         this.load.image('flower-english', getAssetPath('flower-english'));
+
+        // 加载关卡背景音乐
+        this.load.audio('level-background-music', getAssetPath('level-background-music'));
+        this.load.audio('click-sound', getAssetPath('click-sound'));
+        this.load.audio('correct-answer-sound', getAssetPath('correct-answer-sound'));
+        this.load.audio('clearance-sound', getAssetPath('clearance-sound'));
+        this.load.audio('elimination-sound', getAssetPath('elimination-sound'));
     }
 
     async create(): Promise<void> {
@@ -217,6 +224,12 @@ export class TowerDefenseSceneRefactored extends BaseScene {
                 });
             });
         }
+
+        // 播放关卡背景音乐
+        this.sound.play('level-background-music', {
+            loop: true,
+            volume: 0.5
+        });
     }
 
     private createContainers(): void {
@@ -524,6 +537,7 @@ export class TowerDefenseSceneRefactored extends BaseScene {
         // 监听塔被点击事件
         this.events.on('tower-clicked', (tower: Tower) => {
             this.onTowerClicked(tower);
+            this.sound.play('click-sound');
         });
 
         // 监听积分变化事件
@@ -848,6 +862,8 @@ export class TowerDefenseSceneRefactored extends BaseScene {
                 this.gameState.score += bonus;
                 
                 this.showMessage(`🎉 正确! +${bonus}积分`);
+
+                this.sound.play('correct-answer-sound');
             }
             
             // 只有在第一次答题时才增加totalQuestions
@@ -876,6 +892,7 @@ export class TowerDefenseSceneRefactored extends BaseScene {
             
             // 重新启用答题，让用户重新选择
             this.questionActive = true;
+
         }
     }
 
@@ -999,6 +1016,7 @@ export class TowerDefenseSceneRefactored extends BaseScene {
 
     private async onLevelComplete(): Promise<void> {
         this.showMessage('关卡完成!');
+        this.sound.stopAll();
         
         // 暂停游戏，防止继续操作
         this.gameState.isPaused = true;
@@ -1012,6 +1030,8 @@ export class TowerDefenseSceneRefactored extends BaseScene {
         
         console.log('关卡完成，准备获取奖励...');
         
+        this.sound.play('clearance-sound');
+
         try {
             // 准备游戏完成数据
             const completionData: GameCompletionData = {

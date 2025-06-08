@@ -10,6 +10,9 @@ export class CuriousTreeScene extends BaseScene {
         super.preload();
         // 加载好奇树背景
         this.load.image('curious-tree-bg', getAssetPath('curious-tree'));
+
+        // 加载好奇树背景音乐
+        this.load.audio('curious-tree-bgm', getAssetPath('curious-tree-bgm'));
     }
 
     create(): void {
@@ -52,6 +55,12 @@ export class CuriousTreeScene extends BaseScene {
         
         // 添加功能按钮区域
         this.createFunctionButtons();
+
+        // 播放好奇树背景音乐
+        this.sound.play('curious-tree-bgm', {
+            loop: true,
+            volume: 0.5
+        });
     }
     
     /**

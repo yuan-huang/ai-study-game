@@ -28,9 +28,13 @@ export class LevelSelectScene extends BaseScene {
         this.load.image('level-select-bg', getAssetPath('level-select-bg'));
         // 打印出学科关卡
         console.log(`进入学科: ${this.subjectName}`);
+
+        // 加载关卡背景音乐
+        this.load.audio('level-background-music', getAssetPath('level-background-music'));
     }
 
     async create() {
+        super.create();
         // 添加背景
         const bg = this.add.image(0, 0, 'level-select-bg')
             .setOrigin(0, 0);
@@ -77,6 +81,12 @@ export class LevelSelectScene extends BaseScene {
 
         // 创建关卡选择界面
         this.createLevelButtons();
+
+        // 播放关卡背景音乐
+        this.sound.play('level-background-music', {
+            loop: true,
+            volume: 0.5
+        });
     }
 
     createBackButton() {

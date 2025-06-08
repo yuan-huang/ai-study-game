@@ -49,26 +49,19 @@ export class LoginScene extends BaseScene {
 
         this.load.image('login-canvas',getAssetPath('login-canvas'));
 
-        // 循环播放登录背景音乐,能控制音量 0-1
-
-        this.load.audio('login-bgm', getAssetPath('login-bgm'));
+       // 加载登录背景音乐
+       this.load.audio('landing-interface-music', getAssetPath('landing-interface-music'));
     }
 
     create(): void {
         super.create();
-
-        //播放登录背景音乐
-        this.sound.play('login-bgm',{
-            loop: true,
-            volume: 0.5
-        });
-
         
         // 检查是否有登录缓存
         this.checkLoginCache().then(hasCache => {
             if (hasCache) {
                 // 如果有缓存，直接进入游戏
-                this.scene.start('MainScene');
+                // this.scene.start('MainScene');
+                this.scene.start('GardenScene');
                 return;
             }
             
@@ -81,6 +74,13 @@ export class LoginScene extends BaseScene {
             this.createFormContainer(centerX, centerY);
             this.createAllFormElements();
             this.setupEventListeners();
+        });
+
+        // 停止所有正在播放的音乐，然后播放登录背景音乐
+        this.sound.stopAll();
+        this.sound.play('landing-interface-music', {
+            loop: true,
+            volume: 0.5
         });
     }
 
@@ -626,6 +626,7 @@ export class LoginScene extends BaseScene {
     }
 
     private cleanup(): void {
+
         // 清除年级菜单
         if (this.activeGradeMenu) {
             this.activeGradeMenu.destroy();

@@ -14,6 +14,10 @@ export class MainScene extends BaseScene {
         if (this.input) {
             this.input.topOnly = true; // 只处理最顶层的交互
         }
+        
+        // 监听场景切换事件
+        this.events.on('shutdown', this.cleanup, this);
+        this.events.on('destroy', this.cleanup, this);
     }
     
     preload(): void {
@@ -28,18 +32,13 @@ export class MainScene extends BaseScene {
         this.load.image('knowledge-flower', getAssetPath('knowledge-flower'));
         this.load.image('sprite', getAssetPath('sprite'));
         this.load.image('sprite-fly', getAssetPath('sprite-fly'));
+        // 加载主城背景音乐
+        this.load.audio('main-city-bgm', getAssetPath('main-city-bgm'));
     }
     
     create() {
         // 初始化效果管理器
         this.effectManager = new EffectManager(this);
-
-        // 监听场景销毁事件，清理效果管理器
-        this.events.once('shutdown', () => {
-            if (this.effectManager) {
-                this.effectManager.destroy();
-            }
-        });
 
         // 创建背景
         const bg = this.add.image(0, 0, 'main-bg')
@@ -57,16 +56,16 @@ export class MainScene extends BaseScene {
         .setInteractive({ cursor: 'pointer' });
         
         // 添加永久学科名称标签
-        this.add.text(
+        this.createText(
             chineseBuilding.x,
             chineseBuilding.y + chineseBuilding.height * 0.2,
             '语文塔',
+            'LABEL_TEXT',
             {
-                fontSize: '24px',
+                fontSize: 24,
                 color: '#ffffff',
                 backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                padding: { x: 10, y: 6 },
-                fontFamily: 'Alibaba-PuHuiTi, Arial, sans-serif'
+                padding: { x: 10, y: 6 }
             }
         ).setOrigin(0.5, 0.5).setDepth(100);
 
@@ -81,16 +80,16 @@ export class MainScene extends BaseScene {
         .setInteractive({ cursor: 'pointer' });
         
         // 添加永久学科名称标签
-        this.add.text(
+        this.createText(
             mathBuilding.x,
             mathBuilding.y + mathBuilding.height * 0.1,
             '数学塔',
+            'LABEL_TEXT',
             {
-                fontSize: '24px',
+                fontSize: 24,
                 color: '#ffffff',
                 backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                padding: { x: 10, y: 6 },
-                fontFamily: 'Alibaba-PuHuiTi, Arial, sans-serif'
+                padding: { x: 10, y: 6 }
             }
         ).setOrigin(0.5, 0.5).setDepth(100);
 
@@ -105,16 +104,16 @@ export class MainScene extends BaseScene {
         .setInteractive({ cursor: 'pointer' });
         
         // 添加永久学科名称标签
-        this.add.text(
+        this.createText(
             englishBuilding.x,
             englishBuilding.y + englishBuilding.height * 0.1,
             '英语塔',
+            'LABEL_TEXT',
             {
-                fontSize: '24px',
+                fontSize: 24,
                 color: '#ffffff',
                 backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                padding: { x: 10, y: 6 },
-                fontFamily: 'Alibaba-PuHuiTi, Arial, sans-serif'
+                padding: { x: 10, y: 6 }
             }
         ).setOrigin(0.5, 0.5).setDepth(100);
 
@@ -130,16 +129,16 @@ export class MainScene extends BaseScene {
         .setInteractive({ cursor: 'pointer' });
         
         // 添加永久学科名称标签
-        this.add.text(
+        this.createText(
             curiousTree.x,
             curiousTree.y + curiousTree.height * 0.2,
             '好奇树',
+            'LABEL_TEXT',
             {
-                fontSize: '24px',
+                fontSize: 24,
                 color: '#ffffff',
                 backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                padding: { x: 10, y: 6 },
-                fontFamily: 'Alibaba-PuHuiTi, Arial, sans-serif'
+                padding: { x: 10, y: 6 }
             }
         ).setOrigin(0.5, 0.5).setDepth(100);
 
@@ -199,9 +198,28 @@ export class MainScene extends BaseScene {
         this.effectManager.addSpriteInteraction(sprite);
         
 
+
+        // 播放主城背景音乐
+        this.sound.stopAll();
+        this.sound.play('main-city-bgm', {
+            loop: true,
+            volume: 0.5
+        });
+    }
+
+    /**
+     * 清理场景资源
+     */
+    private cleanup(): void {
+        // 停止主城背景音乐
+        this.sound.stopAll();
+        
+        // 清理效果管理器
+        if (this.effectManager) {
+            this.effectManager.destroy();
+        }
     }
     
-
 
 } 
 

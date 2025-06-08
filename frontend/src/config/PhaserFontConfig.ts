@@ -1,4 +1,4 @@
-import { PhaserTextStyles } from './FontConfig';
+// 移除错误的导入，所有配置都在本文件中定义
 
 /**
  * Phaser游戏全局字体配置
