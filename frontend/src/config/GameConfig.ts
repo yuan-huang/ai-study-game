@@ -8,6 +8,7 @@ import { TowerDefenseSceneRefactored } from '@/scenes/levels/TowerDefenseSceneRe
 import { CuriousTreeScene } from '../scenes/curiousTree/CuriousTreeScene';
 import { GardenScene } from '../scenes/garden/GardenScene';
 
+
 const isDev = import.meta.env.DEV;
 
 export const GameConfig: Types.Core.GameConfig = {
@@ -55,6 +56,7 @@ export const GameConfig: Types.Core.GameConfig = {
         TowerDefenseSceneRefactored,
         CuriousTreeScene,
         GardenScene,
+
         // MainMenuScene
         // 其他场景将在这里添加
     ],

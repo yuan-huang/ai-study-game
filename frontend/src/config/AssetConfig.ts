@@ -254,6 +254,12 @@ export const GameAssets: SceneAssets = {
             path: '/images/ui/main-ui/garden.jpg',
             type: AssetType.IMAGE
         },
+        //frontend\public\images\ui\storage\backpack.png
+        {
+            key: 'backpack',
+            path: '/images/ui/storage/backpack.png',
+            type: AssetType.IMAGE
+        },
         //frontend\public\images\ui\flowers\flower-chinese.png
         {
             key: 'flower-chinese',

@@ -391,6 +391,44 @@ export class GardenApiService {
   }
 
   /**
+   * 获取用户甘露库存
+   * @param userId 用户ID
+   */
+  async getNectarInventory(userId: string): Promise<ApiResponse<{
+    nectars: NectarData[];
+    totalNectars: number;
+    totalTypes: number;
+  }>> {
+    return get(`/garden/nectar/${userId}`);
+  }
+
+  /**
+   * 使用甘露治疗花朵
+   * @param userId 用户ID
+   * @param flowerId 花朵ID
+   * @param nectarId 甘露ID
+   * @param healingAmount 治疗量（可选）
+   */
+  async useNectar(
+    userId: string,
+    flowerId: string,
+    nectarId: string,
+    healingAmount?: number
+  ): Promise<ApiResponse<{
+    flower: FlowerData;
+    healedAmount: number;
+    remainingNectar: number;
+    nectarConsumed: boolean;
+  }>> {
+    return post('/garden/use-nectar', {
+      userId,
+      flowerId,
+      nectarId,
+      healingAmount
+    });
+  }
+
+  /**
    * 智能花园管理 - 获取完整花园状态并提供管理建议
    * @param userId 用户ID
    */

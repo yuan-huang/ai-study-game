@@ -1196,4 +1196,182 @@ export class GardenController extends BaseController<IGardenDoc> {
       });
     }
   }
+
+  /**
+   * 获取用户的甘露库存
+   */
+  async getNectarInventory(req: Request, res: Response): Promise<Response> {
+    try {
+      const { userId } = req.params;
+
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: '缺少用户ID参数'
+        });
+      }
+
+      // 获取用户所有甘露
+      const nectars = await Nectar.find({ userId: new mongoose.Types.ObjectId(userId) });
+
+      // 按学科分类统计甘露
+      const nectarSummary = nectars.reduce((acc: any, nectar) => {
+        const key = `${nectar.subject}-grade${nectar.grade}-${nectar.category}`;
+        if (!acc[key]) {
+          acc[key] = {
+            id: nectar._id,
+            subject: nectar.subject,
+            grade: nectar.grade,
+            category: nectar.category,
+            totalHealingPower: 0,
+            count: 0,
+            nectarIds: []
+          };
+        }
+        acc[key].totalHealingPower += nectar.healingPower;
+        acc[key].count += 1;
+        acc[key].nectarIds.push(nectar._id);
+        return acc;
+      }, {});
+
+      logger.info(`用户 ${userId} 甘露库存查询: ${nectars.length}份甘露，${Object.keys(nectarSummary).length}种类型`);
+
+      return res.status(200).json({
+        success: true,
+        message: '获取甘露库存成功',
+        data: {
+          nectars: Object.values(nectarSummary),
+          totalNectars: nectars.length,
+          totalTypes: Object.keys(nectarSummary).length
+        }
+      });
+
+    } catch (error) {
+      logger.error('获取甘露库存失败:', error);
+      return res.status(500).json({
+        success: false,
+        message: '获取甘露库存失败'
+      });
+    }
+  }
+
+  /**
+   * 简化版甘露使用接口 - 使用甘露ID直接治疗花朵
+   */
+  async useNectar(req: Request, res: Response): Promise<Response> {
+    try {
+      const { userId, flowerId, nectarId, healingAmount } = req.body;
+
+      if (!userId || !flowerId || !nectarId) {
+        return res.status(400).json({
+          success: false,
+          message: '缺少必需参数: userId, flowerId, nectarId'
+        });
+      }
+
+      const session = await mongoose.startSession();
+      session.startTransaction();
+
+      try {
+        // 查找花朵
+        const flower = await Flower.findOne({
+          _id: new mongoose.Types.ObjectId(flowerId),
+          userId: new mongoose.Types.ObjectId(userId)
+        }).session(session);
+
+        if (!flower) {
+          await session.abortTransaction();
+          session.endSession();
+          return res.status(404).json({
+            success: false,
+            message: '花朵不存在'
+          });
+        }
+
+        // 查找甘露
+        const nectar = await Nectar.findOne({
+          _id: new mongoose.Types.ObjectId(nectarId),
+          userId: new mongoose.Types.ObjectId(userId)
+        }).session(session);
+
+        if (!nectar) {
+          await session.abortTransaction();
+          session.endSession();
+          return res.status(404).json({
+            success: false,
+            message: '甘露不存在'
+          });
+        }
+
+        // 计算实际治疗量
+        const maxHealingAmount = healingAmount || nectar.healingPower;
+        const actualHealing = Math.min(
+          maxHealingAmount,
+          flower.maxHp - flower.hp,
+          nectar.healingPower
+        );
+        
+        if (actualHealing <= 0) {
+          await session.abortTransaction();
+          session.endSession();
+          return res.status(400).json({
+            success: false,
+            message: '花朵已满血或甘露不足'
+          });
+        }
+
+        // 治疗花朵
+        flower.hp = Math.min(flower.hp + actualHealing, flower.maxHp);
+        flower.lastHealedAt = new Date();
+        await flower.save({ session });
+
+        // 消耗甘露
+        nectar.healingPower -= actualHealing;
+        if (nectar.healingPower <= 0) {
+          await Nectar.deleteOne({ _id: nectar._id }).session(session);
+        } else {
+          await nectar.save({ session });
+        }
+
+        await session.commitTransaction();
+        session.endSession();
+
+        logger.info(`用户 ${userId} 使用甘露 ${nectarId} 治疗花朵 ${flowerId}，恢复 ${actualHealing} HP`);
+
+        return res.status(200).json({
+          success: true,
+          message: '甘露使用成功',
+          data: {
+            flower: {
+              id: flower._id,
+              subject: flower.subject,
+              grade: flower.grade,
+              category: flower.category,
+              hp: flower.hp,
+              maxHp: flower.maxHp,
+              isPlanted: flower.isPlanted,
+              gardenPosition: flower.isPlanted ? { x: flower.gardenPositionX, y: flower.gardenPositionY } : null,
+              plantedAt: flower.plantedAt,
+              lastHealedAt: flower.lastHealedAt
+            },
+            healedAmount: actualHealing,
+            remainingNectar: nectar.healingPower > 0 ? nectar.healingPower : 0,
+            nectarConsumed: nectar.healingPower <= 0
+          }
+        });
+
+      } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+        throw error;
+      }
+
+    } catch (error) {
+      logger.error('使用甘露失败:', error);
+      return res.status(500).json({
+        success: false,
+        message: '使用甘露失败'
+      });
+    }
+  }
 } 

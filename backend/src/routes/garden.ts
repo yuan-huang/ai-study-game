@@ -113,4 +113,23 @@ router.get('/forget-curve/:userId/:flowerId', gardenController.getFlowerForgetCu
  */
 router.get('/subject-status/:userId', gardenController.getSubjectFlowerStatus.bind(gardenController));
 
+/**
+ * @route GET /api/garden/nectar/:userId
+ * @desc 获取用户的甘露库存
+ * @param userId - 用户ID
+ * @access Public
+ */
+router.get('/nectar/:userId', gardenController.getNectarInventory.bind(gardenController));
+
+/**
+ * @route POST /api/garden/use-nectar
+ * @desc 使用甘露治疗花朵
+ * @body userId - 用户ID
+ * @body flowerId - 花朵ID
+ * @body nectarId - 甘露ID
+ * @body healingAmount - 治疗量（可选，默认使用甘露的全部治疗力）
+ * @access Public
+ */
+router.post('/use-nectar', gardenController.useNectar.bind(gardenController));
+
 export default router; 
