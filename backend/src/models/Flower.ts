@@ -12,6 +12,7 @@ export interface IFlower extends mongoose.Document {
   gardenPositionY?: number;
   plantedAt?: Date;
   lastHealedAt?: Date;
+  lastUpdatedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,7 +28,8 @@ const flowerSchema = new mongoose.Schema({
   gardenPositionX: { type: Number },
   gardenPositionY: { type: Number },
   plantedAt: { type: Date },
-  lastHealedAt: { type: Date }
+  lastHealedAt: { type: Date },
+  lastUpdatedAt: { type: Date }
 }, {
   timestamps: true
 });

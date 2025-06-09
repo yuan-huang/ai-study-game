@@ -9,7 +9,7 @@ export class CuriousTreeScene extends BaseScene {
     preload(): void {
         super.preload();
         // 加载好奇树背景
-        this.load.image('curious-tree-bg', getAssetPath('curious-tree'));
+        this.load.image('curious-tree-bg', getAssetPath('curious-tree-bg'));
 
         // 加载好奇树背景音乐
         this.load.audio('curious-tree-bgm', getAssetPath('curious-tree-bgm'));

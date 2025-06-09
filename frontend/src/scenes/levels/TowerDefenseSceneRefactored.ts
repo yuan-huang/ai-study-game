@@ -1743,8 +1743,6 @@ export class TowerDefenseSceneRefactored extends BaseScene {
             this.tweens.add({
                 targets: tooltip,
                 alpha: 1,
-                scaleX: 1,
-                scaleY: 1,
                 duration: 200,
                 ease: 'Back.Out'
             });
@@ -1752,8 +1750,6 @@ export class TowerDefenseSceneRefactored extends BaseScene {
             // 图标缩放效果
             this.tweens.add({
                 targets: icon,
-                scaleX: 1.1,
-                scaleY: 1.1,
                 duration: 200,
                 ease: 'Power2'
             });
@@ -1766,8 +1762,6 @@ export class TowerDefenseSceneRefactored extends BaseScene {
                 this.tweens.add({
                     targets: tooltip,
                     alpha: 0,
-                    scaleX: 0.8,
-                    scaleY: 0.8,
                     duration: 150,
                     ease: 'Power2',
                     onComplete: () => {
@@ -1782,8 +1776,6 @@ export class TowerDefenseSceneRefactored extends BaseScene {
             // 图标恢复原大小
             this.tweens.add({
                 targets: icon,
-                scaleX: 1,
-                scaleY: 1,
                 duration: 200,
                 ease: 'Power2'
             });

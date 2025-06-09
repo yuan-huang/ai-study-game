@@ -6,6 +6,8 @@ import { Flower } from '../models/Flower';
 import { Nectar } from '../models/Nectar';
 import { User } from '../models/User';
 import { FlowerMemoryService } from '../services/FlowerMemoryService';
+import { GardenService } from '../services/GardenService';
+import { FlowerBloodManager } from '../services/FlowerBloodManager';
 import { TowerDefenseRecord } from '../models/TowerDefenseRecord';
 import { createQuestionModel } from '../models/Question';
 import mongoose from 'mongoose';
@@ -16,6 +18,7 @@ interface IGardenDoc extends Document {
 }
 
 export class GardenController extends BaseController<IGardenDoc> {
+  
   constructor() {
     // 传入 null 作为 model，因为这个控制器主要用于花园管理而非单一数据库操作
     super(null as any);
@@ -960,16 +963,24 @@ export class GardenController extends BaseController<IGardenDoc> {
   /**
    * 获取各学科花朵状态信息
    * 根据用户年级、学科分类统计等计算花朵等级和HP
+   * 🌟 优化：使用虚拟血量计算，不强制更新数据库
    */
   async getSubjectFlowerStatus(req: Request, res: Response): Promise<Response> {
     try {
       const { userId } = req.params;
+      const { forceUpdate = false } = req.query; // 可选参数：是否强制更新数据库血量
 
       if (!userId) {
         return res.status(400).json({
           success: false,
           message: '缺少用户ID参数'
         });
+      }
+
+      // 🌟 优化：只有明确要求或满足24小时条件时才更新数据库血量
+      if (forceUpdate === 'true' || await this.shouldUpdateFlowerHP(userId)) {
+        logger.info(`为用户 ${userId} 更新花朵血量 (forceUpdate=${forceUpdate})`);
+        await GardenService.updateAllFlowersHP(userId);
       }
 
       // 1. 获取用户信息，特别是年级
@@ -1055,7 +1066,7 @@ export class GardenController extends BaseController<IGardenDoc> {
             return acc;
           }, {});
 
-          // 5. 计算各分类的待闯关和已闯关状态
+          // 5. 🌟 使用虚拟血量计算，不修改数据库
           const categoryHPInfo: Array<{
             分类: string;
             hp值: number;
@@ -1065,9 +1076,11 @@ export class GardenController extends BaseController<IGardenDoc> {
             花朵数量: number;
             问题总数: number;
           }> = [];
+
           let totalCurrentHP = 0;
           let totalMaxHP = 0;
 
+          // 按分类统计HP信息
           categoryStats.forEach(categoryStat => {
             const category = categoryStat.category;
             const categoryFlowers = userFlowersByCategory[category] || [];
@@ -1079,10 +1092,9 @@ export class GardenController extends BaseController<IGardenDoc> {
             let lastPlayTime = null;
 
             if (categoryFlowers.length > 0) {
-              // 如果有花朵，计算记忆衰减后的HP
+              // 🌟 简化：只计算数据库HP
               categoryFlowers.forEach((flower: any) => {
-                const calculatedHP = FlowerMemoryService.calculateFlowerHP(flower);
-                categoryCurrentHP += calculatedHP;
+                categoryCurrentHP += flower.hp; // 数据库存储的HP
                 categoryMaxHP += flower.maxHp;
               });
               
@@ -1092,19 +1104,21 @@ export class GardenController extends BaseController<IGardenDoc> {
               }
             }
 
+            totalCurrentHP += categoryCurrentHP;
+            totalMaxHP += categoryMaxHP;
+
             categoryHPInfo.push({
               分类: category,
-              hp值: categoryCurrentHP,
+              hp值: Math.round(categoryCurrentHP), // 数据库HP
               最大hp值: categoryMaxHP,
               上一次闯关时间: lastPlayTime,
               闯关次数: categoryRecords.length,
               花朵数量: categoryFlowers.length,
               问题总数: categoryStat.totalQuestions
             });
-
-            totalCurrentHP += categoryCurrentHP;
-            totalMaxHP += categoryMaxHP;
           });
+
+          logger.info(`学科${subject}血量统计: 总HP=${Math.round(totalCurrentHP)}, 最大HP=${totalMaxHP}`);
 
           // 6. 分析待闯关和已闯关
           const completedCategories = categoryStats.filter(cat => 
@@ -1115,7 +1129,9 @@ export class GardenController extends BaseController<IGardenDoc> {
             !userFlowersByCategory[cat.category] || userFlowersByCategory[cat.category].length === 0
           );
 
-          // 7. 组装返回数据
+          // 7. 🌟 简化：组装返回数据（使用数据库血量）
+          const displayHP = totalCurrentHP;
+          
           subjectFlowerData.push({
             subject: subject,
             当前等级: currentLevel,
@@ -1137,9 +1153,16 @@ export class GardenController extends BaseController<IGardenDoc> {
               最后闯关时间: (recordsByCategory[cat.category] || [])[0]?.createdAt
             })),
             花的血量HP: {
-              当前花总的HP: Math.round(totalCurrentHP),
+              当前花总的HP: Math.round(displayHP),
               最大花总的HP: totalMaxHP,
-              HP百分比: totalMaxHP > 0 ? Math.round((totalCurrentHP / totalMaxHP) * 100) : 0,
+              HP百分比: totalMaxHP > 0 ? Math.round((displayHP / totalMaxHP) * 100) : 0,
+              血量来源: '数据库',
+              计算说明: '使用数据库存储的血量',
+              血量详情: {
+                学科花朵总数: userFlowers.length,
+                有花朵的分类数: Object.keys(userFlowersByCategory).length,
+                更新建议: '24小时自动衰减机制'
+              },
               category: categoryHPInfo
             }
           });
@@ -1159,8 +1182,11 @@ export class GardenController extends BaseController<IGardenDoc> {
             已闯关: [],
             花的血量HP: {
               当前花总的HP: 0,
+              数据库HP: 0,
+              虚拟HP: 0,
               最大花总的HP: 0,
               HP百分比: 0,
+              血量来源: '错误',
               category: []
             },
             error: '该学科数据处理失败'
@@ -1168,7 +1194,7 @@ export class GardenController extends BaseController<IGardenDoc> {
         }
       }
 
-      logger.info(`用户 ${userId} 的学科花朵状态查询完成，涉及 ${subjects.length} 个学科`);
+      logger.info(`用户 ${userId} 的学科花朵状态查询完成（虚拟血量模式），涉及 ${subjects.length} 个学科`);
 
       return res.status(200).json({
         success: true,
@@ -1176,6 +1202,7 @@ export class GardenController extends BaseController<IGardenDoc> {
         data: {
           userId: userId,
           userGrade: userGrade,
+          bloodCalculationMode: '数据库血量', // 标识使用的血量计算模式
           subjectFlowers: subjectFlowerData,
           summary: {
             totalSubjects: subjects.length,
@@ -1184,6 +1211,11 @@ export class GardenController extends BaseController<IGardenDoc> {
             averageHPPercentage: Math.round(
               subjectFlowerData.reduce((sum, s) => sum + s.花的血量HP.HP百分比, 0) / subjects.length
             )
+          },
+          操作提示: {
+            查看血量: '当前返回数据库存储的血量',
+            强制更新数据库: '添加参数 ?forceUpdate=true 可强制更新数据库血量',
+            自动更新条件: '系统会在超过24小时时自动更新数据库'
           }
         }
       });
@@ -1194,6 +1226,30 @@ export class GardenController extends BaseController<IGardenDoc> {
         success: false,
         message: '获取学科花朵状态失败'
       });
+    }
+  }
+
+  /**
+   * 🌟 重新设计：判断是否需要更新花朵血量到数据库
+   * 核心规则：只有超过24小时才能更新血量
+   * @param userId 用户ID
+   * @returns 是否需要更新
+   */
+  private async shouldUpdateFlowerHP(userId: string): Promise<boolean> {
+    try {
+      const updateDecision = await FlowerBloodManager.shouldUpdateFlowers(userId);
+      
+      if (updateDecision.shouldUpdate) {
+        logger.info(`用户 ${userId} 满足24小时更新条件: ${updateDecision.reason} (优先级: ${updateDecision.priority})`);
+      } else {
+        logger.info(`用户 ${userId} 暂无花朵满足24小时更新条件`);
+      }
+
+      return updateDecision.shouldUpdate;
+
+    } catch (error) {
+      logger.error('判断血量更新条件失败:', error);
+      return false;
     }
   }
 
@@ -1256,113 +1312,193 @@ export class GardenController extends BaseController<IGardenDoc> {
   }
 
   /**
-   * 简化版甘露使用接口 - 使用甘露ID直接治疗花朵
+   * 手动更新花朵血量并输出扣血日志
+   * 用于演示和测试遗忘曲线功能
    */
-  async useNectar(req: Request, res: Response): Promise<Response> {
+  async updateFlowersBloodAndShowLog(req: Request, res: Response): Promise<Response> {
     try {
-      const { userId, flowerId, nectarId, healingAmount } = req.body;
+      const { userId } = req.params;
 
-      if (!userId || !flowerId || !nectarId) {
+      if (!userId) {
         return res.status(400).json({
           success: false,
-          message: '缺少必需参数: userId, flowerId, nectarId'
+          message: '缺少用户ID参数'
         });
       }
 
-      const session = await mongoose.startSession();
-      session.startTransaction();
+      logger.info(`=== 开始为用户 ${userId} 演示花朵扣血功能 ===`);
+
+      // 1. 更新花朵血量
+      await GardenService.updateAllFlowersHP(userId);
+
+      // 2. 输出详细的扣血预测表
+      await GardenService.outputFlowerBloodLossSchedule(userId);
+
+      // 3. 获取更新后的花朵数据用于返回
+      const updatedFlowers = await Flower.find({
+        userId: new mongoose.Types.ObjectId(userId)
+      });
+
+      const flowersWithMemory = updatedFlowers.map(flower => {
+        const currentHP = flower.hp; // 直接使用已更新的血量
+        const memoryStatus = FlowerMemoryService.getMemoryStatus(currentHP, flower.maxHp);
+        
+        return {
+          id: flower._id,
+          subject: flower.subject,
+          grade: flower.grade,
+          category: flower.category,
+          currentHP: currentHP,
+          maxHP: flower.maxHp,
+          isPlanted: flower.isPlanted,
+          plantedAt: flower.plantedAt,
+          lastHealedAt: flower.lastHealedAt,
+          lastUpdatedAt: flower.lastUpdatedAt,
+          memoryStatus: {
+            level: memoryStatus.level,
+            percentage: memoryStatus.percentage,
+            description: memoryStatus.description,
+            color: memoryStatus.color
+          }
+        };
+      });
+
+      logger.info(`=== 用户 ${userId} 花朵扣血演示完成 ===`);
+
+      return res.status(200).json({
+        success: true,
+        message: '花朵血量更新和扣血日志生成完成',
+        data: {
+          totalFlowers: updatedFlowers.length,
+          flowers: flowersWithMemory,
+          note: '详细的扣血日志已输出到服务器日志中，包括未来7天的预测表'
+        }
+      });
+
+    } catch (error) {
+      logger.error('更新花朵血量并输出日志失败:', error);
+      return res.status(500).json({
+        success: false,
+        message: '更新花朵血量并输出日志失败'
+      });
+    }
+  }
+
+  /**
+   * 使用甘露治疗对应学科分类的所有花朵
+   * 新逻辑：直接恢复100HP，清空甘露，重新计算生命值
+   */
+  async useNectar(req: Request, res: Response): Promise<Response> {
+    try {
+      const { userId, subject, category } = req.body;
+
+      if (!userId || !subject || !category) {
+        return res.status(400).json({
+          success: false,
+          message: '缺少必需参数: userId, subject, category'
+        });
+      }
+
+      // 获取用户信息，获取年级
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: '用户不存在'
+        });
+      }
+
+      const userGrade = user.grade;
 
       try {
-        // 查找花朵
-        const flower = await Flower.findOne({
-          _id: new mongoose.Types.ObjectId(flowerId),
-          userId: new mongoose.Types.ObjectId(userId)
-        }).session(session);
+        // 1. 查找对应学科-年级-分类的所有甘露
+        const nectars = await Nectar.find({
+          userId: new mongoose.Types.ObjectId(userId),
+          subject: subject,
+          grade: userGrade,
+          category: category
+        });
 
-        if (!flower) {
-          await session.abortTransaction();
-          session.endSession();
+        if (nectars.length === 0) {
           return res.status(404).json({
             success: false,
-            message: '花朵不存在'
+            message: '没有找到对应的甘露'
           });
         }
 
-        // 查找甘露
-        const nectar = await Nectar.findOne({
-          _id: new mongoose.Types.ObjectId(nectarId),
-          userId: new mongoose.Types.ObjectId(userId)
-        }).session(session);
+        // 2. 查找对应学科-年级-分类的所有花朵
+        const flowers = await Flower.find({
+          userId: new mongoose.Types.ObjectId(userId),
+          subject: subject,
+          grade: userGrade,
+          category: category
+        });
 
-        if (!nectar) {
-          await session.abortTransaction();
-          session.endSession();
+        if (flowers.length === 0) {
           return res.status(404).json({
             success: false,
-            message: '甘露不存在'
+            message: '没有找到对应的花朵'
           });
         }
 
-        // 计算实际治疗量
-        const maxHealingAmount = healingAmount || nectar.healingPower;
-        const actualHealing = Math.min(
-          maxHealingAmount,
-          flower.maxHp - flower.hp,
-          nectar.healingPower
-        );
+        // 3. 🌟 新逻辑：直接将对应的花血量恢复到100HP
+        const healedFlowers = [];
+        for (const flower of flowers) {
+          const beforeHP = flower.hp;
+          
+          // 直接设置为100HP（满血）
+          flower.hp = 100;
+          flower.lastHealedAt = new Date();
+          await flower.save();
+
+          healedFlowers.push({
+            id: flower._id,
+            subject: flower.subject,
+            grade: flower.grade,
+            category: flower.category,
+            beforeHP: beforeHP,
+            afterHP: flower.hp,
+            healedAmount: flower.hp - beforeHP,
+            maxHp: flower.maxHp
+          });
+
+          logger.info(`花朵 ${flower._id} 从 ${beforeHP}HP 直接恢复到 ${flower.hp}HP`);
+        }
+
+        // 4. 🌟 将当前甘露匹配的属性全部清空掉
+        const deletedNectarsCount = await Nectar.deleteMany({
+          userId: new mongoose.Types.ObjectId(userId),
+          subject: subject,
+          grade: userGrade,
+          category: category
+        });
+
+
+        // 输出使用甘露后的最终状态
+        logger.info('=== 甘露使用完成 ===');
+        logger.info(`用户: ${userId}`);
+        logger.info(`学科-年级-分类: ${subject}-${userGrade}-${category}`);
+        logger.info(`治疗花朵数: ${healedFlowers.length}`);
+        logger.info(`消耗甘露数: ${deletedNectarsCount.deletedCount}`);
+        logger.info(`处理步骤: 1.直接恢复100HP → 2.清空甘露 → 3.重新计算生命值`);
         
-        if (actualHealing <= 0) {
-          await session.abortTransaction();
-          session.endSession();
-          return res.status(400).json({
-            success: false,
-            message: '花朵已满血或甘露不足'
-          });
-        }
-
-        // 治疗花朵
-        flower.hp = Math.min(flower.hp + actualHealing, flower.maxHp);
-        flower.lastHealedAt = new Date();
-        await flower.save({ session });
-
-        // 消耗甘露
-        nectar.healingPower -= actualHealing;
-        if (nectar.healingPower <= 0) {
-          await Nectar.deleteOne({ _id: nectar._id }).session(session);
-        } else {
-          await nectar.save({ session });
-        }
-
-        await session.commitTransaction();
-        session.endSession();
-
-        logger.info(`用户 ${userId} 使用甘露 ${nectarId} 治疗花朵 ${flowerId}，恢复 ${actualHealing} HP`);
+        logger.info(`用户 ${userId} 使用 ${subject}-${userGrade}-${category} 甘露成功，治疗了 ${healedFlowers.length} 朵花，清空了 ${deletedNectarsCount.deletedCount} 份甘露`);
 
         return res.status(200).json({
           success: true,
-          message: '甘露使用成功',
+          message: `甘露使用成功，${healedFlowers.length} 朵花朵恢复到满血状态`,
           data: {
-            flower: {
-              id: flower._id,
-              subject: flower.subject,
-              grade: flower.grade,
-              category: flower.category,
-              hp: flower.hp,
-              maxHp: flower.maxHp,
-              isPlanted: flower.isPlanted,
-              gardenPosition: flower.isPlanted ? { x: flower.gardenPositionX, y: flower.gardenPositionY } : null,
-              plantedAt: flower.plantedAt,
-              lastHealedAt: flower.lastHealedAt
-            },
-            healedAmount: actualHealing,
-            remainingNectar: nectar.healingPower > 0 ? nectar.healingPower : 0,
-            nectarConsumed: nectar.healingPower <= 0
+            subject,
+            grade: userGrade,
+            category,
+            healedFlowersCount: healedFlowers.length,
+            deletedNectarsCount: deletedNectarsCount.deletedCount,
+            healedFlowers,
+            note: '所有花朵已恢复到100HP，甘露已清空，生命值已重新计算'
           }
         });
 
       } catch (error) {
-        await session.abortTransaction();
-        session.endSession();
         throw error;
       }
 
@@ -1371,6 +1507,484 @@ export class GardenController extends BaseController<IGardenDoc> {
       return res.status(500).json({
         success: false,
         message: '使用甘露失败'
+      });
+    }
+  }
+
+  /**
+   * 手动更新花朵血量
+   * 提供独立的血量更新接口，用于手动触发或定时任务
+   */
+  async updateFlowersBlood(req: Request, res: Response): Promise<Response> {
+    try {
+      const { userId } = req.params;
+      const { outputLog = false } = req.query;
+
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: '缺少用户ID参数'
+        });
+      }
+
+      logger.info(`手动更新用户 ${userId} 的花朵血量`);
+
+      // 获取更新前的花朵状态
+      const beforeFlowers = await Flower.find({
+        userId: new mongoose.Types.ObjectId(userId)
+      });
+
+      if (beforeFlowers.length === 0) {
+        return res.status(200).json({
+          success: true,
+          message: '用户暂无花朵，无需更新',
+          data: {
+            totalFlowers: 0,
+            updatedFlowers: 0,
+            updateDetails: []
+          }
+        });
+      }
+
+      // 执行血量更新
+      await GardenService.updateAllFlowersHP(userId);
+
+      // 如果需要输出详细日志
+      if (outputLog === 'true') {
+        await GardenService.outputFlowerBloodLossSchedule(userId);
+      }
+
+      // 获取更新后的花朵状态
+      const afterFlowers = await Flower.find({
+        userId: new mongoose.Types.ObjectId(userId)
+      });
+
+      // 计算更新详情
+      const updateDetails = beforeFlowers.map((beforeFlower, index) => {
+        const afterFlower = afterFlowers.find(f => f._id.toString() === beforeFlower._id.toString());
+        const hpLoss = beforeFlower.hp - (afterFlower?.hp || 0);
+        const virtualHP = FlowerMemoryService.calculateFlowerHP(beforeFlower);
+
+        return {
+          flowerId: beforeFlower._id,
+          subject: beforeFlower.subject,
+          grade: beforeFlower.grade,
+          category: beforeFlower.category,
+          beforeHP: beforeFlower.hp,
+          afterHP: afterFlower?.hp || 0,
+          hpLoss: hpLoss,
+          virtualHP: Math.round(virtualHP),
+          hpLossPercentage: beforeFlower.maxHp > 0 ? Math.round((hpLoss / beforeFlower.maxHp) * 100) : 0,
+          maxHp: beforeFlower.maxHp,
+          updateTime: new Date()
+        };
+      });
+
+      const totalHPLoss = updateDetails.reduce((sum, detail) => sum + detail.hpLoss, 0);
+      const avgHPLoss = updateDetails.length > 0 ? totalHPLoss / updateDetails.length : 0;
+
+      logger.info(`用户 ${userId} 血量更新完成: 总扣血${totalHPLoss}HP，平均扣血${avgHPLoss.toFixed(1)}HP`);
+
+      return res.status(200).json({
+        success: true,
+        message: `花朵血量更新完成，共更新 ${updateDetails.length} 朵花`,
+        data: {
+          totalFlowers: updateDetails.length,
+          updatedFlowers: updateDetails.filter(d => d.hpLoss > 0).length,
+          totalHPLoss,
+          averageHPLoss: Math.round(avgHPLoss * 100) / 100,
+          updateDetails,
+          statistics: {
+            criticalFlowers: updateDetails.filter(d => (d.afterHP / d.maxHp) < 0.3).length,
+            healthyFlowers: updateDetails.filter(d => (d.afterHP / d.maxHp) >= 0.7).length,
+            updateTime: new Date()
+          }
+        }
+      });
+
+    } catch (error) {
+      logger.error('手动更新花朵血量失败:', error);
+      return res.status(500).json({
+        success: false,
+        message: '手动更新花朵血量失败'
+      });
+    }
+  }
+
+  /**
+   * 获取花朵血量状态对比
+   * 对比数据库血量与虚拟血量，不更新数据库
+   */
+  async getFlowersBloodComparison(req: Request, res: Response): Promise<Response> {
+    try {
+      const { userId } = req.params;
+
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: '缺少用户ID参数'
+        });
+      }
+
+      const flowers = await Flower.find({
+        userId: new mongoose.Types.ObjectId(userId)
+      });
+
+      if (flowers.length === 0) {
+        return res.status(200).json({
+          success: true,
+          message: '用户暂无花朵',
+          data: {
+            totalFlowers: 0,
+            comparison: []
+          }
+        });
+      }
+
+      const currentTime = new Date();
+      const comparison = flowers.map(flower => {
+        const virtualHP = FlowerMemoryService.calculateFlowerHP(flower, currentTime);
+        const hpDifference = virtualHP - flower.hp;
+        const memoryStatus = FlowerMemoryService.getMemoryStatus(virtualHP, flower.maxHp);
+        const forgettingInfo = FlowerMemoryService.calculateForgettingRate(flower, currentTime);
+
+        return {
+          flowerId: flower._id,
+          subject: flower.subject,
+          grade: flower.grade,
+          category: flower.category,
+          databaseHP: flower.hp,
+          virtualHP: Math.round(virtualHP),
+          hpDifference: Math.round(hpDifference),
+          hpDifferencePercentage: Math.round((hpDifference / flower.maxHp) * 100),
+          maxHP: flower.maxHp,
+          memoryStatus,
+          forgettingInfo,
+          lastUpdated: flower.lastUpdatedAt,
+          needsUpdate: Math.abs(hpDifference) > 10,
+          updatePriority: Math.abs(hpDifference) > 20 ? 'high' : Math.abs(hpDifference) > 10 ? 'medium' : 'low'
+        };
+      });
+
+      // 统计信息
+      const totalDatabaseHP = flowers.reduce((sum, f) => sum + f.hp, 0);
+      const totalVirtualHP = comparison.reduce((sum, c) => sum + c.virtualHP, 0);
+      const needsUpdateCount = comparison.filter(c => c.needsUpdate).length;
+      const highPriorityCount = comparison.filter(c => c.updatePriority === 'high').length;
+
+      return res.status(200).json({
+        success: true,
+        message: '获取花朵血量对比成功',
+        data: {
+          totalFlowers: flowers.length,
+          comparison,
+          statistics: {
+            totalDatabaseHP,
+            totalVirtualHP,
+            totalHPDifference: totalVirtualHP - totalDatabaseHP,
+            hpDifferencePercentage: totalDatabaseHP > 0 ? Math.round(((totalVirtualHP - totalDatabaseHP) / totalDatabaseHP) * 100) : 0,
+            needsUpdateCount,
+            highPriorityCount,
+            syncStatus: Math.abs(totalVirtualHP - totalDatabaseHP) < 50 ? 'good' : 'needs_update',
+            recommendation: Math.abs(totalVirtualHP - totalDatabaseHP) > 100 ? '建议立即更新血量' : '血量同步正常'
+          }
+        }
+      });
+
+    } catch (error) {
+      logger.error('获取花朵血量对比失败:', error);
+      return res.status(500).json({
+        success: false,
+        message: '获取花朵血量对比失败'
+      });
+    }
+  }
+
+  /**
+   * 🌟 获取优化的花朵血量状态
+   * 使用虚拟血量计算，提供详细的同步状态信息
+   */
+  async getOptimizedFlowersBloodStatus(req: Request, res: Response): Promise<Response> {
+    try {
+      const { userId } = req.params;
+      const { useCache = true } = req.query;
+
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: '缺少用户ID参数'
+        });
+      }
+
+      const flowers = await Flower.find({
+        userId: new mongoose.Types.ObjectId(userId)
+      });
+
+      if (flowers.length === 0) {
+        return res.status(200).json({
+          success: true,
+          message: '用户暂无花朵',
+          data: {
+            flowers: [],
+            summary: {
+              totalFlowers: 0,
+              totalDatabaseHP: 0,
+              totalVirtualHP: 0,
+              totalHPDifference: 0,
+              needsUpdateCount: 0,
+              averageUpdateAge: 0,
+              syncStatus: 'excellent'
+            },
+            updateDecision: {
+              shouldUpdate: false,
+              reason: '无花朵',
+              priority: 'low',
+              affectedFlowers: 0,
+              recommendations: []
+            }
+          }
+        });
+      }
+
+      // 获取血量状态
+      const bloodStatus = await FlowerBloodManager.getFlowersBloodStatus(flowers);
+      
+      // 获取更新建议
+      const updateDecision = await FlowerBloodManager.shouldUpdateFlowers(userId);
+      
+      // 获取详细建议
+      const recommendations = await FlowerBloodManager.getUpdateRecommendations(userId);
+
+      // 🌟 简化：花朵数据，只返回需要的字段
+      const simplifiedFlowers = bloodStatus.flowers.map(f => ({
+        id: f.flower._id,
+        subject: f.flower.subject,
+        grade: f.flower.grade,
+        category: f.flower.category,
+        databaseHP: f.databaseHP,
+        maxHP: f.flower.maxHp,
+        memoryStatus: f.memoryStatus,
+        needsUpdate: f.needsUpdate,
+        updatePriority: f.updatePriority,
+        hoursSinceLatest: f.hoursSinceLatest,
+        isPlanted: f.flower.isPlanted,
+        lastUpdated: f.flower.lastUpdatedAt,
+        plantedAt: f.flower.plantedAt
+      }));
+
+      logger.info(`用户 ${userId} 血量状态查询: ${flowers.length}朵花，${bloodStatus.summary.needsUpdateCount}朵需要更新`);
+
+      return res.status(200).json({
+        success: true,
+        message: '获取血量状态成功',
+        data: {
+          flowers: simplifiedFlowers,
+          summary: bloodStatus.summary,
+          updateDecision,
+          recommendations,
+          metadata: {
+            calculationMode: '数据库血量',
+            queryTime: new Date(),
+            updateRule: '24小时自动衰减机制'
+          }
+        }
+      });
+
+    } catch (error) {
+      logger.error('获取优化血量状态失败:', error);
+      return res.status(500).json({
+        success: false,
+        message: '获取优化血量状态失败'
+      });
+    }
+  }
+
+  /**
+   * 🌟 智能更新花朵血量
+   * 使用优化的更新策略
+   */
+  async smartUpdateFlowersBlood(req: Request, res: Response): Promise<Response> {
+    try {
+      const { userId } = req.params;
+      const { 
+        forceUpdate = false,
+        maxFlowers,
+        priorityOnly = false,
+        batchSize
+      } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: '缺少用户ID参数'
+        });
+      }
+
+      // 执行智能更新
+      const updateResult = await FlowerBloodManager.smartUpdateFlowers(userId, {
+        forceUpdate,
+        maxFlowers,
+        priorityOnly,
+        batchSize
+      });
+
+      const message = updateResult.updatedCount > 0 
+        ? `智能更新完成，更新了 ${updateResult.updatedCount}/${updateResult.totalFlowers} 朵花`
+        : '所有花朵血量已同步，无需更新';
+
+      logger.info(`用户 ${userId} ${message}`);
+
+      return res.status(200).json({
+        success: true,
+        message,
+        data: updateResult
+      });
+
+    } catch (error) {
+      logger.error('智能更新花朵血量失败:', error);
+      return res.status(500).json({
+        success: false,
+        message: '智能更新花朵血量失败'
+      });
+    }
+  }
+
+  /**
+   * 批量更新特定条件的花朵血量
+   * 可以按学科、血量差异等条件筛选更新
+   */
+  async batchUpdateFlowersBlood(req: Request, res: Response): Promise<Response> {
+    try {
+      const { userId } = req.params;
+      const { 
+        subject, 
+        minHpDifference = 10, 
+        onlyOutdated = false,
+        maxAge = 24 
+      } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: '缺少用户ID参数'
+        });
+      }
+
+      // 构建查询条件
+      const query: any = {
+        userId: new mongoose.Types.ObjectId(userId)
+      };
+
+      if (subject) {
+        query.subject = subject;
+      }
+
+      const flowers = await Flower.find(query);
+
+      if (flowers.length === 0) {
+        return res.status(200).json({
+          success: true,
+          message: '未找到符合条件的花朵',
+          data: {
+            totalFlowers: 0,
+            updatedFlowers: 0
+          }
+        });
+      }
+
+      const currentTime = new Date();
+      const flowersToUpdate = [];
+
+      // 筛选需要更新的花朵
+      for (const flower of flowers) {
+        const virtualHP = FlowerMemoryService.calculateFlowerHP(flower, currentTime);
+        const hpDifference = Math.abs(virtualHP - flower.hp);
+        
+        // 检查时间条件
+        const lastUpdateTime = flower.lastUpdatedAt || flower.createdAt;
+        const hoursSinceUpdate = (currentTime.getTime() - lastUpdateTime.getTime()) / (1000 * 60 * 60);
+        
+        // 判断是否需要更新
+        const needsUpdate = 
+          hpDifference >= minHpDifference && 
+          (!onlyOutdated || hoursSinceUpdate >= maxAge);
+
+        if (needsUpdate) {
+          flowersToUpdate.push({
+            flower,
+            virtualHP,
+            hpDifference,
+            hoursSinceUpdate
+          });
+        }
+      }
+
+      if (flowersToUpdate.length === 0) {
+        return res.status(200).json({
+          success: true,
+          message: '没有花朵需要更新',
+          data: {
+            totalFlowers: flowers.length,
+            updatedFlowers: 0,
+            criteria: {
+              subject: subject || 'all',
+              minHpDifference,
+              onlyOutdated,
+              maxAge
+            }
+          }
+        });
+      }
+
+      // 执行批量更新
+      const updatePromises = flowersToUpdate.map(async ({ flower }) => {
+        const virtualHP = FlowerMemoryService.calculateFlowerHP(flower, currentTime);
+        const beforeHP = flower.hp;
+        
+        flower.hp = Math.max(0, Math.round(virtualHP));
+        flower.lastUpdatedAt = currentTime;
+        await flower.save();
+
+        return {
+          flowerId: flower._id,
+          subject: flower.subject,
+          category: flower.category,
+          beforeHP,
+          afterHP: flower.hp,
+          hpChange: flower.hp - beforeHP
+        };
+      });
+
+      const updateResults = await Promise.all(updatePromises);
+
+      logger.info(`用户 ${userId} 批量更新花朵血量: 更新了 ${updateResults.length}/${flowers.length} 朵花`);
+
+      return res.status(200).json({
+        success: true,
+        message: `批量更新完成，共更新 ${updateResults.length} 朵花`,
+        data: {
+          totalFlowers: flowers.length,
+          updatedFlowers: updateResults.length,
+          criteria: {
+            subject: subject || 'all',
+            minHpDifference,
+            onlyOutdated,
+            maxAge
+          },
+          updateResults,
+          statistics: {
+            totalHPChange: updateResults.reduce((sum, r) => sum + r.hpChange, 0),
+            averageHPChange: updateResults.length > 0 ? 
+              updateResults.reduce((sum, r) => sum + r.hpChange, 0) / updateResults.length : 0
+          }
+        }
+      });
+
+    } catch (error) {
+      logger.error('批量更新花朵血量失败:', error);
+      return res.status(500).json({
+        success: false,
+        message: '批量更新花朵血量失败'
       });
     }
   }

@@ -60,8 +60,8 @@ export class LoginScene extends BaseScene {
         this.checkLoginCache().then(hasCache => {
             if (hasCache) {
                 // 如果有缓存，直接进入游戏
-                // this.scene.start('MainScene');
-                this.scene.start('GardenScene');
+                this.scene.start('MainScene');
+                // this.scene.start('GardenScene');
                 return;
             }
             

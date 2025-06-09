@@ -13,6 +13,7 @@ export class GardenScene extends BaseScene {
     private nectarInventory: { nectars: any[], totalNectars: number, totalTypes: number } | null = null;
     private floatingNectars: Phaser.GameObjects.Container[] = [];
     private isDragMode: boolean = false;
+    private currentBackpackContainer: Phaser.GameObjects.Container | null = null;
     
 
     constructor() {
@@ -1178,18 +1179,46 @@ export class GardenScene extends BaseScene {
      */
     private async useNectar(nectar: any): Promise<void> {
         try {
-            // 这里可以添加使用甘露的API调用
             console.log('使用甘露:', nectar);
             
-            // 显示使用效果
-            this.showMessage(`使用了${this.getSubjectName(nectar.subject)}甘露，恢复${nectar.healingPower}点HP！`);
+            // 调用新的甘露使用API
+            const response = await gardenApi.useNectar(
+                this.currentUserId,
+                nectar.subject,
+                nectar.category
+            );
+
+            if (response.success && response.data) {
+                const data = response.data;
+                
+                // 计算总恢复血量
+                const totalHealed = data.healedFlowers.reduce((sum: number, flower: any) => sum + flower.healedAmount, 0);
+                
+                // 显示详细的使用效果
+                const subjectName = this.getSubjectName(data.subject);
+                
+                let message = `✨ 使用了${subjectName}-${data.category}甘露！\n`;
+                message += `❤️ 总恢复HP: ${totalHealed}点\n`;
+                
+                this.showMessage(message);
+                  
+                console.log('甘露使用成功:', data);
+            } else {
+                this.showMessage(response.message || '使用甘露失败');
+            }
             
-            // 刷新甘露库存
+            // 刷新甘露库存和花园状态
             await this.refreshNectarInventory();
+            await this.loadGardenData();
+            
+            // 如果背包弹框是打开的，更新其内容
+            if (this.currentBackpackContainer) {
+                this.updateBackpackContent();
+            }
             
         } catch (error) {
             console.error('使用甘露失败:', error);
-            this.showMessage('使用甘露失败');
+            this.showMessage('使用甘露失败：网络错误');
         }
     }
 
@@ -1216,6 +1245,9 @@ private openBackpackDialog(): void {
         this.cameras.main.height / 2
     ).setDepth(1001);
 
+    // 保存背包容器引用
+    this.currentBackpackContainer = backpackContainer;
+
     const bpWidth = 1200;
     const bpHeight = 760;
     // 背包背景
@@ -1229,12 +1261,17 @@ private openBackpackDialog(): void {
 
     backpackContainer.add([shadow, backpackBg]);
 
+    // 将overlay存储到容器数据中，供关闭按钮使用
+    backpackContainer.setData('overlay', overlay);
+
     // 创建背包标题
     this.createBackpackHeader(backpackContainer,bpWidth,bpHeight);
 
+    // 创建背包统计信息
+    // this.createBackpackStats(backpackContainer, bpWidth, bpHeight);
+
     // 创建仓库格子区域
     this.createInventoryGrid(backpackContainer, bpWidth, bpHeight);
-
 
     // 添加进入动画
     this.animateBackpackOpen(backpackContainer, overlay);
@@ -1287,7 +1324,8 @@ private createBackpackHeader(container: Phaser.GameObjects.Container, bpWidth: n
 
     // 关闭按钮事件
     closeBtn.on('pointerdown', () => {
-        this.animateBackpackClose(container);
+        const overlay = container.getData('overlay');
+        this.animateBackpackClose(container, overlay);
     });
 
     closeBtn.on('pointerover', () => {
@@ -1344,6 +1382,9 @@ private createBackpackStats(container: Phaser.GameObjects.Container, bpWidth: nu
         color: '#2E5984',
         fontStyle: 'bold'
     }).setOrigin(0.5);
+
+    // 给统计文字添加标记，便于后续更新
+    statsTextObj.setData('isStatsText', true);
 
     container.add([statsBg, statsTextObj]);
 }
@@ -1404,6 +1445,8 @@ private createInventoryGrid(container: Phaser.GameObjects.Container, bpWidth: nu
                 slotIndex < this.nectarInventory.nectars.length) {
                 const nectar = this.nectarInventory.nectars[slotIndex];
                 const nectarItem = this.createNectarItem(x, y, nectar, slotSize);
+                // 标记为甘露物品，便于后续移除
+                nectarItem.setData('isNectarItem', true);
                 container.add(nectarItem);
             }
         }
@@ -1569,45 +1612,47 @@ private getSubjectNameShort(subject: string): string {
 /**
  * 显示甘露提示信息
  */
-private showNectarTooltip(nectar: any, x: number, y: number): void {
-    // 如果已有提示框，先移除
-    this.hideNectarTooltip();
+    private showNectarTooltip(nectar: any, x: number, y: number): void {
+        // 如果已有提示框，先移除
+        this.hideNectarTooltip();
 
-    const tooltipContainer = this.add.container(
-        this.cameras.main.width / 2 + x + 100, 
-        this.cameras.main.height / 2 + y
-    ).setDepth(1500);
+        const tooltipContainer = this.add.container(
+            this.cameras.main.width / 2 + x + 100, 
+            this.cameras.main.height / 2 + y
+        ).setDepth(1500);
 
-    // 提示框背景
-    const tooltipBg = this.add.rectangle(0, 0, 180, 100, 0x2C3E50, 0.8)
-        .setStrokeStyle(2, 0x34495E);
+        // 提示框背景
+        const tooltipBg = this.add.rectangle(0, 0, 200, 120, 0x2C3E50, 0.8)
+            .setStrokeStyle(2, 0x34495E);
 
-    // 提示文字
-    const tooltipText = this.createText(0, 0, 
-        `${this.getSubjectName(nectar.subject)}甘露\n` +
-        `分类: ${nectar.category}\n`+
-        `年级: ${nectar.grade}\n` ,
-       
-         'LABEL_TEXT', {
-        fontSize: 20,
-        color: '#FFFFFF',
-        align: 'left'
-    }).setOrigin(0.5);
+        // 提示文字
+        const tooltipText = this.createText(0, 0, 
+            `${this.getSubjectName(nectar.subject)}甘露\n` +
+            `分类: ${nectar.category}\n`+
+            `年级: ${nectar.grade}\n` +
+            `治疗力: ${nectar.totalHealingPower}\n` +
+            `🚨 使用后清除`,
+           
+             'LABEL_TEXT', {
+            fontSize: 18,
+            color: '#FFFFFF',
+            align: 'left'
+        }).setOrigin(0.5);
 
-    tooltipContainer.add([tooltipBg, tooltipText]);
+        tooltipContainer.add([tooltipBg, tooltipText]);
 
-    // 保存引用以便清理
-    tooltipContainer.setData('isTooltip', true);
-    this.currentTooltip = tooltipContainer;
+        // 保存引用以便清理
+        tooltipContainer.setData('isTooltip', true);
+        this.currentTooltip = tooltipContainer;
 
-    // 淡入动画
-    tooltipContainer.setAlpha(0);
-    this.tweens.add({
-        targets: tooltipContainer,
-        alpha: 1,
-        duration: 200
-    });
-}
+        // 淡入动画
+        tooltipContainer.setAlpha(0);
+        this.tweens.add({
+            targets: tooltipContainer,
+            alpha: 1,
+            duration: 200
+        });
+    }
 
 /**
  * 隐藏甘露提示信息
@@ -1619,98 +1664,7 @@ private hideNectarTooltip(): void {
     }
 }
 
-/**
- * 创建背包操作按钮
- */
-private createBackpackButtons(container: Phaser.GameObjects.Container, overlay: Phaser.GameObjects.Rectangle, bpWidth: number, bpHeight: number): void {
-    const buttonHeight = Math.max(40, bpHeight * 0.06); // 按钮高度自适应
-    const buttonWidth = Math.max(100, bpWidth * 0.08); // 按钮宽度自适应
-    const buttonY = (bpHeight / 2) - (buttonHeight / 2) - 20; // 底部对齐，留20px边距
-    const buttonSpacing = bpWidth * 0.02; // 按钮间距为弹框宽度的2%
-    const fontSize = Math.min(16, bpWidth * 0.012); // 字体大小自适应
 
-    // 计算按钮位置（三个按钮居中排列）
-    const totalButtonWidth = buttonWidth * 3 + buttonSpacing * 2;
-    const startX = -(totalButtonWidth / 2) + (buttonWidth / 2);
-
-    // 整理按钮
-    const organizeBtnX = startX;
-    const organizeBtn = this.add.rectangle(organizeBtnX, buttonY, buttonWidth, buttonHeight, 0x4CAF50, 1)
-        .setStrokeStyle(2, 0x388E3C)
-        .setInteractive({ useHandCursor: true });
-
-    const organizeText = this.createText(organizeBtnX, buttonY, '📦 整理', 'BUTTON_TEXT', {
-        fontSize: fontSize,
-        color: '#FFFFFF'
-    }).setOrigin(0.5);
-
-    // 整理按钮事件
-    organizeBtn.on('pointerdown', () => {
-        this.organizeBackpack();
-    });
-
-    // 全部使用按钮
-    const useAllBtnX = startX + buttonWidth + buttonSpacing;
-    const useAllBtn = this.add.rectangle(useAllBtnX, buttonY, buttonWidth, buttonHeight, 0xFF9800, 1)
-        .setStrokeStyle(2, 0xF57C00)
-        .setInteractive({ useHandCursor: true });
-
-    // 根据弹框宽度调整按钮文字
-    const useAllBtnText = bpWidth >= 800 ? '✨ 全部使用' : '✨ 全用';
-    const useAllText = this.createText(useAllBtnX, buttonY, useAllBtnText, 'BUTTON_TEXT', {
-        fontSize: fontSize,
-        color: '#FFFFFF'
-    }).setOrigin(0.5);
-
-    // 全部使用按钮事件
-    useAllBtn.on('pointerdown', () => {
-        this.useAllNectars();
-    });
-
-    // 关闭按钮
-    const closeBtnX = startX + (buttonWidth + buttonSpacing) * 2;
-    const closeBtn = this.add.rectangle(closeBtnX, buttonY, buttonWidth, buttonHeight, 0xF44336, 1)
-        .setStrokeStyle(2, 0xD32F2F)
-        .setInteractive({ useHandCursor: true });
-
-    const closeText = this.createText(closeBtnX, buttonY, '❌ 关闭', 'BUTTON_TEXT', {
-        fontSize: fontSize,
-        color: '#FFFFFF'
-    }).setOrigin(0.5);
-
-    // 关闭按钮事件
-    closeBtn.on('pointerdown', () => {
-        this.animateBackpackClose(container, overlay);
-    });
-
-    // 添加按钮悬浮效果
-    [organizeBtn, useAllBtn, closeBtn].forEach(btn => {
-        btn.on('pointerover', () => {
-            this.tweens.add({
-                targets: btn,
-                scaleX: 1.05,
-                scaleY: 1.05,
-                duration: 150
-            });
-        });
-
-        btn.on('pointerout', () => {
-            this.tweens.add({
-                targets: btn,
-                scaleX: 1,
-                scaleY: 1,
-                duration: 150
-            });
-        });
-    });
-
-    container.add([organizeBtn, organizeText, useAllBtn, useAllText, closeBtn, closeText]);
-
-    // 点击遮罩关闭
-    overlay.on('pointerdown', () => {
-        this.animateBackpackClose(container, overlay);
-    });
-}
 
 /**
  * 背包打开动画
@@ -1745,6 +1699,11 @@ private animateBackpackOpen(container: Phaser.GameObjects.Container, overlay: Ph
 private animateBackpackClose(container: Phaser.GameObjects.Container, overlay?: Phaser.GameObjects.Rectangle): void {
     this.hideNectarTooltip(); // 清理提示框
 
+    // 清除背包容器引用
+    if (this.currentBackpackContainer === container) {
+        this.currentBackpackContainer = null;
+    }
+
     this.tweens.add({
         targets: container,
         scaleX: 0,
@@ -1770,7 +1729,7 @@ private organizeBackpack(): void {
 /**
  * 使用全部甘露
  */
-private useAllNectars(): void {
+private async useAllNectars(): Promise<void> {
     if (!this.nectarInventory || !this.nectarInventory.nectars.length) {
         this.showMessage('📦 背包中没有甘露可以使用');
         return;
@@ -1779,26 +1738,54 @@ private useAllNectars(): void {
     // 显示确认对话框
     this.showConfirmDialog(
         '确定要使用全部甘露吗？',
-        '这将消耗背包中的所有甘露来恢复花朵HP',
-        () => {
-            // 确认使用
-            let totalHealing = 0;
-            this.nectarInventory!.nectars.forEach(nectar => {
-                totalHealing += nectar.healingPower * nectar.count;
-            });
-            
-            this.showMessage(`✨ 使用了全部甘露，总共恢复 ${totalHealing} 点HP！`);
-            
-            // 清空甘露库存（这里应该调用API）
-            this.nectarInventory!.nectars = [];
-            this.nectarInventory!.totalNectars = 0;
-            this.nectarInventory!.totalTypes = 0;
-            
-            // 重新刷新背包显示
-            this.animateBackpackClose(this.children.getByName('backpackContainer') as Phaser.GameObjects.Container);
-            setTimeout(() => {
-                this.openBackpackDialog();
-            }, 500);
+        '这将消耗背包中的所有甘露来恢复对应花朵HP',
+        async () => {
+            try {
+                let totalHealedFlowers = 0;
+                let totalHealedAmount = 0;
+                
+                // 逐个使用每种甘露
+                for (const nectar of this.nectarInventory!.nectars) {
+                    try {
+                        const response = await gardenApi.useNectar(
+                            this.currentUserId,
+                            nectar.subject,
+                            nectar.category
+                        );
+                        
+                        if (response.success && response.data) {
+                            totalHealedFlowers += response.data.healedFlowersCount;
+                            // 计算这次使用甘露的治疗力（根据healedFlowers计算）
+                            const thisHealedAmount = response.data.healedFlowers.reduce((sum: number, flower: any) => sum + flower.healedAmount, 0);
+                            totalHealedAmount += thisHealedAmount;
+                        }
+                    } catch (error) {
+                        console.error(`使用甘露 ${nectar.subject}-${nectar.category} 失败:`, error);
+                    }
+                }
+                
+                this.showMessage(
+                    `✨ 使用了全部甘露！\n` +
+                    `🌸 治疗花朵: ${totalHealedFlowers}朵\n` +
+                    `❤️ 总恢复HP: ${totalHealedAmount}点`
+                );
+                
+                // 刷新库存和花园状态
+                await this.refreshNectarInventory();
+                await this.loadGardenData();
+                
+                // 如果背包弹框是打开的，更新其内容
+                if (this.currentBackpackContainer) {
+                    this.updateBackpackContent();
+                }
+                
+                // 背包已经打开，甘露库存已刷新，无需重新打开背包
+                // 用户可以看到甘露已经被消耗完毕
+                
+            } catch (error) {
+                console.error('批量使用甘露失败:', error);
+                this.showMessage('批量使用甘露失败');
+            }
         }
     );
 }
@@ -1893,5 +1880,82 @@ private showConfirmDialog(title: string, message: string, onConfirm: () => void)
 // 在类的属性声明部分添加
 private currentTooltip: Phaser.GameObjects.Container | null = null;
 
+/**
+ * 更新背包弹框内容
+ */
+private updateBackpackContent(): void {
+    if (!this.currentBackpackContainer) {
+        return;
+    }
+
+    console.log('🔄 更新背包弹框内容');
+    
+    // 获取背包容器的网格信息
+    const gridInfo = this.currentBackpackContainer.getData('gridInfo');
+    if (!gridInfo) {
+        console.warn('未找到网格信息，无法更新背包内容');
+        return;
+    }
+
+    const { cols, rows, slotSize, spacing, gridStartX, gridStartY } = gridInfo;
+
+    // 查找并移除所有现有的甘露物品（保留格子背景）
+    const children = this.currentBackpackContainer.list;
+    for (let i = children.length - 1; i >= 0; i--) {
+        const child = children[i] as any;
+        if (child.getData && child.getData('isNectarItem')) {
+            child.destroy();
+        }
+    }
+
+    // 重新创建甘露物品
+    for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+            const slotIndex = row * cols + col;
+            const x = gridStartX + col * (slotSize + spacing);
+            const y = gridStartY + row * (slotSize + spacing);
+
+            // 如果有甘露数据，放置甘露
+            if (this.nectarInventory && 
+                this.nectarInventory.nectars && 
+                slotIndex < this.nectarInventory.nectars.length) {
+                const nectar = this.nectarInventory.nectars[slotIndex];
+                const nectarItem = this.createNectarItem(x, y, nectar, slotSize);
+                // 标记为甘露物品，便于后续移除
+                nectarItem.setData('isNectarItem', true);
+                this.currentBackpackContainer.add(nectarItem);
+            }
+        }
+    }
+
+    // 同时更新统计信息（查找并更新统计文字）
+    this.updateBackpackStats();
+
+    console.log('✅ 背包内容更新完成');
+}
+
+/**
+ * 更新背包统计信息
+ */
+private updateBackpackStats(): void {
+    if (!this.currentBackpackContainer) {
+        return;
+    }
+
+    // 查找统计文字对象并更新
+    const children = this.currentBackpackContainer.list;
+    for (const child of children) {
+        const gameObject = child as any;
+        if (gameObject.type === 'Text' && gameObject.getData && gameObject.getData('isStatsText')) {
+            // 更新统计文字
+            let statsText = '📦 背包空空如也';
+            if (this.nectarInventory && this.nectarInventory.nectars.length > 0) {
+                statsText = `📊 甘露总数: ${this.nectarInventory.totalNectars} | 🎯 种类: ${this.nectarInventory.totalTypes} | 📦 格子: ${this.nectarInventory.nectars.length}/20`;
+            }
+            gameObject.setText(statsText);
+            break;
+        }
+    }
+}
 
 } 

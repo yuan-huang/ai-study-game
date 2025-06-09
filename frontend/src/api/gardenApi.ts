@@ -33,7 +33,7 @@ export interface NectarData {
   grade: number;
   category: string;
   totalHealingPower: number;
-  count: number;
+  count: number; // 已合并的甘露数量（技术上一个学科-分类只有一个甘露，但后端可能合并显示）
 }
 
 // 花园布局接口
@@ -403,28 +403,37 @@ export class GardenApiService {
   }
 
   /**
-   * 使用甘露治疗花朵
+   * 使用甘露治疗对应学科分类的所有花朵
    * @param userId 用户ID
-   * @param flowerId 花朵ID
-   * @param nectarId 甘露ID
-   * @param healingAmount 治疗量（可选）
+   * @param subject 学科
+   * @param category 分类
    */
   async useNectar(
     userId: string,
-    flowerId: string,
-    nectarId: string,
-    healingAmount?: number
+    subject: string,
+    category: string
   ): Promise<ApiResponse<{
-    flower: FlowerData;
-    healedAmount: number;
-    remainingNectar: number;
-    nectarConsumed: boolean;
+    subject: string;
+    grade: number;
+    category: string;
+    healedFlowersCount: number;
+    deletedNectarsCount: number;
+    healedFlowers: Array<{
+      id: string;
+      subject: string;
+      grade: number;
+      category: string;
+      beforeHP: number;
+      afterHP: number;
+      healedAmount: number;
+      maxHp: number;
+    }>;
+    note: string;
   }>> {
     return post('/garden/use-nectar', {
       userId,
-      flowerId,
-      nectarId,
-      healingAmount
+      subject,
+      category
     });
   }
 

@@ -190,6 +190,65 @@ export class FlowerMemoryService {
   }
 
   /**
+   * 计算花朵自上次更新以来的HP衰减值
+   * @param flower 花朵对象
+   * @param currentTime 当前时间（可选，默认为现在）
+   * @returns 衰减的HP值（正数表示需要扣减的HP）
+   */
+  static calculateHPDecay(flower: IFlower, currentTime: Date = new Date()): {
+    decayAmount: number;
+    newHP: number;
+    timeSinceLastUpdate: number;
+  } {
+    // 获取上次更新时间，如果没有则使用记忆基准时间
+    const lastUpdateTime = flower.lastUpdatedAt || this.getMemoryReferenceTime(flower);
+    
+    // 计算自上次更新以来的时间差（小时）
+    const timeSinceLastUpdate = (currentTime.getTime() - lastUpdateTime.getTime()) / (1000 * 60 * 60);
+    
+    // 如果时间差为负数或0，没有衰减
+    if (timeSinceLastUpdate <= 0) {
+      return {
+        decayAmount: 0,
+        newHP: flower.hp,
+        timeSinceLastUpdate: 0
+      };
+    }
+
+    // 获取学科和年级相关的衰减系数
+    const subjectMultiplier = this.MEMORY_CONFIG.SUBJECT_DECAY_MULTIPLIERS[flower.subject] || 1.0;
+    const gradeMultiplier = this.MEMORY_CONFIG.GRADE_MEMORY_MULTIPLIERS[flower.grade] || 1.0;
+    
+    // 计算有效记忆强度
+    const effectiveMemoryStrength = this.MEMORY_CONFIG.MEMORY_STRENGTH * gradeMultiplier / subjectMultiplier;
+    
+    // 计算当前HP相对于maxHP的比率
+    const currentHPRatio = flower.hp / flower.maxHp;
+    
+    // 基于当前HP比率和时间差计算衰减
+    // 使用指数衰减模型：新比率 = 当前比率 * e^(-时间差/记忆强度)
+    const decayRate = Math.exp(-timeSinceLastUpdate / effectiveMemoryStrength);
+    const newHPRatio = currentHPRatio * decayRate;
+    
+    // 确保不低于最小HP比率
+    const finalHPRatio = Math.max(newHPRatio, this.MEMORY_CONFIG.MIN_HP_RATIO);
+    
+    // 计算新的HP值
+    const newHP = Math.round(flower.maxHp * finalHPRatio);
+    
+    // 计算衰减值
+    const decayAmount = Math.max(0, flower.hp - newHP);
+    
+    logger.debug(`花朵${flower._id}的HP衰减计算: 时间差=${timeSinceLastUpdate.toFixed(1)}h, 当前HP=${flower.hp}, 衰减=${decayAmount}, 新HP=${newHP}`);
+    
+    return {
+      decayAmount,
+      newHP: Math.min(newHP, flower.maxHp),
+      timeSinceLastUpdate
+    };
+  }
+
+  /**
    * 获取遗忘曲线图表数据
    * @param flower 花朵对象
    * @param durationHours 预测时长（小时）
@@ -277,5 +336,161 @@ export class FlowerMemoryService {
       overallGrade,
       recommendations
     };
+  }
+
+  /**
+   * 计算花朵的遗忘比例
+   * 基于艾宾浩斯遗忘曲线公式 R = e^(-t/S)
+   * 遗忘比例 = 1 - R (记忆保持率)
+   * @param flower 花朵对象
+   * @param currentTime 当前时间（可选，默认为现在）
+   * @returns 遗忘比例信息
+   */
+  static calculateForgettingRate(flower: IFlower, currentTime: Date = new Date()): {
+    forgettingRate: number;
+    memoryRetentionRate: number;
+    timeSinceReference: number;
+    timeUnit: string;
+    forgettingStage: string;
+    description: string;
+  } {
+    // 直接使用花朵的创建时间作为基准时间点
+    const referenceTime = flower.createdAt;
+    
+    // 计算时间差（小时）
+    const timeDiffHours = (currentTime.getTime() - referenceTime.getTime()) / (1000 * 60 * 60);
+    
+    // 如果时间差为负数或0，没有遗忘
+    if (timeDiffHours <= 0) {
+      return {
+        forgettingRate: 0,
+        memoryRetentionRate: 1,
+        timeSinceReference: 0,
+        timeUnit: '小时',
+        forgettingStage: '新鲜记忆',
+        description: '刚刚学习，记忆完整'
+      };
+    }
+    
+    // 获取学科和年级相关的衰减系数
+    const subjectMultiplier = this.MEMORY_CONFIG.SUBJECT_DECAY_MULTIPLIERS[flower.subject] || 1.0;
+    const gradeMultiplier = this.MEMORY_CONFIG.GRADE_MEMORY_MULTIPLIERS[flower.grade] || 1.0;
+    
+    // 计算有效记忆强度
+    const effectiveMemoryStrength = this.MEMORY_CONFIG.MEMORY_STRENGTH * gradeMultiplier / subjectMultiplier;
+    
+    // 应用艾宾浩斯遗忘曲线公式: R = e^(-t/s)
+    const memoryRetentionRate = Math.exp(-timeDiffHours / effectiveMemoryStrength);
+    
+    // 计算遗忘比例：遗忘率 = 1 - 记忆保持率
+    const forgettingRate = 1 - memoryRetentionRate;
+    
+    // 确定时间单位和值
+    let timeValue: number;
+    let timeUnit: string;
+    
+    if (timeDiffHours < 1) {
+      timeValue = Math.round(timeDiffHours * 60);
+      timeUnit = '分钟';
+    } else if (timeDiffHours < 24) {
+      timeValue = Math.round(timeDiffHours * 10) / 10;
+      timeUnit = '小时';
+    } else if (timeDiffHours < 168) {
+      timeValue = Math.round(timeDiffHours / 24 * 10) / 10;
+      timeUnit = '天';
+    } else {
+      timeValue = Math.round(timeDiffHours / 168 * 10) / 10;
+      timeUnit = '周';
+    }
+    
+    // 确定遗忘阶段
+    let forgettingStage: string;
+    let description: string;
+    
+    if (forgettingRate < 0.2) {
+      forgettingStage = '初期遗忘';
+      description = '记忆仍然清晰，少量内容被遗忘';
+    } else if (forgettingRate < 0.5) {
+      forgettingStage = '快速遗忘期';
+      description = '进入快速遗忘阶段，需要及时复习';
+    } else if (forgettingRate < 0.7) {
+      forgettingStage = '中度遗忘';
+      description = '大部分内容已被遗忘，建议深度复习';
+    } else if (forgettingRate < 0.8) {
+      forgettingStage = '重度遗忘';
+      description = '严重遗忘状态，需要重新学习';
+    } else {
+      forgettingStage = '深度遗忘';
+      description = '接近完全遗忘，急需重新学习';
+    }
+    
+    logger.debug(`花朵${flower._id}的遗忘率计算: 时间=${timeValue}${timeUnit}, 遗忘率=${(forgettingRate * 100).toFixed(1)}%, 记忆保持率=${(memoryRetentionRate * 100).toFixed(1)}%`);
+    
+    return {
+      forgettingRate: Math.round(forgettingRate * 1000) / 1000, // 保留3位小数
+      memoryRetentionRate: Math.round(memoryRetentionRate * 1000) / 1000,
+      timeSinceReference: timeValue,
+      timeUnit,
+      forgettingStage,
+      description
+    };
+  }
+
+  /**
+   * 批量计算多个花朵的遗忘比例
+   * @param flowers 花朵数组
+   * @param currentTime 当前时间（可选）
+   * @returns 遗忘比例信息数组
+   */
+  static calculateMultipleForgettingRates(flowers: IFlower[], currentTime: Date = new Date()): Array<{
+    flower: IFlower;
+    forgettingInfo: ReturnType<typeof FlowerMemoryService.calculateForgettingRate>;
+  }> {
+    return flowers.map(flower => ({
+      flower,
+      forgettingInfo: this.calculateForgettingRate(flower, currentTime)
+    }));
+  }
+
+  /**
+   * 输出遗忘曲线对照表（基于艾宾浩斯实验数据）
+   * @param flower 花朵对象
+   */
+  static outputForgettingCurveReference(flower: IFlower): void {
+    logger.info('\n=== 艾宾浩斯遗忘曲线对照表 ===');
+    logger.info('基于艾宾浩斯实验数据的标准遗忘曲线：');
+    
+    logger.info('┌────────────┬────────────┬────────────┬────────────────┐');
+    logger.info('│    时间    │  遗忘比例  │  记忆保持  │    当前花朵    │');
+    logger.info('├────────────┼────────────┼────────────┼────────────────┤');
+    
+    // 艾宾浩斯实验的标准数据点
+    const standardDataPoints = [
+      { time: 20/60, unit: '20分钟', forgetting: 0.42, retention: 0.58 },
+      { time: 1, unit: '1小时', forgetting: 0.56, retention: 0.44 },
+      { time: 24, unit: '1天', forgetting: 0.74, retention: 0.26 },
+      { time: 168, unit: '1周', forgetting: 0.77, retention: 0.23 },
+      { time: 720, unit: '1个月', forgetting: 0.79, retention: 0.21 }
+    ];
+    
+    const currentTime = new Date();
+    
+    standardDataPoints.forEach(point => {
+      const futureTime = new Date(currentTime.getTime() + point.time * 60 * 60 * 1000);
+      const flowerForgetting = this.calculateForgettingRate(flower, futureTime);
+      
+      const timeStr = point.unit.padEnd(10);
+      const forgettingStr = `${(point.forgetting * 100).toFixed(0)}%`.padStart(10);
+      const retentionStr = `${(point.retention * 100).toFixed(0)}%`.padStart(10);
+      const flowerStr = `${(flowerForgetting.forgettingRate * 100).toFixed(1)}%`.padStart(14);
+      
+      logger.info(`│ ${timeStr} │ ${forgettingStr} │ ${retentionStr} │ ${flowerStr} │`);
+    });
+    
+    logger.info('└────────────┴────────────┴────────────┴────────────────┘');
+    logger.info('注意：');
+    logger.info('• 标准数据基于艾宾浩斯的实验（无意义字母组合）');
+    logger.info('• 当前花朵的遗忘率会根据学科、年级等因素调整');
+    logger.info('• 实际学习内容比无意义字母更容易记忆');
   }
 } 

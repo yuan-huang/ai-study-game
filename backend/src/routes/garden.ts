@@ -123,13 +123,20 @@ router.get('/nectar/:userId', gardenController.getNectarInventory.bind(gardenCon
 
 /**
  * @route POST /api/garden/use-nectar
- * @desc 使用甘露治疗花朵
+ * @desc 使用甘露治疗对应学科分类的所有花朵（一个用户-学科-分类只有一个甘露，使用后全部清除）
  * @body userId - 用户ID
- * @body flowerId - 花朵ID
- * @body nectarId - 甘露ID
- * @body healingAmount - 治疗量（可选，默认使用甘露的全部治疗力）
+ * @body subject - 学科
+ * @body category - 分类
  * @access Public
  */
 router.post('/use-nectar', gardenController.useNectar.bind(gardenController));
+
+/**
+ * @route POST /api/garden/update-flowers-blood/:userId
+ * @desc 手动更新花朵血量并输出扣血日志（用于演示和测试遗忘曲线功能）
+ * @param userId - 用户ID
+ * @access Public
+ */
+router.post('/update-flowers-blood/:userId', gardenController.updateFlowersBloodAndShowLog.bind(gardenController));
 
 export default router; 
