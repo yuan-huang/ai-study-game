@@ -1,3 +1,4 @@
+/// <reference path="../../types/rex-ui.d.ts" />
 import { getAssetPath } from '@/config/AssetConfig';
 import { BaseScene } from '../BaseScene';
 import { gardenApi, SubjectFlowerStatusResponse } from '@/api/gardenApi';
@@ -12,6 +13,7 @@ export class GardenScene extends BaseScene {
     private nectarInventory: { nectars: any[], totalNectars: number, totalTypes: number } | null = null;
     private floatingNectars: Phaser.GameObjects.Container[] = [];
     private isDragMode: boolean = false;
+    
 
     constructor() {
         super('GardenScene');
@@ -860,54 +862,6 @@ export class GardenScene extends BaseScene {
     
 
     /**
-     * 显示治疗效果
-     */
-    private showHealingEffect(position: {x: number, y: number}, healedAmount: number): void {
-        // 创建治疗特效文字
-        const healText = this.createText(
-            position.x, position.y - 50,
-            `+${healedAmount} HP`,
-            'NUMBER_TEXT',
-            {
-                fontSize: 28,
-                color: '#00ff00',
-                stroke: '#ffffff',
-                strokeThickness: 2
-            }
-        ).setOrigin(0.5).setDepth(1500);
-
-        // 飘起动画
-        this.tweens.add({
-            targets: healText,
-            y: healText.y - 60,
-            alpha: 0,
-            scaleX: 1.5,
-            scaleY: 1.5,
-            duration: 1500,
-            ease: 'Power2',
-            onComplete: () => {
-                healText.destroy();
-            }
-        });
-
-        // 创建光芒特效
-        const glowEffect = this.add.circle(position.x, position.y, 30, 0x00ff00, 0.6)
-            .setDepth(1400);
-        
-        this.tweens.add({
-            targets: glowEffect,
-            scaleX: 2,
-            scaleY: 2,
-            alpha: 0,
-            duration: 800,
-            ease: 'Power2',
-            onComplete: () => {
-                glowEffect.destroy();
-            }
-        });
-    }
-
-    /**
      * 刷新甘露库存
      */
     private async refreshNectarInventory(): Promise<void> {
@@ -937,387 +891,6 @@ export class GardenScene extends BaseScene {
         return nameMap[subject] || subject;
     }
 
-    /**
-     * 打开背包弹框 - 使用简化的 Rex-UI 实现
-     */
-    private openBackpackDialog(): void {
-        console.log('🎒 尝试打开背包弹框');
-        console.log('🔧 检查 rexUI 是否可用:', this.rexUI);
-        
-        if (!this.rexUI) {
-            console.error('❌ rexUI 插件未找到！');
-            this.showMessage('背包功能暂时不可用');
-            return;
-        }
-        
-        console.log('✅ rexUI 插件已找到，开始创建 Dialog');
-        
-        var dialog = this.rexUI.add.dialog({
-            x: 400,
-            y: 300,
-            background: this.rexUI.add.roundRectangle(0, 0, 100, 100, 10, 0x1565c0),
-            title: this.add.text(0, 0, 'Title', { fontSize: '24px' }),
-            content: this.add.text(0, 0, 'Content', { fontSize: '16px' }),
-            actions: [
-                this.add.text(0, 0, 'OK', { fontSize: '18px' }),
-                this.add.text(0, 0, 'Cancel', { fontSize: '18px' })
-            ]
-        });
-    
-        // 显示为模态对话框
-        dialog.modal();
-    }
-
-    /**
-     * 创建简单的关闭按钮
-     */
-    private createSimpleCloseButton(overlay: Phaser.GameObjects.Rectangle, dialog: any): Phaser.GameObjects.GameObject {
-        const closeContainer = this.rexUI.add.sizer({
-            orientation: 'horizontal',
-            space: { item: 8 }
-        });
-
-        // 关闭按钮背景
-        const closeButton = this.rexUI.add.roundRectangle(0, 0, 120, 40, 8, 0xf44336)
-            .setStrokeStyle(2, 0xd32f2f)
-            .setInteractive({ useHandCursor: true });
-
-        // 关闭文字
-        const closeText = this.createText(0, 0, '✖️ 关闭', 'BUTTON_TEXT', {
-            fontSize: 16,
-            color: '#ffffff',
-            fontStyle: 'bold'
-        });
-
-        closeContainer.add(closeButton, { expand: true });
-        closeContainer.add(closeText, { expand: false, align: 'center' });
-
-        // 悬浮效果
-        closeButton.on('pointerover', () => {
-            this.tweens.add({
-                targets: closeContainer,
-                scaleX: 1.1,
-                scaleY: 1.1,
-                duration: 150
-            });
-        });
-
-        closeButton.on('pointerout', () => {
-            this.tweens.add({
-                targets: closeContainer,
-                scaleX: 1,
-                scaleY: 1,
-                duration: 150
-            });
-        });
-
-        // 点击关闭事件
-        closeButton.on('pointerdown', () => {
-            console.log('🔒 关闭背包');
-            this.tweens.add({
-                targets: dialog,
-                scaleX: 0,
-                scaleY: 0,
-                alpha: 0,
-                duration: 300,
-                ease: 'Back.easeIn',
-                onComplete: () => {
-                    overlay.destroy();
-                    dialog.destroy();
-                }
-            });
-        });
-
-        // 点击遮罩关闭
-        overlay.on('pointerdown', () => {
-            console.log('🔒 点击遮罩关闭背包');
-            this.tweens.add({
-                targets: dialog,
-                scaleX: 0,
-                scaleY: 0,
-                alpha: 0,
-                duration: 300,
-                ease: 'Back.easeIn',
-                onComplete: () => {
-                    overlay.destroy();
-                    dialog.destroy();
-                }
-            });
-        });
-
-        return closeContainer;
-    }
-
-    /**
-     * 创建弹框标题
-     */
-    private createDialogTitle(): Phaser.GameObjects.GameObject {
-        const titleContainer = this.rexUI.add.sizer({
-            orientation: 'horizontal',
-            space: { item: 10 }
-        });
-
-        // 标题背景
-        titleContainer.addBackground(
-            this.rexUI.add.roundRectangle(0, 0, 860, 80, 10, 0xe8f5e8)
-                .setStrokeStyle(2, 0x4caf50)
-        );
-
-        // 添加标题文本
-        titleContainer.add(
-            this.createText(0, 0, '🎒 背包仓库', 'TITLE_LARGE', {
-                fontSize: 32,
-                color: '#2d5016',
-                fontStyle: 'bold'
-            }),
-            { expand: true, align: 'left' }
-        );
-
-        return titleContainer;
-    }
-
-
-
-    /**
-     * 创建背包内容 - 优化的布局
-     */
-    private createBackpackContent(): Phaser.GameObjects.GameObject {
-        console.log('🔧 创建背包内容');
-        
-        // 主内容容器
-        const mainContent = this.rexUI.add.sizer({
-            orientation: 'vertical',
-            width: 840,
-            height: 580,
-            space: { item: 15 }
-        });
-
-        // 统计信息条
-        const statsBar = this.createStatsBar();
-        mainContent.add(statsBar, { expand: false });
-
-        // 甘露展示区域
-        const nectarArea = this.createNectarDisplayArea();
-        mainContent.add(nectarArea, { expand: true });
-        
-        return mainContent;
-    }
-
-    /**
-     * 创建甘露展示区域
-     */
-    private createNectarDisplayArea(): Phaser.GameObjects.GameObject {
-        const displayContainer = this.rexUI.add.sizer({
-            orientation: 'vertical',
-            width: 820,
-            height: 450
-        });
-
-        // 添加背景
-        displayContainer.addBackground(
-            this.rexUI.add.roundRectangle(0, 0, 820, 450, 10, 0xfafafa)
-                .setStrokeStyle(2, 0xcccccc)
-        );
-
-        if (this.nectarInventory?.nectars && this.nectarInventory.nectars.length > 0) {
-            // 有甘露时显示网格
-            const nectarGrid = this.createSimpleNectarGrid();
-            displayContainer.add(nectarGrid, { expand: true, align: 'center' });
-        } else {
-            // 空背包提示
-            const emptyMessage = this.createEmptyBackpackMessage();
-            displayContainer.add(emptyMessage, { expand: true, align: 'center' });
-        }
-
-        return displayContainer;
-    }
-
-    /**
-     * 创建简化的甘露网格 - 避免复杂布局问题
-     */
-    private createSimpleNectarGrid(): Phaser.GameObjects.GameObject {
-        // 使用简单的容器来放置甘露卡片
-        const gridContainer = this.add.container(0, 0);
-        
-        const nectars = this.nectarInventory!.nectars.slice(0, 8); // 最多显示8个
-        const columns = 4;
-        const cardWidth = 140;
-        const cardHeight = 100;
-        const spacingX = 180;
-        const spacingY = 120;
-        
-        nectars.forEach((nectar, index) => {
-            const col = index % columns;
-            const row = Math.floor(index / columns);
-            
-            const xPos = (col - 1.5) * spacingX;
-            const yPos = (row - 0.5) * spacingY;
-            
-            const nectarCard = this.createNectarCard(nectar, xPos, yPos);
-            gridContainer.add(nectarCard);
-        });
-        
-        return gridContainer;
-    }
-
-    /**
-     * 创建甘露卡片
-     */
-    private createNectarCard(nectar: any, x: number, y: number): Phaser.GameObjects.Container {
-        const cardContainer = this.add.container(x, y);
-        
-        // 获取学科颜色
-        const subjectColors: Record<string, number> = {
-            'chinese': 0xff6b6b,
-            'math': 0x4ecdc4,
-            'english': 0x45b7d1,
-            'technology': 0x9b59b6,
-            'marine': 0x26de81
-        };
-        const bgColor = subjectColors[nectar.subject] || 0xcccccc;
-        
-        // 卡片阴影
-        const shadow = this.add.rectangle(3, 3, 140, 100, 0x000000, 0.2);
-        
-        // 卡片背景
-        const cardBg = this.add.rectangle(0, 0, 140, 100, 0xffffff, 1)
-            .setStrokeStyle(3, bgColor)
-            .setInteractive({ useHandCursor: true });
-        
-        // 甘露图标
-        const icon = this.add.circle(0, -25, 15, bgColor, 1);
-        
-        // 学科名称
-        const subjectText = this.createText(0, -5, 
-            this.getSubjectName(nectar.subject), 'LABEL_TEXT', {
-            fontSize: 16,
-            color: '#333333',
-            fontStyle: 'bold'
-        });
-        
-        // 数量和治疗力
-        const countText = this.createText(-35, 20, 
-            `数量: ${nectar.count}`, 'NUMBER_TEXT', {
-            fontSize: 12,
-            color: '#666666'
-        });
-        
-        const healingText = this.createText(35, 20, 
-            `💖${nectar.healingPower}`, 'NUMBER_TEXT', {
-            fontSize: 12,
-            color: '#e74c3c'
-        });
-        
-        cardContainer.add([shadow, cardBg, icon, subjectText, countText, healingText]);
-        
-        // 交互效果
-        this.addCardInteraction(cardContainer, cardBg, bgColor, nectar);
-        
-        return cardContainer;
-    }
-
-    /**
-     * 添加卡片交互效果
-     */
-    private addCardInteraction(container: Phaser.GameObjects.Container, cardBg: Phaser.GameObjects.Rectangle, bgColor: number, nectar: any): void {
-        // 悬浮效果
-        cardBg.on('pointerover', () => {
-            this.tweens.add({
-                targets: container,
-                scaleX: 1.05,
-                scaleY: 1.05,
-                duration: 200,
-                ease: 'Power2'
-            });
-            cardBg.setFillStyle(bgColor, 0.1);
-        });
-        
-        cardBg.on('pointerout', () => {
-            this.tweens.add({
-                targets: container,
-                scaleX: 1,
-                scaleY: 1,
-                duration: 200,
-                ease: 'Power2'
-            });
-            cardBg.setFillStyle(0xffffff, 1);
-        });
-        
-        // 点击使用效果
-        cardBg.on('pointerdown', () => {
-            this.tweens.add({
-                targets: container,
-                scaleX: 0.95,
-                scaleY: 0.95,
-                duration: 100,
-                yoyo: true,
-                onComplete: () => {
-                    this.showNectarDetailDialog(nectar);
-                }
-            });
-        });
-    }
-
-    /**
-     * 创建空背包消息
-     */
-    private createEmptyBackpackMessage(): Phaser.GameObjects.GameObject {
-        const messageContainer = this.rexUI.add.sizer({
-            orientation: 'vertical',
-            space: { item: 20 }
-        });
-
-        // 空背包图标
-        const emptyIcon = this.createText(0, 0, '📦', 'TITLE_MEDIUM', {
-            fontSize: 48,
-            color: '#cccccc'
-        });
-
-        // 提示文字
-        const emptyText = this.createText(0, 0, '背包是空的\n去闯关获得更多甘露吧！', 'BODY_TEXT', {
-            fontSize: 18,
-            color: '#999999',
-            align: 'center'
-        });
-
-        messageContainer.add(emptyIcon, { expand: false });
-        messageContainer.add(emptyText, { expand: false });
-
-        return messageContainer;
-    }
-
-    /**
-     * 创建统计信息条
-     */
-    private createStatsBar(): Phaser.GameObjects.GameObject {
-        const statsText = !this.nectarInventory || !this.nectarInventory.nectars ? 
-            '📦 背包中没有甘露' :
-            `📊 甘露总数: ${this.nectarInventory.totalNectars} | 🎯 种类: ${this.nectarInventory.totalTypes}`;
-            
-        const statsContainer = this.rexUI.add.sizer({
-            orientation: 'horizontal',
-            width: 800,
-            height: 50
-        });
-
-        // 统计面板背景
-        statsContainer.addBackground(
-            this.rexUI.add.roundRectangle(0, 0, 800, 50, 8, 0xe8f5e8)
-                .setStrokeStyle(2, 0x4caf50)
-        );
-
-        // 统计文字
-        statsContainer.add(
-            this.createText(0, 0, statsText, 'LABEL_TEXT', {
-                fontSize: 20,
-                color: '#2e7d32',
-                fontStyle: 'bold'
-            }),
-            { expand: true, align: 'center' }
-        );
-
-        return statsContainer;
-    }
 
     /**
      * 显示甘露详情弹框 - 使用简化实现
@@ -1617,4 +1190,703 @@ export class GardenScene extends BaseScene {
             this.showMessage('使用甘露失败');
         }
     }
+
+
+/**
+ * 打开背包弹框 - 完整实现
+ */
+private openBackpackDialog(): void {
+    console.log('🎒 打开背包弹框');
+    
+    // 创建背景遮罩
+    const overlay = this.add.rectangle(
+        this.cameras.main.width / 2,
+        this.cameras.main.height / 2,
+        this.cameras.main.width,
+        this.cameras.main.height,
+        0x000000,
+        0.7
+    ).setInteractive().setDepth(1000);
+
+    // 创建背包主容器
+    const backpackContainer = this.add.container(
+        this.cameras.main.width / 2, 
+        this.cameras.main.height / 2
+    ).setDepth(1001);
+
+    const bpWidth = 1200;
+    const bpHeight = 650;
+    // 背包背景
+    const backpackBg = this.add.rectangle(0, 0, bpWidth, bpHeight, 0xffffff, 1)
+        .setStrokeStyle(4, 0x8B4513); // 棕色边框，像真实背包
+    //设置圆角
+    backpackBg.setRounded(20);
+
+    // 背包阴影
+    const shadow = this.add.rectangle(8, 8, bpWidth, bpHeight, 0x000000, 0.3);
+
+    backpackContainer.add([shadow, backpackBg]);
+
+    // 创建背包标题
+    this.createBackpackHeader(backpackContainer,bpWidth,bpHeight);
+
+    // 创建统计信息
+    // this.createBackpackStats(backpackContainer,bpWidth,bpHeight);
+
+    // 创建仓库格子区域
+    this.createInventoryGrid(backpackContainer,bpWidth,bpHeight);
+
+    // 创建操作按钮
+    this.createBackpackButtons(backpackContainer, overlay,bpWidth,bpHeight);
+
+    // 添加进入动画
+    this.animateBackpackOpen(backpackContainer, overlay);
+}
+
+/**
+ * 创建背包标题,做成一个容器,里面包含背包图标,标题文字,关闭按钮
+ */
+private createBackpackHeader(container: Phaser.GameObjects.Container, bpWidth: number, bpHeight: number): void {
+    const headerContainer = this.rexUI.add.sizer({
+        orientation: 'horizontal',
+        space: { item: 10 }
+    });
+    const headerHeight = Math.max(60, bpHeight * 0.1); // 标题高度为弹框高度的10%，最小60px
+    const headerY = -(bpHeight / 2) + (headerHeight / 2); // 顶部对齐
+    const iconSize = Math.min(40, headerHeight * 0.6); // 图标大小自适应
+    const fontSize = 32; // 字体大小根据宽度自适应
+    const closeBtnSize = Math.min(25, headerHeight * 0.4); // 关闭按钮大小自适应
+
+    // 标题背景
+    // 设置圆角
+    const headerBg = this.add.rectangle(0, headerY, bpWidth , headerHeight, 0xF5DEB3, 1)
+        .setStrokeStyle(2, 0x8B4513)
+        .setRounded(20);
+
+    // 背包图标
+    const iconX = -(bpWidth / 2) + (bpWidth * 0.08); // 左侧8%位置
+    const backpackIcon = this.add.text(iconX, headerY, '🎒', {
+        fontSize: `${iconSize}px`
+    }).setOrigin(0, 0.5);
+
+    // 标题文字
+    const titleX = iconX + (bpWidth * 0.05); // 图标右侧5%位置
+    const titleText = this.createText(titleX, headerY, '甘露仓库', 'TITLE_LARGE', {
+        fontSize: fontSize,
+        color: '#8B4513',
+        fontStyle: 'bold'
+    }).setOrigin(0, 0.5);
+
+    // 关闭按钮
+    const closeBtnX = bpWidth/2 - 100; // 靠右边
+    const closeBtn = this.add.circle(closeBtnX, headerY, closeBtnSize, 0xff4757, 1)
+        .setStrokeStyle(2, 0xd32f2f)
+        .setInteractive({ useHandCursor: true });
+
+    const closeText = this.add.text(closeBtnX, headerY, '✖', {
+        fontSize: `${closeBtnSize * 0.8}px`,
+        color: '#ffffff'
+    }).setOrigin(0.5);
+
+    // 关闭按钮事件
+    closeBtn.on('pointerdown', () => {
+        this.animateBackpackClose(container);
+    });
+
+    closeBtn.on('pointerover', () => {
+        this.tweens.add({
+            targets: [closeBtn, closeText],
+            scaleX: 1.1,
+            scaleY: 1.1,
+            duration: 150
+        });
+    });
+
+    closeBtn.on('pointerout', () => {
+        this.tweens.add({
+            targets: [closeBtn, closeText],
+            scaleX: 1,
+            scaleY: 1,
+            duration: 150
+        });
+    });
+    headerContainer.add([headerBg, backpackIcon, titleText, closeBtn, closeText]);
+    container.add([headerContainer]);
+}
+
+/**
+ * 创建背包统计信息
+ */
+private createBackpackStats(container: Phaser.GameObjects.Container, bpWidth: number, bpHeight: number): void {
+    const headerHeight = Math.max(60, bpHeight * 0.1);
+    const statsHeight = Math.max(40, bpHeight * 0.08); // 统计区域高度为弹框高度的8%，最小40px
+    const statsY = -(bpHeight / 2) + headerHeight + (statsHeight / 2) + 10; // 紧贴标题下方
+    const fontSize = Math.min(18, bpWidth * 0.015); // 字体大小根据宽度自适应
+    
+    // 统计背景
+    const statsBg = this.add.rectangle(0, statsY, bpWidth * 0.9, statsHeight, 0xE6F3FF, 1)
+        .setStrokeStyle(1, 0x4A90E2);
+
+    // 统计文字
+    let statsText = '📦 背包空空如也';
+    if (this.nectarInventory && this.nectarInventory.nectars.length > 0) {
+        // 根据弹框宽度调整文字内容
+        if (bpWidth >= 1000) {
+            statsText = `📊 甘露总数: ${this.nectarInventory.totalNectars} | 🎯 种类: ${this.nectarInventory.totalTypes} | 📦 格子: ${this.nectarInventory.nectars.length}/20`;
+        } else {
+            statsText = `📊 总数: ${this.nectarInventory.totalNectars} | 🎯 种类: ${this.nectarInventory.totalTypes} | 📦 ${this.nectarInventory.nectars.length}/20`;
+        }
+    }
+
+    const statsTextObj = this.createText(0, statsY, statsText, 'BODY_TEXT', {
+        fontSize: fontSize,
+        color: '#2E5984',
+        fontStyle: 'bold'
+    }).setOrigin(0.5);
+
+    container.add([statsBg, statsTextObj]);
+}
+
+/**
+ * 创建仓库格子网格
+ */
+private createInventoryGrid(container: Phaser.GameObjects.Container, bpWidth: number, bpHeight: number): void {
+    const headerHeight = Math.max(60, bpHeight * 0.1);
+    const statsHeight = Math.max(40, bpHeight * 0.08);
+    const buttonHeight = Math.max(50, bpHeight * 0.1);
+    
+    // 计算网格可用区域
+    const gridAreaHeight = bpHeight - headerHeight - statsHeight - buttonHeight - 60; // 减去间距
+    const gridAreaWidth = bpWidth * 0.9; // 网格宽度为弹框宽度的90%
+    
+    // 根据可用区域计算最佳网格布局
+    const cols = Math.max(4, Math.min(6, Math.floor(bpWidth / 150))); // 根据宽度调整列数，4-6列
+    const rows = Math.max(3, Math.min(5, Math.floor(gridAreaHeight / 120))); // 根据高度调整行数，3-5行
+    const totalSlots = cols * rows;
+    
+    // 计算最佳格子大小和间距
+    const maxSlotSize = Math.min(100, (gridAreaWidth - (cols + 1) * 10) / cols); // 最大格子尺寸
+    const slotSize = Math.max(60, maxSlotSize); // 最小60px
+    const spacing = Math.max(5, (gridAreaWidth - cols * slotSize) / (cols + 1)); // 自适应间距
+    
+    // 网格位置计算
+    const gridY = -(bpHeight / 2) + headerHeight + statsHeight + 30; // 统计区域下方30px
+    const gridCenterY = gridY + (gridAreaHeight / 2);
+    
+    // 计算网格实际大小
+    const actualGridWidth = cols * slotSize + (cols - 1) * spacing;
+    const actualGridHeight = rows * slotSize + (rows - 1) * spacing;
+    
+    // 网格背景
+    const gridBg = this.add.rectangle(0, gridCenterY, actualGridWidth + 40, actualGridHeight + 40, 0xFAFAFA, 1)
+        .setStrokeStyle(2, 0xDDDDDD);
+    container.add(gridBg);
+
+    // 计算起始位置（居中对齐）
+    const gridStartX = -(actualGridWidth / 2) + (slotSize / 2);
+    const gridStartY = gridCenterY - (actualGridHeight / 2) + (slotSize / 2);
+
+    // 创建格子
+    for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+            const slotIndex = row * cols + col;
+            const x = gridStartX + col * (slotSize + spacing);
+            const y = gridStartY + row * (slotSize + spacing);
+
+            // 创建格子
+            const slot = this.createInventorySlot(x, y, slotSize, slotIndex);
+            container.add(slot);
+
+            // 如果有甘露数据，放置甘露
+            if (this.nectarInventory && 
+                this.nectarInventory.nectars && 
+                slotIndex < this.nectarInventory.nectars.length) {
+                const nectar = this.nectarInventory.nectars[slotIndex];
+                const nectarItem = this.createNectarItem(x, y, nectar, slotSize);
+                container.add(nectarItem);
+            }
+        }
+    }
+
+    // 添加网格信息到容器数据中，供其他方法使用
+    container.setData('gridInfo', {
+        cols, rows, totalSlots, slotSize, spacing,
+        gridStartX, gridStartY, gridCenterY
+    });
+}
+
+/**
+ * 创建单个仓库格子
+ */
+private createInventorySlot(x: number, y: number, size: number, index: number): Phaser.GameObjects.Container {
+    const slotContainer = this.add.container(x, y);
+
+    // 格子背景
+    const slotBg = this.add.rectangle(0, 0, size, size, 0xF8F8F8, 1)
+        .setStrokeStyle(2, 0xBBBBBB);
+
+    // 格子编号（小字）
+    const slotNumber = this.add.text(-35, -35, (index + 1).toString(), {
+        fontSize: '12px',
+        color: '#999999'
+    });
+
+    // 格子装饰线条（模拟缝线效果）
+    const decorLine1 = this.add.line(0, 0, -30, -30, 30, 30, 0xDDDDDD, 1).setLineWidth(1);
+    const decorLine2 = this.add.line(0, 0, 30, -30, -30, 30, 0xDDDDDD, 1).setLineWidth(1);
+
+    slotContainer.add([slotBg, slotNumber, decorLine1, decorLine2]);
+
+    return slotContainer;
+}
+
+/**
+ * 创建甘露物品
+ */
+private createNectarItem(x: number, y: number, nectar: any, slotSize: number): Phaser.GameObjects.Container {
+    const itemContainer = this.add.container(x, y);
+
+    // 学科颜色映射
+    const subjectColors: Record<string, number> = {
+        'chinese': 0xFF6B6B,
+        'math': 0x4ECDC4,
+        'english': 0x45B7D1,
+        'technology': 0x9B59B6,
+        'marine': 0x26DE81
+    };
+    const itemColor = subjectColors[nectar.subject] || 0xCCCCCC;
+
+    // 根据格子大小自适应元素尺寸
+    const itemSize = slotSize - 10;
+    const iconRadius = Math.max(8, slotSize * 0.15); // 图标半径自适应
+    const countRadius = Math.max(8, slotSize * 0.12); // 数量标签半径自适应
+    const subjectFontSize = Math.max(10, slotSize * 0.12); // 学科名称字体大小自适应
+    const countFontSize = Math.max(8, slotSize * 0.1); // 数量字体大小自适应
+    const healingFontSize = Math.max(8, slotSize * 0.1); // 治疗力字体大小自适应
+
+    // 甘露容器背景
+    const itemBg = this.add.rectangle(0, 0, itemSize, itemSize, itemColor, 0.8)
+        .setStrokeStyle(2, itemColor);
+
+    // 甘露图标
+    const iconY = -(itemSize * 0.15); // 图标位置自适应
+    const nectarIcon = this.add.circle(0, iconY, iconRadius, itemColor, 1);
+
+    // 学科名称
+    const subjectY = itemSize * 0.1; // 学科名称位置自适应
+    const subjectText = this.createText(0, subjectY, 
+        this.getSubjectNameShort(nectar.subject), 'LABEL_TEXT', {
+        fontSize: subjectFontSize,
+        color: '#FFFFFF',
+        fontStyle: 'bold'
+    }).setOrigin(0.5);
+
+    // 数量标签 - 位置自适应
+    const countX = itemSize * 0.35;
+    const countY = -(itemSize * 0.35);
+    const countBg = this.add.circle(countX, countY, countRadius, 0xFF4757, 1);
+    const countText = this.add.text(countX, countY, nectar.count.toString(), {
+        fontSize: `${countFontSize}px`,
+        color: '#FFFFFF',
+        fontStyle: 'bold'
+    }).setOrigin(0.5);
+
+    // 治疗力显示 - 位置自适应
+    const healingY = itemSize * 0.35;
+    const healingText = this.add.text(0, healingY, `💖${nectar.healingPower}`, {
+        fontSize: `${healingFontSize}px`,
+        color: '#FF4757'
+    }).setOrigin(0.5);
+
+    itemContainer.add([itemBg, nectarIcon, subjectText, countBg, countText, healingText]);
+
+    // 添加交互效果
+    itemBg.setInteractive({ useHandCursor: true });
+
+    // 悬浮效果
+    itemBg.on('pointerover', () => {
+        this.tweens.add({
+            targets: itemContainer,
+            scaleX: 1.1,
+            scaleY: 1.1,
+            duration: 200,
+            ease: 'Power2'
+        });
+        
+        // 显示详细信息提示
+        this.showNectarTooltip(nectar, x, y);
+    });
+
+    itemBg.on('pointerout', () => {
+        this.tweens.add({
+            targets: itemContainer,
+            scaleX: 1,
+            scaleY: 1,
+            duration: 200,
+            ease: 'Power2'
+        });
+        
+        // 隐藏提示
+        this.hideNectarTooltip();
+    });
+
+    // 点击效果
+    itemBg.on('pointerdown', () => {
+        this.tweens.add({
+            targets: itemContainer,
+            scaleX: 0.9,
+            scaleY: 0.9,
+            duration: 100,
+            yoyo: true,
+            onComplete: () => {
+                this.showNectarDetailDialog(nectar);
+            }
+        });
+    });
+
+    return itemContainer;
+}
+
+/**
+ * 获取学科简称
+ */
+private getSubjectNameShort(subject: string): string {
+    const nameMap: Record<string, string> = {
+        'chinese': '语文',
+        'math': '数学',
+        'english': '英语',
+        'technology': '科技',
+        'marine': '海洋'
+    };
+    return nameMap[subject] || subject;
+}
+
+/**
+ * 显示甘露提示信息
+ */
+private showNectarTooltip(nectar: any, x: number, y: number): void {
+    // 如果已有提示框，先移除
+    this.hideNectarTooltip();
+
+    const tooltipContainer = this.add.container(
+        this.cameras.main.width / 2 + x + 100, 
+        this.cameras.main.height / 2 + y
+    ).setDepth(1500);
+
+    // 提示框背景
+    const tooltipBg = this.add.rectangle(0, 0, 200, 120, 0x2C3E50, 0.95)
+        .setStrokeStyle(2, 0x34495E);
+
+    // 提示文字
+    const tooltipText = this.createText(0, 0, 
+        `${this.getSubjectName(nectar.subject)}甘露\n` +
+        `年级: ${nectar.grade}\n` +
+        `分类: ${nectar.category}\n` +
+        `治疗力: ${nectar.healingPower}\n` +
+        `数量: ${nectar.count}`, 'LABEL_TEXT', {
+        fontSize: 14,
+        color: '#FFFFFF',
+        align: 'center'
+    }).setOrigin(0.5);
+
+    tooltipContainer.add([tooltipBg, tooltipText]);
+
+    // 保存引用以便清理
+    tooltipContainer.setData('isTooltip', true);
+    this.currentTooltip = tooltipContainer;
+
+    // 淡入动画
+    tooltipContainer.setAlpha(0);
+    this.tweens.add({
+        targets: tooltipContainer,
+        alpha: 1,
+        duration: 200
+    });
+}
+
+/**
+ * 隐藏甘露提示信息
+ */
+private hideNectarTooltip(): void {
+    if (this.currentTooltip) {
+        this.currentTooltip.destroy();
+        this.currentTooltip = null;
+    }
+}
+
+/**
+ * 创建背包操作按钮
+ */
+private createBackpackButtons(container: Phaser.GameObjects.Container, overlay: Phaser.GameObjects.Rectangle, bpWidth: number, bpHeight: number): void {
+    const buttonHeight = Math.max(40, bpHeight * 0.06); // 按钮高度自适应
+    const buttonWidth = Math.max(100, bpWidth * 0.08); // 按钮宽度自适应
+    const buttonY = (bpHeight / 2) - (buttonHeight / 2) - 20; // 底部对齐，留20px边距
+    const buttonSpacing = bpWidth * 0.02; // 按钮间距为弹框宽度的2%
+    const fontSize = Math.min(16, bpWidth * 0.012); // 字体大小自适应
+
+    // 计算按钮位置（三个按钮居中排列）
+    const totalButtonWidth = buttonWidth * 3 + buttonSpacing * 2;
+    const startX = -(totalButtonWidth / 2) + (buttonWidth / 2);
+
+    // 整理按钮
+    const organizeBtnX = startX;
+    const organizeBtn = this.add.rectangle(organizeBtnX, buttonY, buttonWidth, buttonHeight, 0x4CAF50, 1)
+        .setStrokeStyle(2, 0x388E3C)
+        .setInteractive({ useHandCursor: true });
+
+    const organizeText = this.createText(organizeBtnX, buttonY, '📦 整理', 'BUTTON_TEXT', {
+        fontSize: fontSize,
+        color: '#FFFFFF'
+    }).setOrigin(0.5);
+
+    // 整理按钮事件
+    organizeBtn.on('pointerdown', () => {
+        this.organizeBackpack();
+    });
+
+    // 全部使用按钮
+    const useAllBtnX = startX + buttonWidth + buttonSpacing;
+    const useAllBtn = this.add.rectangle(useAllBtnX, buttonY, buttonWidth, buttonHeight, 0xFF9800, 1)
+        .setStrokeStyle(2, 0xF57C00)
+        .setInteractive({ useHandCursor: true });
+
+    // 根据弹框宽度调整按钮文字
+    const useAllBtnText = bpWidth >= 800 ? '✨ 全部使用' : '✨ 全用';
+    const useAllText = this.createText(useAllBtnX, buttonY, useAllBtnText, 'BUTTON_TEXT', {
+        fontSize: fontSize,
+        color: '#FFFFFF'
+    }).setOrigin(0.5);
+
+    // 全部使用按钮事件
+    useAllBtn.on('pointerdown', () => {
+        this.useAllNectars();
+    });
+
+    // 关闭按钮
+    const closeBtnX = startX + (buttonWidth + buttonSpacing) * 2;
+    const closeBtn = this.add.rectangle(closeBtnX, buttonY, buttonWidth, buttonHeight, 0xF44336, 1)
+        .setStrokeStyle(2, 0xD32F2F)
+        .setInteractive({ useHandCursor: true });
+
+    const closeText = this.createText(closeBtnX, buttonY, '❌ 关闭', 'BUTTON_TEXT', {
+        fontSize: fontSize,
+        color: '#FFFFFF'
+    }).setOrigin(0.5);
+
+    // 关闭按钮事件
+    closeBtn.on('pointerdown', () => {
+        this.animateBackpackClose(container, overlay);
+    });
+
+    // 添加按钮悬浮效果
+    [organizeBtn, useAllBtn, closeBtn].forEach(btn => {
+        btn.on('pointerover', () => {
+            this.tweens.add({
+                targets: btn,
+                scaleX: 1.05,
+                scaleY: 1.05,
+                duration: 150
+            });
+        });
+
+        btn.on('pointerout', () => {
+            this.tweens.add({
+                targets: btn,
+                scaleX: 1,
+                scaleY: 1,
+                duration: 150
+            });
+        });
+    });
+
+    container.add([organizeBtn, organizeText, useAllBtn, useAllText, closeBtn, closeText]);
+
+    // 点击遮罩关闭
+    overlay.on('pointerdown', () => {
+        this.animateBackpackClose(container, overlay);
+    });
+}
+
+/**
+ * 背包打开动画
+ */
+private animateBackpackOpen(container: Phaser.GameObjects.Container, overlay: Phaser.GameObjects.Rectangle): void {
+    // 初始状态
+    container.setScale(0.3);
+    container.setAlpha(0);
+    overlay.setAlpha(0);
+
+    // 遮罩渐入
+    this.tweens.add({
+        targets: overlay,
+        alpha: 0.7,
+        duration: 300
+    });
+
+    // 背包弹出动画
+    this.tweens.add({
+        targets: container,
+        scaleX: 1,
+        scaleY: 1,
+        alpha: 1,
+        duration: 500,
+        ease: 'Back.easeOut'
+    });
+}
+
+/**
+ * 背包关闭动画
+ */
+private animateBackpackClose(container: Phaser.GameObjects.Container, overlay?: Phaser.GameObjects.Rectangle): void {
+    this.hideNectarTooltip(); // 清理提示框
+
+    this.tweens.add({
+        targets: container,
+        scaleX: 0,
+        scaleY: 0,
+        alpha: 0,
+        duration: 300,
+        ease: 'Back.easeIn',
+        onComplete: () => {
+            container.destroy();
+            if (overlay) overlay.destroy();
+        }
+    });
+}
+
+/**
+ * 整理背包
+ */
+private organizeBackpack(): void {
+    this.showMessage('🔄 背包整理完成！');
+    // 这里可以添加整理逻辑，比如按学科分类排序
+}
+
+/**
+ * 使用全部甘露
+ */
+private useAllNectars(): void {
+    if (!this.nectarInventory || !this.nectarInventory.nectars.length) {
+        this.showMessage('📦 背包中没有甘露可以使用');
+        return;
+    }
+
+    // 显示确认对话框
+    this.showConfirmDialog(
+        '确定要使用全部甘露吗？',
+        '这将消耗背包中的所有甘露来恢复花朵HP',
+        () => {
+            // 确认使用
+            let totalHealing = 0;
+            this.nectarInventory!.nectars.forEach(nectar => {
+                totalHealing += nectar.healingPower * nectar.count;
+            });
+            
+            this.showMessage(`✨ 使用了全部甘露，总共恢复 ${totalHealing} 点HP！`);
+            
+            // 清空甘露库存（这里应该调用API）
+            this.nectarInventory!.nectars = [];
+            this.nectarInventory!.totalNectars = 0;
+            this.nectarInventory!.totalTypes = 0;
+            
+            // 重新刷新背包显示
+            this.animateBackpackClose(this.children.getByName('backpackContainer') as Phaser.GameObjects.Container);
+            setTimeout(() => {
+                this.openBackpackDialog();
+            }, 500);
+        }
+    );
+}
+
+/**
+ * 显示确认对话框
+ */
+private showConfirmDialog(title: string, message: string, onConfirm: () => void): void {
+    // 创建确认对话框的实现
+    const confirmOverlay = this.add.rectangle(
+        this.cameras.main.width / 2,
+        this.cameras.main.height / 2,
+        this.cameras.main.width,
+        this.cameras.main.height,
+        0x000000,
+        0.8
+    ).setInteractive().setDepth(2000);
+
+    const confirmContainer = this.add.container(
+        this.cameras.main.width / 2,
+        this.cameras.main.height / 2
+    ).setDepth(2001);
+
+    // 对话框背景
+    const dialogBg = this.add.rectangle(0, 0, 400, 200, 0xFFFFFF, 1)
+        .setStrokeStyle(3, 0x4CAF50);
+
+    // 标题
+    const titleText = this.createText(0, -60, title, 'TITLE_MEDIUM', {
+        fontSize: 20,
+        color: '#2D5016'
+    }).setOrigin(0.5);
+
+    // 消息
+    const messageText = this.createText(0, -20, message, 'BODY_TEXT', {
+        fontSize: 16,
+        color: '#333333',
+        align: 'center',
+        wordWrap: { width: 350 }
+    }).setOrigin(0.5);
+
+    // 确认按钮
+    const confirmBtn = this.add.rectangle(-80, 60, 100, 40, 0x4CAF50, 1)
+        .setStrokeStyle(2, 0x388E3C)
+        .setInteractive({ useHandCursor: true });
+
+    const confirmText = this.createText(-80, 60, '✓ 确认', 'BUTTON_TEXT', {
+        fontSize: 16,
+        color: '#FFFFFF'
+    }).setOrigin(0.5);
+
+    // 取消按钮
+    const cancelBtn = this.add.rectangle(80, 60, 100, 40, 0xF44336, 1)
+        .setStrokeStyle(2, 0xD32F2F)
+        .setInteractive({ useHandCursor: true });
+
+    const cancelText = this.createText(80, 60, '✗ 取消', 'BUTTON_TEXT', {
+        fontSize: 16,
+        color: '#FFFFFF'
+    }).setOrigin(0.5);
+
+    confirmContainer.add([dialogBg, titleText, messageText, confirmBtn, confirmText, cancelBtn, cancelText]);
+
+    // 按钮事件
+    confirmBtn.on('pointerdown', () => {
+        onConfirm();
+        confirmOverlay.destroy();
+        confirmContainer.destroy();
+    });
+
+    cancelBtn.on('pointerdown', () => {
+        confirmOverlay.destroy();
+        confirmContainer.destroy();
+    });
+
+    confirmOverlay.on('pointerdown', () => {
+        confirmOverlay.destroy();
+        confirmContainer.destroy();
+    });
+
+    // 弹出动画
+    confirmContainer.setScale(0.5);
+    this.tweens.add({
+        targets: confirmContainer,
+        scaleX: 1,
+        scaleY: 1,
+        duration: 300,
+        ease: 'Back.easeOut'
+    });
+}
+
+// 在类的属性声明部分添加
+private currentTooltip: Phaser.GameObjects.Container | null = null;
+
+
 } 

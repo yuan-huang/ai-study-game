@@ -1,7 +1,7 @@
 import { Types } from 'phaser';
 import { LoadingScene } from '../scenes/LoadingScene';
 import { LoginScene } from '../scenes/LoginScene';
-import UIPlugin from 'phaser3-rex-plugins/templates/ui/ui-plugin.js';
+import UIPlugin from 'phaser3-rex-plugins/dist/rexuiplugin.min.js';
 import { MainScene } from '../scenes/MainScene';
 import { LevelSelectScene } from '../scenes/LevelSelectScene';
 import { TowerDefenseSceneRefactored } from '@/scenes/levels/TowerDefenseSceneRefactored';
