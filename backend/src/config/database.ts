@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 
 
 dotenv.config();
-const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/swl';
+const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/knowledge-garden';
 
 
 export const connectDB = async () => {
