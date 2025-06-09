@@ -915,7 +915,7 @@ export class GardenScene extends BaseScene {
             height: 350,
             space: { 
                 left: 25, right: 25, top: 20, bottom: 20,
-                item: 15 
+                item: 20 
             }
         });
 
@@ -923,6 +923,7 @@ export class GardenScene extends BaseScene {
         const background = this.rexUI.add.roundRectangle(0, 0, 450, 350, 15, 0xffffff)
             .setStrokeStyle(3, 0x4caf50);
         detailSizer.addBackground(background);
+        
 
         // 添加标题
         const title = this.createNectarDetailTitle(nectar);
@@ -970,18 +971,26 @@ export class GardenScene extends BaseScene {
      * 创建甘露详情按钮区域
      */
     private createNectarDetailButtons(nectar: any, overlay: any, dialog: any): Phaser.GameObjects.GameObject {
-        const buttonContainer = this.rexUI.add.sizer({
-            orientation: 'horizontal',
-            space: { item: 20 }
-        });
+        const buttonContainer = this.add.container(0, 0);
+        
+        // 计算按钮间距和位置
+        const buttonWidth = 150;
+        const buttonSpacing = 40;
+        const totalWidth = buttonWidth * 2 + buttonSpacing;
+        
+        // 使用按钮位置
+        const useButtonX = -(totalWidth / 2) + (buttonWidth / 2);
+        const cancelButtonX = (totalWidth / 2) - (buttonWidth / 2);
 
         // 使用按钮
-        const useButton = this.createDetailUseButton(nectar, overlay, dialog);
-        buttonContainer.add(useButton, { expand: false });
+        const useButton = this.createDetailUseButton(nectar, overlay, dialog) as Phaser.GameObjects.Container;
+        useButton.x = useButtonX;
+        buttonContainer.add(useButton);
 
         // 取消按钮
-        const cancelButton = this.createDetailCancelButton(overlay, dialog);
-        buttonContainer.add(cancelButton, { expand: false });
+        const cancelButton = this.createDetailCancelButton(overlay, dialog) as Phaser.GameObjects.Container;
+        cancelButton.x = cancelButtonX;
+        buttonContainer.add(cancelButton);
 
         return buttonContainer;
     }
@@ -990,23 +999,22 @@ export class GardenScene extends BaseScene {
      * 创建使用按钮
      */
     private createDetailUseButton(nectar: any, overlay: any, dialog: any): Phaser.GameObjects.GameObject {
-        const useContainer = this.rexUI.add.sizer({
-            orientation: 'horizontal',
-            space: { item: 8 }
-        });
+        const useContainer = this.add.container(0, 0);
 
-        const useButton = this.rexUI.add.roundRectangle(0, 0, 100, 40, 8, 0x4caf50)
+        const useButton = this.add.rectangle(0, 50, 150, 60, 0x4caf50, 1)
             .setStrokeStyle(2, 0x388e3c)
-            .setInteractive({ useHandCursor: true });
+            .setInteractive({ useHandCursor: true })
+            .setRounded(20);
 
-        const useText = this.createText(0, 0, '✨ 使用', 'BUTTON_TEXT', {
-            fontSize: 16,
+        const useText = this.createText(0, 50, '✨使用', 'BUTTON_TEXT', {
+            fontSize: 32,
             color: '#ffffff',
-            fontStyle: 'bold'
-        });
+            fontStyle: 'bold',
+            align: 'center'
+        }).setOrigin(0.5, 0.5);
 
-        useContainer.add(useButton, { expand: true });
-        useContainer.add(useText, { expand: false, align: 'center' });
+        useContainer.add(useButton);
+        useContainer.add(useText);
 
         // 悬浮效果
         useButton.on('pointerover', () => {
@@ -1040,23 +1048,21 @@ export class GardenScene extends BaseScene {
      * 创建取消按钮
      */
     private createDetailCancelButton(overlay: any, dialog: any): Phaser.GameObjects.GameObject {
-        const cancelContainer = this.rexUI.add.sizer({
-            orientation: 'horizontal',
-            space: { item: 8 }
-        });
+        const cancelContainer = this.add.container(0, 0);
 
-        const cancelButton = this.rexUI.add.roundRectangle(0, 0, 100, 40, 8, 0xf44336)
+        const cancelButton = this.add.rectangle(0, 50, 150, 60, 0xf44336, 1)
             .setStrokeStyle(2, 0xd32f2f)
+            .setRounded(20)
             .setInteractive({ useHandCursor: true });
 
-        const cancelText = this.createText(0, 0, '❌ 取消', 'BUTTON_TEXT', {
-            fontSize: 16,
+        const cancelText = this.createText(0, 50, '❌ 取消', 'BUTTON_TEXT', {
+            fontSize: 32,
             color: '#ffffff',
             fontStyle: 'bold'
-        });
+        }).setOrigin(0.5, 0.5);
 
-        cancelContainer.add(cancelButton, { expand: true });
-        cancelContainer.add(cancelText, { expand: false, align: 'center' });
+        cancelContainer.add(cancelButton);
+        cancelContainer.add(cancelText);
 
         // 悬浮效果
         cancelButton.on('pointerover', () => {
@@ -1125,8 +1131,9 @@ export class GardenScene extends BaseScene {
         const icon = this.add.circle(0, 0, 18, iconColor, 1);
         
         // 标题文字
-        const titleText = this.createText(0, 0, `${this.getSubjectName(nectar.subject)}甘露详情`, 'TITLE_MEDIUM', {
-            fontSize: 22,
+        const titleText = this.createText(0, 0, 
+            `${this.getSubjectName(nectar.subject)}甘露详情`, 'TITLE_MEDIUM', {
+            fontSize: 32,
             color: '#2d5016',
             fontStyle: 'bold'
         });
@@ -1148,25 +1155,20 @@ export class GardenScene extends BaseScene {
             space: { item: 10 }
         })
         .add(this.createText(0, 0, `学科: ${this.getSubjectName(nectar.subject)}`, 'BODY_TEXT', {
-            fontSize: 18,
-            color: '#333333'
+            fontSize: 32,
+            color: '#333333',
+            fontStyle: 'bold'
         }))
         .add(this.createText(0, 0, `年级: ${nectar.grade}年级`, 'BODY_TEXT', {
-            fontSize: 18,
-            color: '#333333'
+            fontSize: 32,
+            color: '#333333',
+            fontStyle: 'bold'
         }))
         .add(this.createText(0, 0, `分类: ${nectar.category}`, 'BODY_TEXT', {
-            fontSize: 18,
-            color: '#333333'
+            fontSize: 32,
+            color: '#333333',
+            fontStyle: 'bold'
         }))
-        .add(this.createText(0, 0, `治疗力: ${nectar.healingPower}`, 'NUMBER_TEXT', {
-            fontSize: 18,
-            color: '#ff6b6b'
-        }))
-        .add(this.createText(0, 0, `数量: ${nectar.count}`, 'NUMBER_TEXT', {
-            fontSize: 18,
-            color: '#4caf50'
-        }));
     }
 
 
@@ -1215,7 +1217,7 @@ private openBackpackDialog(): void {
     ).setDepth(1001);
 
     const bpWidth = 1200;
-    const bpHeight = 650;
+    const bpHeight = 760;
     // 背包背景
     const backpackBg = this.add.rectangle(0, 0, bpWidth, bpHeight, 0xffffff, 1)
         .setStrokeStyle(4, 0x8B4513); // 棕色边框，像真实背包
@@ -1230,14 +1232,9 @@ private openBackpackDialog(): void {
     // 创建背包标题
     this.createBackpackHeader(backpackContainer,bpWidth,bpHeight);
 
-    // 创建统计信息
-    // this.createBackpackStats(backpackContainer,bpWidth,bpHeight);
-
     // 创建仓库格子区域
-    this.createInventoryGrid(backpackContainer,bpWidth,bpHeight);
+    this.createInventoryGrid(backpackContainer, bpWidth, bpHeight);
 
-    // 创建操作按钮
-    this.createBackpackButtons(backpackContainer, overlay,bpWidth,bpHeight);
 
     // 添加进入动画
     this.animateBackpackOpen(backpackContainer, overlay);
@@ -1247,45 +1244,45 @@ private openBackpackDialog(): void {
  * 创建背包标题,做成一个容器,里面包含背包图标,标题文字,关闭按钮
  */
 private createBackpackHeader(container: Phaser.GameObjects.Container, bpWidth: number, bpHeight: number): void {
-    const headerContainer = this.rexUI.add.sizer({
-        orientation: 'horizontal',
-        space: { item: 10 }
-    });
+    const headerContainer = this.add.container(0, 0);
+    
     const headerHeight = Math.max(60, bpHeight * 0.1); // 标题高度为弹框高度的10%，最小60px
     const headerY = -(bpHeight / 2) + (headerHeight / 2); // 顶部对齐
     const iconSize = Math.min(40, headerHeight * 0.6); // 图标大小自适应
     const fontSize = 32; // 字体大小根据宽度自适应
-    const closeBtnSize = Math.min(25, headerHeight * 0.4); // 关闭按钮大小自适应
+    const closeBtnSize = Math.max(30, Math.min(50, headerHeight * 0.6)); // 关闭按钮大小自适应
 
     // 标题背景
+    const headerBg = this.add.rectangle(0, headerY, bpWidth * 0.96, headerHeight, 0xF5DEB3, 1)
+        .setStrokeStyle(2, 0x8B4513);
     // 设置圆角
-    const headerBg = this.add.rectangle(0, headerY, bpWidth , headerHeight, 0xF5DEB3, 1)
-        .setStrokeStyle(2, 0x8B4513)
-        .setRounded(20);
+    if (headerBg.setRounded) {
+        headerBg.setRounded(20);
+    }
 
     // 背包图标
-    const iconX = -(bpWidth / 2) + (bpWidth * 0.08); // 左侧8%位置
+    const iconX = -(bpWidth / 2) + 80; // 左侧固定位置
     const backpackIcon = this.add.text(iconX, headerY, '🎒', {
         fontSize: `${iconSize}px`
-    }).setOrigin(0, 0.5);
+    }).setOrigin(0.5, 0.5);
 
-    // 标题文字
-    const titleX = iconX + (bpWidth * 0.05); // 图标右侧5%位置
-    const titleText = this.createText(titleX, headerY, '甘露仓库', 'TITLE_LARGE', {
+    // 标题文字（居中）
+    const titleText = this.createText(0, headerY, '甘露仓库', 'TITLE_LARGE', {
         fontSize: fontSize,
         color: '#8B4513',
         fontStyle: 'bold'
-    }).setOrigin(0, 0.5);
+    }).setOrigin(0.5, 0.5);
 
     // 关闭按钮
-    const closeBtnX = bpWidth/2 - 100; // 靠右边
+    const closeBtnX = (bpWidth / 2) - 80; // 右侧固定位置
     const closeBtn = this.add.circle(closeBtnX, headerY, closeBtnSize, 0xff4757, 1)
-        .setStrokeStyle(2, 0xd32f2f)
+        .setStrokeStyle(3, 0xd32f2f)
         .setInteractive({ useHandCursor: true });
 
     const closeText = this.add.text(closeBtnX, headerY, '✖', {
-        fontSize: `${closeBtnSize * 0.8}px`,
-        color: '#ffffff'
+        fontSize: `${closeBtnSize * 0.6}px`,
+        color: '#ffffff',
+        fontStyle: 'bold'
     }).setOrigin(0.5);
 
     // 关闭按钮事件
@@ -1296,8 +1293,8 @@ private createBackpackHeader(container: Phaser.GameObjects.Container, bpWidth: n
     closeBtn.on('pointerover', () => {
         this.tweens.add({
             targets: [closeBtn, closeText],
-            scaleX: 1.1,
-            scaleY: 1.1,
+            scaleX: 1.2,
+            scaleY: 1.2,
             duration: 150
         });
     });
@@ -1310,8 +1307,12 @@ private createBackpackHeader(container: Phaser.GameObjects.Container, bpWidth: n
             duration: 150
         });
     });
+
+    // 将所有元素添加到标题容器
     headerContainer.add([headerBg, backpackIcon, titleText, closeBtn, closeText]);
-    container.add([headerContainer]);
+    
+    // 将标题容器添加到主容器
+    container.add(headerContainer);
 }
 
 /**
@@ -1454,7 +1455,8 @@ private createNectarItem(x: number, y: number, nectar: any, slotSize: number): P
         'technology': 0x9B59B6,
         'marine': 0x26DE81
     };
-    const itemColor = subjectColors[nectar.subject] || 0xCCCCCC;
+    // 默认白色
+    const itemColor = 0xFFFFFF;
 
     // 根据格子大小自适应元素尺寸
     const itemSize = slotSize - 10;
@@ -1465,12 +1467,15 @@ private createNectarItem(x: number, y: number, nectar: any, slotSize: number): P
     const healingFontSize = Math.max(8, slotSize * 0.1); // 治疗力字体大小自适应
 
     // 甘露容器背景
-    const itemBg = this.add.rectangle(0, 0, itemSize, itemSize, itemColor, 0.8)
+    const itemBg = this.add.rectangle(0, 0, itemSize, itemSize, itemColor, 0.5)
         .setStrokeStyle(2, itemColor);
 
     // 甘露图标
-    const iconY = -(itemSize * 0.15); // 图标位置自适应
-    const nectarIcon = this.add.circle(0, iconY, iconRadius, itemColor, 1);
+    const iconY = -(itemSize * 0.1); // 图标位置自适应
+    // 甘露图标path
+    const nectarIcon = this.add.image(0, 0, "nectar");
+    nectarIcon.setDisplaySize(slotSize, slotSize);
+    nectarIcon.setOrigin(0.5, 0.5);
 
     // 学科名称
     const subjectY = itemSize * 0.1; // 学科名称位置自适应
@@ -1482,23 +1487,23 @@ private createNectarItem(x: number, y: number, nectar: any, slotSize: number): P
     }).setOrigin(0.5);
 
     // 数量标签 - 位置自适应
-    const countX = itemSize * 0.35;
-    const countY = -(itemSize * 0.35);
-    const countBg = this.add.circle(countX, countY, countRadius, 0xFF4757, 1);
-    const countText = this.add.text(countX, countY, nectar.count.toString(), {
-        fontSize: `${countFontSize}px`,
-        color: '#FFFFFF',
-        fontStyle: 'bold'
-    }).setOrigin(0.5);
+    // const countX = itemSize * 0.35;
+    // const countY = -(itemSize * 0.35);
+    // const countBg = this.add.circle(countX, countY, countRadius, 0xFF4757, 1);
+    // const countText = this.add.text(countX, countY, nectar.count.toString(), {
+    //     fontSize: `${countFontSize}px`,
+    //     color: '#FFFFFF',
+    //     fontStyle: 'bold'
+    // }).setOrigin(0.5);
 
     // 治疗力显示 - 位置自适应
-    const healingY = itemSize * 0.35;
-    const healingText = this.add.text(0, healingY, `💖${nectar.healingPower}`, {
-        fontSize: `${healingFontSize}px`,
-        color: '#FF4757'
-    }).setOrigin(0.5);
+    // const healingY = itemSize * 0.35;
+    // const healingText = this.add.text(0, healingY, `💖${nectar.healingPower}`, {
+    //     fontSize: `${healingFontSize}px`,
+    //     color: '#FF4757'
+    // }).setOrigin(0.5);
 
-    itemContainer.add([itemBg, nectarIcon, subjectText, countBg, countText, healingText]);
+    itemContainer.add([itemBg, nectarIcon, subjectText]);
 
     // 添加交互效果
     itemBg.setInteractive({ useHandCursor: true });
@@ -1574,19 +1579,19 @@ private showNectarTooltip(nectar: any, x: number, y: number): void {
     ).setDepth(1500);
 
     // 提示框背景
-    const tooltipBg = this.add.rectangle(0, 0, 200, 120, 0x2C3E50, 0.95)
+    const tooltipBg = this.add.rectangle(0, 0, 180, 100, 0x2C3E50, 0.8)
         .setStrokeStyle(2, 0x34495E);
 
     // 提示文字
     const tooltipText = this.createText(0, 0, 
         `${this.getSubjectName(nectar.subject)}甘露\n` +
-        `年级: ${nectar.grade}\n` +
-        `分类: ${nectar.category}\n` +
-        `治疗力: ${nectar.healingPower}\n` +
-        `数量: ${nectar.count}`, 'LABEL_TEXT', {
-        fontSize: 14,
+        `分类: ${nectar.category}\n`+
+        `年级: ${nectar.grade}\n` ,
+       
+         'LABEL_TEXT', {
+        fontSize: 20,
         color: '#FFFFFF',
-        align: 'center'
+        align: 'left'
     }).setOrigin(0.5);
 
     tooltipContainer.add([tooltipBg, tooltipText]);
