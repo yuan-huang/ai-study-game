@@ -1,4 +1,4 @@
-import { KnowledgeGarden } from './types/main';
+import { KnowledgeGarden } from './KnowledgeGarden';
 import { fontManager } from './utils/fontManager';
 import { FontTest } from './components/FontTest';
 import { PhaserFontConfig } from './config/PhaserFontConfig';

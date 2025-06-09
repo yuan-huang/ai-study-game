@@ -1,5 +1,5 @@
 import { User, Seed } from '../types';
-import { post, get, ApiResponse } from '../utils/request';
+import { post, get } from '../utils/request';
 
 // 认证相关API
 export const authApi = {

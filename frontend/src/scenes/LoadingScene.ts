@@ -1,118 +1,69 @@
 import { BaseScene } from './BaseScene';
-import { AssetLoader } from '@/utils/AssetLoader';
-import { GameAssets } from '@/config/AssetConfig';
 
 export class LoadingScene extends BaseScene {
-    private loadingBar!: Phaser.GameObjects.Graphics;
-    private loadingText!: Phaser.GameObjects.Text;
-    private assetLoader!: AssetLoader;
+    private loadingText?: Phaser.GameObjects.Text;
+    private progressBar?: Phaser.GameObjects.Graphics;
+    private progressBarBg?: Phaser.GameObjects.Graphics;
 
     constructor() {
         super('LoadingScene');
     }
 
     preload(): void {
-        this.createLoadingBar();
-        this.setupAssetLoader();
-
-        // 加载所有场景的资源
-        this.loadAllScenes();
+        this.createLoadingUI();
+        
+        // 设置加载进度监听
+        this.load.on('progress', this.onLoadProgress, this);
+        this.load.on('complete', this.onLoadComplete, this);
+        
+        // 这里可以加载游戏资源
+        // this.load.image('background', 'assets/images/background.png');
+        // this.load.audio('bgm', 'assets/audio/background.mp3');
     }
 
-    private createLoadingBar(): void {
-        const width = this.cameras.main.width;
-        const height = this.cameras.main.height;
+    create(): void {
+        // 加载完成后的逻辑
+        console.log('加载场景创建完成');
+    }
+
+    private createLoadingUI(): void {
+        const centerX = this.cameras.main.width / 2;
+        const centerY = this.cameras.main.height / 2;
 
         // 创建加载文本
-        this.loadingText = this.add.text(width / 2, height / 2 - 50, '加载中...', {
-            fontSize: '24px',
-            color: '#ffffff',
-            fontStyle: 'bold'
+        this.loadingText = this.add.text(centerX, centerY - 50, '加载中...', {
+            fontSize: '32px',
+            color: '#ffffff'
         });
         this.loadingText.setOrigin(0.5);
 
-        // 创建加载进度条
-        this.loadingBar = this.add.graphics();
-        this.loadingBar.setPosition(width / 2 - 160, height / 2);
+        // 创建进度条背景
+        this.progressBarBg = this.add.graphics();
+        this.progressBarBg.fillStyle(0x333333);
+        this.progressBarBg.fillRect(centerX - 200, centerY + 20, 400, 20);
 
-        // 绘制进度条边框
-        this.loadingBar.lineStyle(2, 0xffffff);
-        this.loadingBar.strokeRoundedRect(0, 0, 320, 30, 5);
+        // 创建进度条
+        this.progressBar = this.add.graphics();
     }
 
-    private setupAssetLoader(): void {
-        this.assetLoader = new AssetLoader(this);
-        
-        // 添加加载进度监听
-        this.assetLoader.addLoadingListeners(
-            // 进度更新
-            (value: number) => {
-                this.updateLoadingBar(value);
-            },
-            // 加载完成
-            () => {
-                this.onLoadComplete();
-            }
-        );
-    }
+    private onLoadProgress(progress: number): void {
+        if (this.progressBar && this.loadingText) {
+            const centerX = this.cameras.main.width / 2;
+            const centerY = this.cameras.main.height / 2;
 
-    private loadAllScenes(): void {
-        // 获取所有场景名称
-        const sceneNames = Object.keys(GameAssets);
-        
-        // 加载所有场景的资源
-        this.assetLoader.loadMultipleScenes(sceneNames);
-    }
+            // 更新进度条
+            this.progressBar.clear();
+            this.progressBar.fillStyle(0x4caf50);
+            this.progressBar.fillRect(centerX - 200, centerY + 20, 400 * progress, 20);
 
-    private updateLoadingBar(value: number): void {
-        this.loadingBar.clear();
-
-        // 绘制进度条边框
-        this.loadingBar.lineStyle(2, 0xffffff);
-        this.loadingBar.strokeRoundedRect(0, 0, 320, 30, 5);
-
-        // 进度条背景
-        this.loadingBar.fillStyle(0x444444);
-        this.loadingBar.fillRoundedRect(0, 0, 320, 30, 5);
-
-        // 进度条
-        this.loadingBar.fillStyle(0x00ff00);
-        this.loadingBar.fillRoundedRect(2, 2, 316 * value, 26, 4);
-
-        // 更新加载文本
-        const percent = Math.round(value * 100);
-        this.loadingText.setText(`加载中... ${percent}%`);
+            // 更新加载文本
+            this.loadingText.setText(`加载中... ${Math.round(progress * 100)}%`);
+        }
     }
 
     private onLoadComplete(): void {
-        this.loadingText.setText('加载完成！');
-        
-        // 添加闪烁效果
-        this.tweens.add({
-            targets: this.loadingText,
-            alpha: { from: 1, to: 0.5 },
-            duration: 500,
-            yoyo: true,
-            repeat: 2,
-            onComplete: () => {
-                // 延迟一下，让用户看到加载完成的状态
-                this.time.delayedCall(500, () => {
-                    this.scene.start('LoginScene');
-                });
-            }
-        });
-    }
-
-    // 场景销毁时清理资源
-    destroy(): void {
-        if (this.loadingBar) {
-            this.loadingBar.destroy();
-        }
-        if (this.loadingText) {
-            this.loadingText.destroy();
-        }
-        // 移除所有事件监听
-        this.load.off('progress');
-        this.load.off('complete');
+        console.log('加载完成');
+        // 可以在这里添加过渡到下一个场景的逻辑
+        // this.scene.start('LoginScene');
     }
 } 

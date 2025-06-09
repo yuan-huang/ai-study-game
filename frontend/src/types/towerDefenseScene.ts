@@ -27,7 +27,7 @@ export interface UserConfig {
 
 // 题目接口
 export interface Question {
-    _id: string;
+    _id?: string;
     id?: string; // 使用MongoDB ObjectId字符串
     question: string;
     options: string[];

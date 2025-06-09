@@ -1,5 +1,4 @@
-// 塔防游戏逻辑类导出
-export { GamePath } from './GamePath'; 
+
 // MonsterManager
 export { MonsterManager } from './MonsterManager';
 // PathManager
