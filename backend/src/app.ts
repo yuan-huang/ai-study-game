@@ -23,6 +23,7 @@ import levelRoutes from './routes/level';
 import questionRoutes from './routes/question';
 import towerDefenseRoutes from './routes/towerDefense';
 import gardenRoutes from './routes/garden';
+import growthRoutes from './routes/growth';
 
 dotenv.config();
 
@@ -55,8 +56,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // 健康检查
 app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'OK', 
+  res.status(200).json({
+    status: 'OK',
     timestamp: new Date().toISOString(),
     environment: config.environment
   });
@@ -73,11 +74,12 @@ app.use('/api/levels', levelRoutes);
 app.use('/api/questions', questionRoutes);
 app.use('/api/tower-defense', towerDefenseRoutes);
 app.use('/api/garden', gardenRoutes);
+app.use('/api/growth', growthRoutes);
 
 // Socket.IO 连接处理
 io.on('connection', (socket) => {
   logger.info(`用户连接: ${socket.id}`);
-  
+
   socket.on('join-game', (gameId: string) => {
     socket.join(gameId);
     logger.info(`用户 ${socket.id} 加入游戏房间: ${gameId}`);

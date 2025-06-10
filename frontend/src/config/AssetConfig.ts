@@ -71,7 +71,7 @@ export const GameAssets: SceneAssets = {
             type: AssetType.AUDIO
         }
     ],
-    
+
     // 主场景资源
     MainScene: [
         {
@@ -137,7 +137,7 @@ export const GameAssets: SceneAssets = {
         // 关卡背景音乐 - 关卡选择和游戏进行时的背景音乐
         {
             key: 'level-background-music',
-            path: '/audio/LevelBackgroundMusic.mp3',
+            path: '/audio/MainCityBackgroundMusic.mp3',
             type: AssetType.AUDIO
         }
     ],
@@ -240,7 +240,7 @@ export const GameAssets: SceneAssets = {
         },
         //frontend\public\images\ui\entities\monster-messy.png
         {
-            key: 'monster-messy',   
+            key: 'monster-messy',
             path: '/images/ui/entities/monster-messy.png',
             type: AssetType.IMAGE
         },
@@ -283,7 +283,7 @@ export const GameAssets: SceneAssets = {
             key: 'flower-english',
             path: '/images/ui/flowers/flower-english.png',
             type: AssetType.IMAGE
-        },  
+        },
         //frontend\public\images\ui\flowers\flower-technology.png
         {
             key: 'flower-technology',

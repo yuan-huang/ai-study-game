@@ -137,7 +137,7 @@ export const ENEMY_TYPES: { [key: string]: EnemyType } = {
 /**
  * 波次配置 - 每波怪物配置
  */
-export const WAVE_CONFIG: { [key: number]: Array<{icon: string, name: string, type: string, count: number}> } = {
+export const WAVE_CONFIG: { [key: number]: Array<{ icon: string, name: string, type: string, count: number }> } = {
     1: [
         { icon: '🐙', name: '小怪兵', type: 'monster-normal', count: 5 },
         { icon: '🐙', name: '懒惰怪', type: 'monster-lazy', count: 3 },
@@ -145,7 +145,7 @@ export const WAVE_CONFIG: { [key: number]: Array<{icon: string, name: string, ty
     ],
     2: [
         { icon: '🐙', name: '小怪兵', type: 'monster-normal', count: 3 },
-        { icon: '🐙', name: '懒惰怪', type: 'monster-lazy', count:5 },
+        { icon: '🐙', name: '懒惰怪', type: 'monster-lazy', count: 5 },
         { icon: '🐙', name: '邋遢怪', type: 'monster-messy', count: 2 },
     ],
     3: [
@@ -154,7 +154,7 @@ export const WAVE_CONFIG: { [key: number]: Array<{icon: string, name: string, ty
         { icon: '👹', name: '贪吃怪', type: 'monster-gluttonous', count: 2 }
     ],
     4: [
-        { icon: '🐙', name: '懒惰怪', type: 'monster-lazy', count: 6 }, 
+        { icon: '🐙', name: '懒惰怪', type: 'monster-lazy', count: 6 },
         { icon: '👹', name: '贪吃怪', type: 'monster-gluttonous', count: 3 },
         { icon: '🚶', name: '暴躁怪', type: 'monster-grumpy', count: 1 }
     ],
@@ -216,7 +216,7 @@ export const TOWER_COLORS: { [key: string]: number } = {
 /**
  * 获取波次怪物配置
  */
-export const getWaveMonsters = (wave: number): Array<{icon: string, name: string, type: string, count: number}> => {
+export const getWaveMonsters = (wave: number): Array<{ icon: string, name: string, type: string, count: number }> => {
     return WAVE_CONFIG[wave] || WAVE_CONFIG[5];
 };
 
