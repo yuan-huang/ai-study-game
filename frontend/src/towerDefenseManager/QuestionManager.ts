@@ -6,25 +6,31 @@ export class QuestionManager {
     private userConfig: UserConfig;
     private questionPool: Question[] = [];
     private currentQuestion: Question | null = null;
+    private answeredQuestionIds: string[] = []; // 记录已回答的问题ID
+    private isAllQuestionsAnswered: boolean = false; // 标记是否所有问题都已回答
+    private isInitialized: boolean = false; // 标记是否已初始化
 
     constructor(userConfig: UserConfig) {
         this.userConfig = userConfig;
     }
 
-    public async generateQuestions(): Promise<void> {
+    public async initialize(): Promise<void> {
+        if (this.isInitialized) return;
+        
         try {
-            // 尝试从后端API获取题目
+            // 一次性加载所有问题
             await this.loadQuestionsFromAPI({
                 subject: this.userConfig.subject,
                 grade: this.userConfig.grade,
                 category: this.userConfig.category,
-                count: 20
+                excludeIds: this.answeredQuestionIds
             });
-            console.log('题目加载完成',this.questionPool);
+            this.isInitialized = true;
+            console.log('题目加载完成，共加载题目数量:', this.questionPool.length);
         } catch (error) {
             console.error('从API加载题目失败，使用本地生成:', error);
-            // 如果API调用失败，使用本地生成
             this.generateLocalQuestions();
+            this.isInitialized = true;
         }
     }
 
@@ -255,11 +261,19 @@ export class QuestionManager {
     }
 
     public getNextQuestion(): Question | null {
-        if (this.questionPool.length === 0) {
-            this.generateQuestions();
+        // 如果还没有初始化，返回null
+        if (!this.isInitialized) {
+            console.warn('QuestionManager尚未初始化');
+            return null;
+        }
+
+        // 如果所有问题都已回答完成，返回null
+        if (this.isAllQuestionsAnswered) {
+            return null;
         }
         
         if (this.questionPool.length === 0) {
+            this.isAllQuestionsAnswered = true;
             return null;
         }
         
@@ -267,6 +281,11 @@ export class QuestionManager {
         const questionIndex = Phaser.Math.Between(0, this.questionPool.length - 1);
         this.currentQuestion = this.questionPool[questionIndex];
         this.questionPool.splice(questionIndex, 1);
+        
+        // 记录已回答的问题ID
+        if (this.currentQuestion._id) {
+            this.answeredQuestionIds.push(this.currentQuestion._id);
+        }
         
         return this.currentQuestion;
     }
@@ -284,18 +303,24 @@ export class QuestionManager {
         subject: string;
         grade: number;
         category: string;
-        count: number;
+        excludeIds?: string[];
     }): Promise<Question[]> {
         try {
-            const response =  await questionApi.getQuestions(params.subject as any, params.grade, params.category, params.count);
+            const response = await questionApi.getQuestions(
+                params.subject as any, 
+                params.grade, 
+                params.category,
+                params.excludeIds
+            );
+            
             if (response.success && response.data && response.data.questions) {
                 // 转换API数据格式到本地Question类型
                 const convertedQuestions: Question[] = response.data.questions.map(apiQuestion => ({
-                    _id: apiQuestion._id, // 将数字ID转换为字符串
+                    _id: apiQuestion._id,
                     question: apiQuestion.question,
                     options: apiQuestion.options,
                     explanation: apiQuestion.explanation,
-                    correct: apiQuestion.right_answer, // API的right_answer转换为correct
+                    correct: apiQuestion.right_answer,
                     difficulty: apiQuestion.difficulty_score ? 
                         (apiQuestion.difficulty_score <= 1.5 ? '简单' : 
                          apiQuestion.difficulty_score <= 2.5 ? '中等' : 
@@ -304,10 +329,15 @@ export class QuestionManager {
                 
                 this.questionPool = convertedQuestions;
                 console.log(`成功从API加载了 ${this.questionPool.length} 道题目`);
-                console.log('转换后的题目示例:', convertedQuestions[0]);
+                
+                // 如果没有加载到任何题目，抛出错误
+                if (this.questionPool.length === 0) {
+                    throw new Error('服务异常：未获取到任何题目');
+                }
+                
                 return convertedQuestions;
             } else {
-                throw new Error('API返回数据格式错误');
+                throw new Error('服务异常：API返回数据格式错误');
             }
         } catch (error) {
             console.error('加载题目失败:', error);
@@ -319,11 +349,17 @@ export class QuestionManager {
         return this.questionPool.length;
     }
 
-    public refillQuestionPool(): void {
-        if (this.questionPool.length < 5) {
-            this.generateQuestions();
-        }
+    public isQuestionsExhausted(): boolean {
+        return this.isAllQuestionsAnswered;
     }
 
+    public getAnsweredQuestionIds(): string[] {
+        return this.answeredQuestionIds;
+    }
 
+    public refillQuestionPool(): void {
+        if (this.questionPool.length < 5 && !this.isAllQuestionsAnswered) {
+            this.initialize();
+        }
+    }
 } 

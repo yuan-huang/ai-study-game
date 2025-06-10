@@ -94,7 +94,7 @@ export class BaseScene extends Scene {
         iconBg.strokeCircle(0, 0, 25);
 
         // 创建设置图标（使用设置齿轮emoji或图片）
-        const settingsIcon = this.add.text(0, 0, '⚙️', {
+        const settingsIcon = this.add.text(0, 0, '🔊', {
             fontSize: '28px',
             color: '#ffffff'
         }).setOrigin(0.5);
@@ -103,10 +103,10 @@ export class BaseScene extends Scene {
         const interactiveArea = this.add.zone(0, 0, 60, 60);
         interactiveArea.setInteractive({ useHandCursor: true });
 
-        // 创建容器
+        // 创建容器并放置在右上角
         const iconContainer = this.add.container(
-            this.cameras.main.width - 50,
-            50,
+            this.cameras.main.width - 40,  // 距离右边40像素
+            40,  // 距离顶部40像素
             [iconBg, settingsIcon, interactiveArea]
         );
 

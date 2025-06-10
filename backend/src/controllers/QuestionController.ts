@@ -43,7 +43,7 @@ export class QuestionController {
    */
   async getQuestions(req: Request, res: Response): Promise<void> {
     try {
-      const { subject, grade, category, count = 10 } = req.query;
+      const { subject, grade, category, excludeIds } = req.query;
 
       // 参数验证
       if (!subject || !grade || !category) {
@@ -52,27 +52,29 @@ export class QuestionController {
       }
 
       const gradeNum = parseInt(grade as string);
-      const countNum = parseInt(count as string);
 
       if (isNaN(gradeNum) || gradeNum < 1 || gradeNum > 12) {
         this.badRequest(res, '年级参数无效');
         return;
       }
 
-      if (isNaN(countNum) || countNum < 1 || countNum > 50) {
-        this.badRequest(res, '题目数量无效，应为1-50之间');
-        return;
-      }
-
-      logger.info(`获取题目: subject=${subject}, grade=${gradeNum}, category=${category}, count=${countNum}`);
+      logger.info(`获取题目: subject=${subject}, grade=${gradeNum}, category=${category}`);
 
       // 获取对应的题目模型
       const QuestionModel = createQuestionModel(subject as string, gradeNum);
 
-      // 随机获取指定数量的题目
+      // 构建查询条件
+      const matchCondition: any = { category: category as string };
+      
+      // 如果有需要排除的问题ID，添加到查询条件中
+      if (excludeIds) {
+        const excludeIdsArray = Array.isArray(excludeIds) ? excludeIds : [excludeIds];
+        matchCondition._id = { $nin: excludeIdsArray };
+      }
+
+      // 获取所有符合条件的题目
       const questions = await QuestionModel.aggregate([
-        { $match: { category: category as string } },
-        { $sample: { size: countNum } },
+        { $match: matchCondition },
         {
           $project: {
             _id: 1,
@@ -92,12 +94,10 @@ export class QuestionController {
         return;
       }
 
-      // 如果题目数量不足，返回现有题目并提示
       const response = {
         questions,
-        requestedCount: countNum,
-        actualCount: questions.length,
-        needMoreQuestions: questions.length < countNum
+        totalCount: questions.length,
+        hasMoreQuestions: questions.length > 0
       };
 
       logger.info(`成功获取 ${questions.length} 道题目`);

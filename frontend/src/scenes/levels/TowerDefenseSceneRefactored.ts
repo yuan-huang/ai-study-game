@@ -169,16 +169,19 @@ export class TowerDefenseSceneRefactored extends BaseScene {
             ease: 'Power2.easeInOut'
         });
 
-        // 创建容器结构
-        this.createContainers();
-        
-        // 初始化管理器
-        this.initializeManager();
-        
         try {
-            // 等待题目加载完成
+            // 初始化游戏状态
+            this.initGameState();
+            
+            // 创建容器
+            this.createContainers();
+            
+            // 初始化管理器
+            this.initializeManager();
+            
+            // 初始化游戏管理器
             console.log('🔤 开始加载题目...');
-            await this.towerDefenseManager.generateQuestions();
+            await this.towerDefenseManager.initialize();
             console.log('✅ 题目加载完成');
             
             // 移除加载提示
@@ -204,11 +207,17 @@ export class TowerDefenseSceneRefactored extends BaseScene {
                 this.startWave();
             });
             
+            // 播放关卡背景音乐
+            this.audioManager.playMusic(this, 'level-background-music', {
+                loop: true
+            });
+            
         } catch (error) {
             console.error('❌ 题目加载失败:', error);
             
             // 更新加载提示为错误信息
-            loadingText.setText('题目加载失败，请重试')
+            const errorMessage = error instanceof Error ? error.message : '服务异常，请稍后重试';
+            loadingText.setText(errorMessage)
                       .setStyle({
                           fontSize: 32,
                           color: '#ff5252',
@@ -224,11 +233,6 @@ export class TowerDefenseSceneRefactored extends BaseScene {
                 });
             });
         }
-
-        // 播放关卡背景音乐
-        this.audioManager.playMusic(this, 'level-background-music', {
-            loop: true
-        });
     }
 
     private createContainers(): void {
@@ -562,9 +566,69 @@ export class TowerDefenseSceneRefactored extends BaseScene {
         if (this.currentQuestion) {
             this.updateQuestionDisplay();
             this.questionActive = true;
-            this.questionAnsweredIncorrectly = false; // 重置错误标记
+            this.questionAnsweredIncorrectly = false;
+        } else if (this.towerDefenseManager.isQuestionsExhausted()) {
+            this.questionPanel.removeAll(true);
+            const width = this.rightContainerWidth;
+            const height = this.singlePanelHeight;
+            
+            const panelBg = this.add.rectangle(width/2, height/2, width, height, 0xffffff, 0.95);
+            panelBg.setStrokeStyle(2, 0xe0e0e0);
+            panelBg.setRounded(20);
+            this.questionPanel.add(panelBg);
+            
+            const completionText = createText(
+                this,
+                width/2,
+                height/2 - 40,
+                '🎉 恭喜！\n所有问题已完成！',
+                'TITLE_MEDIUM',
+                {
+                    fontSize: 36,
+                    color: '#4caf50',
+                    align: 'center',
+                    fontStyle: 'bold'
+                }
+            ).setOrigin(0.5);
+            this.questionPanel.add(completionText);
+
+            const detailText = createText(
+                this,
+                width/2,
+                height/2 + 40,
+                '',
+                'BODY_TEXT',
+                {
+                    fontSize: 28,
+                    color: '#666666',
+                    align: 'center',
+                    lineSpacing: 10
+                }
+            ).setOrigin(0.5);
+            this.questionPanel.add(detailText);
+
+            const starIcon = this.add.text(
+                width/2 - 100,
+                height/2 - 100,
+                '⭐',
+                {
+                    fontSize: '48px',
+                    color: '#ffd700'
+                }
+            ).setOrigin(0.5);
+            this.questionPanel.add(starIcon);
+
+            const trophyIcon = this.add.text(
+                width/2 + 100,
+                height/2 - 100,
+                '🏆',
+                {
+                    fontSize: '48px',
+                    color: '#ffd700'
+                }
+            ).setOrigin(0.5);
+            this.questionPanel.add(trophyIcon);
         }
-        console.log('currentQuestion', this.currentQuestion);
     }
 
     private updateQuestionDisplay(showResult: boolean = false, isCorrect?: boolean): void {
@@ -934,6 +998,13 @@ export class TowerDefenseSceneRefactored extends BaseScene {
     private startWave(): void {
         if (this.waveInProgress) return;
         
+        // 检查是否还有问题可以回答
+        if (this.towerDefenseManager.isQuestionsExhausted()) {
+            console.log('所有问题已完成，不再开始新波次');
+            this.onLevelComplete();
+            return;
+        }
+        
         this.waveInProgress = true;
         this.currentWaveEnemies = this.towerDefenseManager.monsterManager.generateWaveEnemies(this.gameState.currentWave);
         
@@ -998,6 +1069,13 @@ export class TowerDefenseSceneRefactored extends BaseScene {
         const waveBonus = 30 * this.gameState.currentWave;
         this.gameState.score += waveBonus;
         this.showMessage(`波次完成! +${waveBonus}积分`);
+        
+        // 检查是否还有问题可以回答
+        if (this.towerDefenseManager.isQuestionsExhausted()) {
+            console.log('所有问题已完成，不再继续生成波次');
+            this.onLevelComplete();
+            return;
+        }
         
         if (this.gameState.currentWave < this.gameState.totalWaves) {
             this.gameState.currentWave++;

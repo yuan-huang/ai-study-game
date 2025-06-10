@@ -36,15 +36,14 @@ export interface GetQuestionsParams {
     subject: SubjectCode;
     grade: number;
     category: string;
-    count?: number;
+    excludeIds?: string[];
 }
 
 // 获取题目响应接口
 export interface GetQuestionsResponse {
     questions: Question[];
-    requestedCount: number;
-    actualCount: number;
-    needMoreQuestions: boolean;
+    totalCount: number;
+    hasMoreQuestions: boolean;
 }
 
 // AI生成题目请求参数接口
@@ -237,20 +236,21 @@ export class QuestionApiService {
      * @param subject 学科代码
      * @param grade 年级
      * @param category 分类名称
-     * @param count 题目数量
+     * @param excludeIds 排除的题目ID数组
      */
     async getQuestions(
         subject: SubjectCode,
         grade: number,
         category: string,
-        count: number = 10
+        excludeIds?: string[]
     ): Promise<ApiResponse<GetQuestionsResponse>> {
-        return getWithParams<GetQuestionsResponse>('/questions', {
+        const params = {
             subject,
             grade,
             category,
-            count
-        });
+            excludeIds
+        };
+        return getWithParams<GetQuestionsResponse>('/questions', params);
     }
 
     /**
@@ -260,12 +260,7 @@ export class QuestionApiService {
     async getQuestionsWithParams(
         params: GetQuestionsParams
     ): Promise<ApiResponse<GetQuestionsResponse>> {
-        return getWithParams<GetQuestionsResponse>('/questions', {
-            subject: params.subject,
-            grade: params.grade,
-            category: params.category,
-            count: params.count || 10
-        });
+        return getWithParams<GetQuestionsResponse>('/questions', params);
     }
 
     /**
@@ -327,65 +322,15 @@ export class QuestionApiService {
         count: number = 10,
         difficulty: number = 2.5
     ): Promise<ApiResponse<Question[]>> {
-        try {
-            // 首先尝试从数据库获取题目
-            const dbResponse = await this.getQuestions(subject, grade, category, count);
-            
-            if (!dbResponse.success || !dbResponse.data) {
-                return {
-                    success: false,
-                    message: '获取题目失败'
-                };
-            }
-
-            const { questions, needMoreQuestions, actualCount } = dbResponse.data;
-            
-            // 如果题目数量足够，直接返回
-            if (!needMoreQuestions) {
-                return {
-                    success: true,
-                    data: questions,
-                    message: `成功获取${actualCount}道题目`
-                };
-            }
-
-            // 如果题目不足，调用AI生成补充
-            const needCount = count - actualCount;
-            console.log(`数据库题目不足，需要AI生成${needCount}道题目`);
-            
-            const aiResponse = await this.generateQuestions(
-                subject, 
-                grade, 
-                category, 
-                needCount, 
-                difficulty, 
-                true // 保存到数据库
-            );
-
-            if (!aiResponse.success || !aiResponse.data) {
-                // AI生成失败，返回现有题目
-                return {
-                    success: true,
-                    data: questions,
-                    message: `AI生成失败，返回现有${actualCount}道题目`
-                };
-            }
-
-            // 合并数据库题目和AI生成题目
-            const allQuestions = [...questions, ...aiResponse.data.questions];
-            
-            return {
-                success: true,
-                data: allQuestions,
-                message: `成功获取${allQuestions.length}道题目（${actualCount}道来自数据库，${aiResponse.data.generatedCount}道AI生成）`
-            };
-
-        } catch (error) {
-            return {
-                success: false,
-                message: error instanceof Error ? error.message : '获取题目异常'
-            };
-        }
+        const params = {
+            subject,
+            grade,
+            category,
+            count,
+            difficulty,
+            useAI: true
+        };
+        return getWithParams<Question[]>('/questions/ai', params);
     }
 
     /**

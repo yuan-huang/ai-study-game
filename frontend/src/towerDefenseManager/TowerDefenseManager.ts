@@ -73,6 +73,11 @@ export class TowerDefenseManager {
         });
     }
 
+    public async initialize(): Promise<void> {
+        // 初始化问题管理器
+        await this.questionManager.initialize();
+    }
+
     public initializePath(): void {
         this.pathManager.createAndDrawPath();
     }
@@ -240,5 +245,13 @@ export class TowerDefenseManager {
         this.monsterManager.destroy();
         this.projectileManager.destroy();
         this.pathManager.destroy();
+    }
+
+    public isQuestionsExhausted(): boolean {
+        return this.questionManager.isQuestionsExhausted();
+    }
+
+    public getAnsweredQuestionIds(): string[] {
+        return this.questionManager.getAnsweredQuestionIds();
     }
 }

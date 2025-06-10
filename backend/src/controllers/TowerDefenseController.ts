@@ -342,8 +342,8 @@ export class TowerDefenseController extends BaseController<ITowerDefenseDoc> {
 
       await gameRecord.save();
 
-      // 查询该用户在此组合下的通过次数
-      const completionCount = await TowerDefenseRecord.countDocuments({
+      // 查询该用户在此组合下是否已有花朵
+      const existingFlower = await Flower.findOne({
         userId: new mongoose.Types.ObjectId(userId),
         subject,
         grade: parseInt(grade),
@@ -352,8 +352,8 @@ export class TowerDefenseController extends BaseController<ITowerDefenseDoc> {
 
       let reward: any = null;
 
-      if (completionCount === 1) {
-        // 首次通过，奖励花朵
+      if (!existingFlower) {
+        // 没有花朵，奖励花朵
         const flower = new Flower({
           userId: new mongoose.Types.ObjectId(userId),
           subject,
@@ -378,9 +378,9 @@ export class TowerDefenseController extends BaseController<ITowerDefenseDoc> {
           }
         };
 
-        logger.info(`首次通过 年级${grade} ${category}关卡，获得花朵奖励`);
+        logger.info(`用户 ${userId} 首次获得 ${subject}-grade${grade}-${category} 的花朵奖励`);
       } else {
-        // 非首次通过，奖励甘露
+        // 已有花朵，奖励甘露
         const nectar = new Nectar({
           userId: new mongoose.Types.ObjectId(userId),
           subject,
@@ -431,7 +431,7 @@ export class TowerDefenseController extends BaseController<ITowerDefenseDoc> {
           },
           reward,
           stats: {
-            totalCompletions: completionCount,
+            totalCompletions: 1,
             experienceGained: Math.floor(score / 10),
             coinsGained: Math.floor(score / 20)
           }
