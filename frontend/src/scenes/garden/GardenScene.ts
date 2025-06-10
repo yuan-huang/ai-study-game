@@ -50,9 +50,8 @@ export class GardenScene extends BaseScene {
         console.log('🖼️ 相机尺寸:', this.cameras.main.width, 'x', this.cameras.main.height);
         
         // 播放花园背景音乐
-        this.sound.play('garden-bgm', {
-            loop: true,
-            volume: 0.5
+        this.audioManager.playMusic(this, 'garden-bgm', {
+            loop: true
         });
 
 

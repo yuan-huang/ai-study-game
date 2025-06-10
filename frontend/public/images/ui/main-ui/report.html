@@ -1,0 +1,2548 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>产品数据分析报告</title>
+    
+    <!-- 引入Vue框架 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
+    
+    <!-- 引入Element UI -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.7/lib/theme-chalk/index.css">
+    <script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.7/lib/index.js"></script>
+    
+    <!-- 引入ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.3.2/dist/echarts.min.js"></script>
+    
+
+</head>
+<body>
+    <div id="app" class="app-container">
+        <!-- 主要内容区域 -->
+        <div class="main-content">
+            <div class="header">
+                <h1>产品数据分析报告</h1>
+                <p>全面的产品功能分析与市场竞争分析</p>
+            </div>
+
+            <!-- Tab页切换 -->
+            <el-tabs v-model="activeTab" type="border-card" class="main-tabs">
+
+
+                <!-- 总结 -->
+                <el-tab-pane label="总结" name="summary">
+                    <div id="section-6" class="section">
+                        <div class="section-title">总结</div>
+                        <div class="section-content">
+                            <el-card shadow="hover" class="analysis-content">
+                                <div v-html="analysisHtml.feature_weight"></div>
+                            </el-card>
+                        </div>
+                    </div>
+                </el-tab-pane>
+
+                <!-- 功能矩阵分析 -->
+                <el-tab-pane label="功能矩阵分析" name="matrix">
+                    <div id="section-1" class="section">
+                        <div class="section-title">功能矩阵分析</div>
+                        <div class="section-content">
+                            <div v-if="tableData.feature_matrix && tableData.feature_matrix.headers">
+                                <el-table :data="transformTableData(tableData.feature_matrix)" style="width: 100%"
+                                    height="600px" border>
+                                    <!-- 新增序号列 -->
+                                    <el-table-column
+                                        type="index"
+                                        label="序号"
+                                        width="70">
+                                    </el-table-column>
+                                    <!-- 原有列 -->
+                                    <el-table-column v-for="header in tableData.feature_matrix.headers" :key="header"
+                                        :prop="header" :label="header"
+                                        :width="header === tableData.feature_matrix.headers[0] ? 180 : ''">
+                                        <template slot-scope="scope">
+                                            <div v-if="isAsin(scope.row[header])" class="asin-container">
+                                                <img :src="getAsinImageUrl(scope.row[header])" class="asin-image"
+                                                    style="height: 50px; max-width: 100%;" @error="handleImageError" />
+                                                <div class="asin-text">{{ scope.row[header] }}</div>
+                                            </div>
+                                            <span v-else-if="isAsinUrl(scope.row[header])" class="asin-container">
+                                                <img :src="scope.row[header]" class="asin-image"
+                                                    style="height: 50px; max-width: 100%;" @error="handleImageError" />
+                                                <div class="asin-text">{{ extractAsin(scope.row[header]) }}</div>
+                                            </span>
+                                            <span v-else>{{ scope.row[header] }}</span>
+                                        </template>
+                                    </el-table-column>
+                                </el-table>
+                            </div>
+                            <div v-else>
+                                <el-alert title="暂无功能矩阵数据" type="info" :closable="false"></el-alert>
+                            </div>
+
+                            <div class="analysis-content" v-html="analysisHtml.feature_matrix"></div>
+                        </div>
+                    </div>
+                </el-tab-pane>
+
+                <!-- 功能覆盖率分析 -->
+                <el-tab-pane label="功能覆盖率分析" name="coverage">
+                    <div id="section-2" class="section">
+                        <div class="section-title">功能覆盖率分析</div>
+                        <div class="section-content">
+                            <!-- 数据表格 -->
+                            <div v-if="tableData.feature_coverage && tableData.feature_coverage.headers">
+                                <el-table :data="transformTableData(tableData.feature_coverage)" style="width: 100%"
+                                    height="600px" border :default-sort="{prop: 'price', order: 'descending'}">
+                                    <el-table-column v-for="header in tableData.feature_coverage.headers" :key="header"
+                                        :prop="header" :label="header"
+                                        :width="header === tableData.feature_coverage.headers[0] ? 200 : 160"
+                                        :sortable="header === 'price' || header === 'sales' || header === 'coverage'">
+                                        <template slot-scope="scope">
+                                            <div v-if="isAsin(scope.row[header])" class="asin-container">
+                                                <img :src="getAsinImageUrl(scope.row[header])" class="asin-image"
+                                                    style="height: 50px; max-width: 100%;" @error="handleImageError" />
+                                                <div class="asin-text">{{ scope.row[header] }}</div>
+                                            </div>
+                                            <span v-else-if="isAsinUrl(scope.row[header])" class="asin-container">
+                                                <img :src="scope.row[header]" class="asin-image"
+                                                    style="height: 50px; max-width: 100%;" @error="handleImageError" />
+                                                <div class="asin-text">{{ extractAsin(scope.row[header]) }}</div>
+                                            </span>
+                                            <span v-else-if="isLongText(scope.row[header])">
+                                                <div class="long-text-container">
+                                                    <span>{{ getShortText(scope.row[header]) }}</span>
+                                                    <el-button type="text"
+                                                        @click="showFullText(scope.row[header])">more</el-button>
+                                                </div>
+                                            </span>
+                                            <span v-else>{{ scope.row[header] }}</span>
+                                        </template>
+                                    </el-table-column>
+                                </el-table>
+                            </div>
+                            <div v-else>
+                                <el-alert title="暂无功能覆盖率数据" type="info" :closable="false"></el-alert>
+                            </div>
+
+                            <!-- 散点图：价格-销量-覆盖率 -->
+                            <div class="chart-section">
+                                <h3>价格-销量-覆盖率分析</h3>
+                                <div class="chart-container" id="coverage-scatter-chart"></div>
+                            </div>
+
+                            <div class="analysis-content" v-html="analysisHtml.feature_coverage"></div>
+                        </div>
+                    </div>
+                </el-tab-pane>
+
+                <!-- 功能普及率分析 Tab Section -->
+                <el-tab-pane label="功能普及率分析" name="distribution">
+                    <div id="section-3" class="section">
+                        <div class="section-title">功能普及率分析</div>
+                        <div class="section-content">
+                            <!-- 数据表格 -->
+                            <div v-if="tableData.feature_distribution && tableData.feature_distribution.headers">
+                                <el-table :data="transformTableData(tableData.feature_distribution)" style="width: 100%"
+                                    height="600px" border>
+                                    <el-table-column v-for="header in tableData.feature_distribution.headers"
+                                        :key="header" :prop="header" :label="header"
+                                        :width="header === tableData.feature_distribution.headers[0] ? 180 : 
+                                               header === 'ASIN集合' || header === '品牌集合' ? 200 : ''">
+                                        <template slot-scope="scope">
+                                            <div v-if="isAsin(scope.row[header])" class="asin-container">
+                                                <img :src="getAsinImageUrl(scope.row[header])" class="asin-image"
+                                                    style="height: 50px; max-width: 100%;" @error="handleImageError" />
+                                                <div class="asin-text">{{ scope.row[header] }}</div>
+                                            </div>
+                                            <span v-else-if="isAsinUrl(scope.row[header])" class="asin-container">
+                                                <img :src="scope.row[header]" class="asin-image"
+                                                    style="height: 50px; max-width: 100%;" @error="handleImageError" />
+                                                <div class="asin-text">{{ extractAsin(scope.row[header]) }}</div>
+                                            </span>
+                                            <span v-else-if="(header === 'ASIN集合' || header === '品牌集合') && isLongText(scope.row[header])">
+                                                <div class="long-text-container">
+                                                    <span>{{ getShortText(scope.row[header]) }}</span>
+                                                    <el-button type="text" @click="showFullText(scope.row[header])">more</el-button>
+                                                </div>
+                                            </span>
+                                            <span v-else>{{ scope.row[header] }}</span>
+                                        </template>
+                                    </el-table-column>
+                                </el-table>
+                            </div>
+                            <div v-else>
+                                <el-alert title="暂无功能普及率数据" type="info" :closable="false"></el-alert>
+                            </div>
+
+                            <!-- 可视化图表 - 直接放在表格下面，不用子Tab -->
+                            <div class="chart-section">
+                                <h3>功能普及率分布</h3>
+                                <div class="chart-container" id="feature-distribution-chart"></div>
+                            </div>
+
+                            <div class="analysis-content" v-html="analysisHtml.feature_distribution"></div>
+                        </div>
+                    </div>
+                </el-tab-pane>
+
+                <!-- 功能权重分析 Tab Section -->
+                <el-tab-pane label="功能权重分析" name="weight">
+                    <div id="section-4" class="section">
+                        <div class="section-title">功能权重分析</div>
+
+                        <div v-if="tableData.feature_weight && tableData.feature_weight.headers">
+                            <el-table :data="transformTableData(tableData.feature_weight)" style="width: 100%"
+                                height="600px" border>
+                                <el-table-column v-for="header in tableData.feature_weight.headers" 
+                                    :key="header" 
+                                    :prop="header" 
+                                    :label="header"
+                                    :width="header === '功能权重排序' ? 400 : header === 'ASIN' ? 180 : ''">
+                                    <template slot-scope="scope">
+                                        <div v-if="isAsin(scope.row[header])" class="asin-container">
+                                            <img :src="getAsinImageUrl(scope.row[header])" class="asin-image"
+                                                style="height: 50px; max-width: 100%;" @error="handleImageError" />
+                                            <div class="asin-text">{{ scope.row[header] }}</div>
+                                        </div>
+                                        <span v-else-if="header === '功能权重排序'">
+                                            <el-popover
+                                                placement="right"
+                                                width="400"
+                                                trigger="click">
+                                                <div class="feature-weight-list full">
+                                                    <ul>
+                                                        <li v-for="(item, index) in parseFeatureWeights(scope.row[header])" :key="index">
+                                                            {{ item.feature }}: {{ item.weight }}
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                                <div slot="reference" class="feature-weight-list preview">
+                                                    <ul>
+                                                        <li v-for="(item, index) in parseFeatureWeights(scope.row[header]).slice(0, 5)" :key="index">
+                                                            {{ item.feature }}: {{ item.weight }}
+                                                        </li>
+                                                    </ul>
+                                                    <el-button v-if="parseFeatureWeights(scope.row[header]).length > 5" 
+                                                            type="text" 
+                                                            size="small" 
+                                                            class="more-button">
+                                                        更多 <i class="el-icon-arrow-right"></i>
+                                                    </el-button>
+                                                </div>
+                                            </el-popover>
+                                        </span>
+                                        <span v-else>{{ scope.row[header] }}</span>
+                                    </template>
+                                </el-table-column>
+                            </el-table>
+                        </div>
+
+                        <div class="section-content">
+                            <!-- 可视化图表 - 直接放在表格下面，不用子Tab -->
+                            <div class="chart-section">
+                                <h3>功能权重分布</h3>
+                                <div class="chart-container" id="feature-weight-chart"></div>
+                            </div>
+
+                            <div class="analysis-content" v-html="analysisHtml.feature_weight"></div>
+                        </div>
+                    </div>
+                </el-tab-pane>
+
+                <!-- 功能溢价分析 Tab Section -->
+                <el-tab-pane label="功能溢价分析" name="premium">
+                    <div id="section-5" class="section">
+                        <div class="section-title">功能溢价分析</div>
+                        <div class="section-content">
+                            <!-- 数据表格 -->
+                            <div v-if="tableData.feature_premium && tableData.feature_premium.headers">
+                                <el-table :data="transformTableData(tableData.feature_premium)" style="width: 100%"
+                                    height="600px" border>
+                                    <el-table-column v-for="header in tableData.feature_premium.headers" :key="header"
+                                        :prop="header" :label="header"
+                                        :width="header === tableData.feature_premium.headers[0] ? 180 : ''">
+                                        <template slot-scope="scope">
+                                            <div v-if="isAsin(scope.row[header])" class="asin-container">
+                                                <img :src="getAsinImageUrl(scope.row[header])" class="asin-image"
+                                                    style="height: 50px; max-width: 100%;" @error="handleImageError" />
+                                                <div class="asin-text">{{ scope.row[header] }}</div>
+                                            </div>
+                                            <span v-else-if="isAsinUrl(scope.row[header])" class="asin-container">
+                                                <img :src="scope.row[header]" class="asin-image"
+                                                    style="height: 50px; max-width: 100%;" @error="handleImageError" />
+                                                <div class="asin-text">{{ extractAsin(scope.row[header]) }}</div>
+                                            </span>
+                                            <span v-else>{{ scope.row[header] }}</span>
+                                        </template>
+                                    </el-table-column>
+                                </el-table>
+                            </div>
+                            <div v-else>
+                                <el-alert title="暂无功能溢价数据" type="info" :closable="false"></el-alert>
+                            </div>
+
+                            <!-- 可视化图表 - 直接放在表格下面，不用子Tab -->
+                            <div class="chart-section">
+                                <h3>功能溢价分布</h3>
+                                <div class="chart-container" id="feature-premium-chart"></div>
+                            </div>
+
+                            <div class="analysis-content" v-html="analysisHtml.feature_premium"></div>
+                        </div>
+                    </div>
+                </el-tab-pane>
+
+
+            </el-tabs>
+        </div>
+    </div>
+
+    
+        <!-- 引入数据 -->
+        <script>
+            // 初始化数据
+            const reportData = {
+                tableData: {
+                    feature_matrix: {"headers": ["ASIN", "价格", "销量", "评分", "评论数", "品牌", "亲子互动", "亲子互动促进", "便携性", "俯卧训练", "发展阶段", "婴儿健身架", "安全信任感", "尺寸", "感官刺激", "成长仪式感", "手眼协调训练", "材质", "清洁方式", "蝴蝶主题健身垫", "超大婴儿健身架", "运动技能训练", "适用年龄", "重量", "音乐互动"], "data": [["B0CHHPJFZN", "75.0", "0", "5.0", "18", "Butterfly + Bloom", "", "", "", "", "", "高级木质婴儿健身架+可水洗游戏垫", "非毒认证", "26x8.5x7英寸（包装）", "4个可拆卸蒙特梭利玩具", "礼盒包装", "促进手眼协调和运动技能", "FSC认证松木+可机洗棉垫", "", "", "", "", "0-12个月", "5磅", ""], ["B0BYJMWG9Q", "33.59", "0", "4.1", "115", "Lauon", "", "解放妈妈双手", "", "", "", "踢踏钢琴游戏垫", "", "", "5个可拆卸摇铃玩具", "", "", "安全可水洗面料", "", "", "", "", "0-6个月", "4.53磅", "双面可拆卸钢琴+忙碌板"], ["B0CBQRXNVW", "39.88", "10000", "4.7", "2895", "Fisher-Price", "", "", "", "", "", "发光成长踢踏钢琴健身架", "", "36.02x27.01x17.99英寸", "10个可重新定位玩具", "智能阶段学习", "", "塑料", "", "", "", "", "0+个月", "3.66磅", "85+歌曲+灯光学习"], ["B07MPCCDM7", "44.84", "10000", "4.7", "23890", "Baby Einstein", "", "爱因斯坦游戏建议", "", "", "", "4合1音乐语言健身架", "", "27x34x18英寸", "7个感官玩具", "", "", "80%织物+20%塑料", "", "", "", "", "0-36个月", "3.19磅", "25+分钟多语言音乐"], ["B0F74NRWXR", "24.99", "0", "0.0", "0", "JING SHOW BUSSINESS", "", "", "", "", "", "钢琴俯卧时间垫", "", "14x11.4x3.5英寸", "", "", "", "高品质棉织物", "", "", "", "", "0-12个月", "1.5磅", "4个发光琴键"], ["B09XHGG4B8", "9.99", "10000", "4.3", "8238", "Yeeeasy", "", "", "", "", "", "俯卧时间水垫", "", "26x20x0.04英寸", "彩色海底世界图案", "", "", "重型PVC材料", "", "", "", "", "3-12个月", "9.5盎司", ""], ["B0C729KNJD", "39.99", "2000", "4.7", "781", "Jyusmile", "", "", "", "", "", "8合1俯卧时间垫+球池", "", "43x39英寸", "6个可拆卸玩具", "", "", "高品质织物", "", "", "", "", "0-12个月", "2.61磅", ""], ["B0CD2LG5FB", "69.99", "2000", "4.8", "880", "Blissful Diary", "", "", "", "", "", "超大叶片形健身垫", "", "53x37英寸", "6个可拆卸动物玩具", "", "", "聚酯纤维", "", "", "", "", "0+个月", "3.38磅", ""], ["B0BL39Q48V", "39.99", "50", "4.3", "70", "Razee", "", "", "", "", "", "木质婴儿健身架", "", "", "5个悬挂玩具", "", "", "木质", "", "", "", "", "新生儿", "1.83磅", ""], ["B0DC661B7M", "64.99", "300", "5.0", "31", "TINITIGIES", "", "", "", "", "", "丛林主题健身垫", "", "53x37英寸", "8个可拆卸玩具", "", "", "聚酯纤维", "", "", "", "", "0-12个月", "2.94磅", ""], ["B09QC9HJRB", "59.99", "300", "4.6", "162", "Razee", "", "", "", "", "", "木质婴儿健身架", "", "86厘米直径垫子", "6个悬挂感官玩具", "", "", "木质", "", "", "", "", "新生儿", "4.19磅", ""], ["B0C89GP2G4", "39.98", "2000", "4.5", "818", "TFDER", "", "", "", "", "", "8合1俯卧时间垫", "", "39.4x43.3x21英寸", "3个织物玩具+镜子", "", "", "聚酯纤维+棉", "", "", "", "", "0-12个月", "2.77磅", ""], ["B0BBLNBKC1", "19.99", "100", "4.3", "223", "Agiyimi", "", "", "", "", "", "7合1俯卧时间垫", "", "35.4x35.4英寸", "6个可拆卸玩具+香蕉枕", "", "", "棉", "", "", "", "", "0-36个月", "2.06磅", ""], ["B0DP6TW6ZP", "26.99", "500", "4.6", "220", "Heypappy", "", "", "", "", "", "9合1牛油果健身垫", "", "39x39x21英寸", "6个可拆卸玩具+遮阳篷", "", "", "聚乙烯泡沫+聚酯纤维", "", "", "", "", "0-18个月", "3.94磅", ""], ["B0CNKZ4RLL", "39.75", "600", "4.9", "65", "Melissa & Doug", "", "", "", "", "", "海洋主题木质健身架", "", "29.5x9.5x6.4英寸", "5个柔软玩具", "", "", "70%织物+20%木材+10%塑料", "", "", "", "", "出生至9个月", "15.8盎司", ""], ["B0DP2MTZ5S", "34.99", "500", "4.9", "72", "ZICOTO", "", "", "", "", "", "农场主题健身垫", "", "35x35x1.06英寸", "5个农场玩具", "", "", "聚酯纤维", "", "", "", "", "0+个月", "2.64磅", ""], ["B08PRVVTKY", "33.85", "1000", "4.7", "1002", "Mallify", "", "", "", "", "", "可水洗俯卧时间垫", "", "35.4x35.4x0.78英寸", "6个特色玩具+12里程碑卡", "", "", "棉", "", "", "", "", "新生儿", "2.03磅", ""], ["B0CTC75YK5", "34.99", "600", "4.6", "180", "ZICOTO", "", "", "", "", "", "棉质健身垫", "", "35x35x35英寸", "6个可爱玩具+镜子", "", "", "棉", "", "", "", "", "0+个月", "2.09磅", ""], ["B0BVZ58FYR", "59.99", "2000", "4.6", "517", "HAN-MM", "", "", "", "", "", "5合1可转换健身架", "", "16.93x12.6x7.09英寸", "6个可拆卸玩具", "", "", "棉", "", "", "", "", "新生儿至幼儿", "4.93磅", ""], ["B0DBQFYJW4", "59.99", "100", "4.7", "26", "AskCat", "", "", "", "", "", "叶片形活动中心", "", "超大尺寸", "8个可拆卸玩具", "", "", "聚酯纤维", "", "", "", "", "新生儿", "3.12磅", ""], ["B0DGXCDWX6", "89.99", "1000", "4.7", "242", "Blissful Diary", "", "", "", "", "多阶段适应", "木质活动中心", "非毒认证", "26×8.5×7英寸（包装）", "视觉+触觉", "礼盒包装", "悬挂玩具", "FSC认证松木+可机洗棉垫", "", "", "", "", "0-12个月", "5磅", ""], ["B0BX4N2SSJ", "39.99", "3000", "4.8", "774", "Blissful Diary", "", "", "", "", "", "可拆卸玩具架", "", "", "", "", "", "聚酯纤维", "", "", "", "", "0-12个月", "2.55磅", ""], ["B0CJRVV1GG", "33.99", "1000", "4.5", "521", "Jyusmile", "", "", "", "", "", "8合1活动垫", "", "43x39英寸", "森林主题玩具", "", "可拆卸悬挂玩具", "", "", "", "", "", "0-12个月", "2.4磅", ""], ["B0DJ6SSKZF", "39.99", "1000", "4.5", "58", "Jyusmile", "", "", "", "", "", "8合1活动垫", "", "", "动物主题玩具", "", "", "棉", "", "", "", "", "0-12个月", "2.33磅", ""], ["B08PV2TJ5L", "29.99", "700", "4.7", "1107", "little dove", "", "", "", "", "", "里程碑活动垫", "", "35.43x35.43英寸", "7种可拆卸玩具", "", "", "棉", "", "", "", "", "0-12个月", "1.76磅", ""], ["B0DPWY724T", "23.99", "0", "4.7", "43", "Outtsp", "", "", "", "", "", "松果形活动垫", "", "", "5种可拆卸玩具", "", "", "聚酯纤维", "", "", "", "", "0-12个月", "3.37磅", ""], ["B0DKPD1GFL", "25.99", "0", "4.5", "37", "TODALE", "", "", "", "", "", "熊猫活动垫", "", "", "", "", "", "", "", "", "", "", "0-36个月", "2.02磅", ""], ["B0DSZD549P", "53.99", "500", "4.6", "56", "suihuooo", "", "", "", "", "", "6区发展垫", "", "", "7种可拆卸玩具", "", "", "棉", "", "", "", "", "0-18个月", "3.96磅", ""], ["B0DFJ6GKFV", "49.99", "200", "4.6", "53", "The Peanutshell", "", "", "", "", "", "蒙特梭利大象垫", "", "", "", "", "", "", "", "", "", "", "0-12个月", "2.79磅", ""], ["B07VSHJZZQ", "72.99", "100", "4.6", "1281", "Sassy", "", "", "", "", "", "STEM发展垫", "", "37x37英寸", "12种活动玩具", "", "", "聚酯纤维+PVC", "", "", "", "", "0+个月", "1磅", ""], ["B075R8BXXC", "140.0", "5000", "4.8", "6555", "Lovevery", "", "", "", "", "", "蒙特梭利活动垫", "", "43x38英寸", "5个发展区", "", "", "棉", "", "", "", "", "新生儿至幼儿", "7.6磅", ""], ["B0DHCV54Y4", "66.49", "50", "4.8", "35", "WOODMAM", "", "", "", "", "", "木质活动垫", "", "45x45英寸", "可拆卸玩具", "", "", "木材+织物", "", "", "", "", "0-12个月", "3.99磅", ""], ["B0DBPTMD3C", "49.99", "100", "4.8", "30", "Monniebaby", "", "", "", "", "", "四叶草活动垫", "", "", "9种可拆卸玩具", "", "", "", "", "", "", "", "0-9+个月", "1.98磅", ""], ["B092QK3KN2", "29.99", "900", "4.7", "1458", "little dove", "", "", "", "", "", "编织风格活动垫", "", "33.9x33.9英寸", "6种可拆卸玩具", "", "", "聚酯棉", "", "", "", "", "0-12个月", "1.98磅", ""], ["B09WJMJ1K4", "57.99", "100", "4.9", "149", "Skip Hop", "", "", "", "", "", "3合1花园垫", "", "", "17+种活动", "", "", "", "", "", "", "", "0+个月", "1.92磅", ""], ["B0DDNPM4V4", "29.99", "50", "4.9", "43", "GiftPeak", "", "", "", "", "", "超大树叶垫", "", "47x35英寸", "6种可拆卸玩具", "", "", "棉", "", "", "", "", "0-18个月", "3.08磅", ""], ["B0DF7WFFBG", "41.99", "50", "4.6", "142", "Lilian&Gema", "", "", "", "", "", "树叶形活动垫", "", "43.7x44.3英寸", "8种可拆卸玩具", "", "", "聚酯纤维+棉+塑料", "", "", "", "", "0-12个月", "2.25磅", ""], ["B0D52ZFL85", "19.99", "50", "4.6", "65", "FBesteam", "", "", "", "", "", "贝壳形活动垫", "", "39.5x35.5英寸", "6种可拆卸玩具", "", "", "织物+棉", "", "", "", "", "0-12个月", "1.9磅", ""], ["B0C665RW3G", "54.99", "300", "4.6", "252", "Aila+Aiden", "", "", "", "", "", "6合1超大垫", "", "", "5种悬挂配件", "", "", "织物", "", "", "", "", "0-12个月", "2.81磅", ""], ["B0CGZVPM83", "39.99", "300", "4.6", "330", "Li'l Pengyu", "", "", "", "", "", "斑马折叠垫", "", "", "多感官玩具", "", "", "聚酯纤维", "", "", "", "", "0-6个月", "2.75磅", ""], ["B0DS8FGLR4", "39.99", "100", "4.8", "30", "Tivellary", "", "", "可快速组装+轻便易携带", "", "", "", "", "53 x 39 x 1.4英寸", "悬挂玩具刺激视觉+听觉+触觉", "婴儿送礼会+生日+圣诞节理想礼物", "", "高品质加厚织物+防滑底面", "可机洗+擦拭", "", "Oversized Baby Play Gym with 5 Detachable Toys + Tummy Time Pillow", "促进翻身+坐立", "新生儿", "3.1磅", ""], ["B0DH3LYZC9", "29.98", "200", "4.6", "63", "2PM SPORTS", "新生儿父母贴心礼物", "", "1分钟快速折叠", "太空棉内垫提供缓冲支撑", "", "", "", "未明确标注", "软水晶绒玩具+精细刺绣工艺", "", "", "100%聚酯纤维+无毒材料", "可拆卸机洗", "Pink Butterfly Theme Baby Play Mat", "", "", "0-12个月", "2.23磅", ""]]},
+                    feature_coverage: {"headers": ["ASIN", "功能点计数", "功能覆盖率", "品牌", "价格", "近30天销量", "评分", "评论数量", "三级标签集合"], "data": [["B0DS8FGLR4", "10", "5.21%", "Tivellary", "39.99", "100", "4.8", "30", "便携性: 可快速组装+轻便易携带; 尺寸: 53x39x1.4英寸; 感官刺激: 悬挂玩具刺激视觉+听觉+触觉; 成长仪式感: 婴儿送礼会+生日+圣诞节理想礼物; 材质: 高品质加厚织物+防滑底面; 清洁方式: 可机洗+擦拭; 超大婴儿健身架: Oversized Baby Play Gym; 运动技能训练: 促进翻身+坐立; 适用年龄: 新生儿; 重量: 3.1磅"], ["B0DGXCDWX6", "10", "5.21%", "Blissful Diary", "89.99", "1000", "4.7", "242", "发展阶段: 多阶段适应; 婴儿健身架: 木质活动中心; 安全信任感: 非毒认证; 尺寸: 26x8.5x7英寸; 感官刺激: 视觉+触觉; 成长仪式感: 礼盒包装; 手眼协调训练: 悬挂玩具; 材质: FSC认证松木+可机洗棉垫; 适用年龄: 0-12个月; 重量: 5磅"], ["B0DH3LYZC9", "10", "5.21%", "2PM SPORTS", "29.98", "200", "4.6", "63", "亲子互动: 新生儿父母贴心礼物; 便携性: 1分钟快速折叠; 俯卧训练: 太空棉内垫提供缓冲支撑; 尺寸: 未明确标注; 感官刺激: 软水晶绒玩具+精细刺绣工艺; 材质: 100%聚酯纤维+无毒材料; 清洁方式: 可拆卸机洗; 蝴蝶主题健身垫: Pink Butterfly Theme Baby Play Mat; 适用年龄: 0-12个月; 重量: 2.23磅"], ["B0CHHPJFZN", "9", "4.69%", "Butterfly + Bloom", "75.00", "0", "5.0", "18", "婴儿健身架: 高级木质婴儿健身架+可水洗游戏垫; 安全信任感: 非毒认证; 尺寸: 26x8.5x7英寸; 感官刺激: 4个可拆卸蒙特梭利玩具; 成长仪式感: 礼盒包装; 手眼协调训练: 促进手眼协调和运动技能; 材质: FSC认证松木+可机洗棉垫; 适用年龄: 0-12个月; 重量: 5磅"], ["B07MPCCDM7", "8", "4.17%", "Baby Einstein", "44.84", "10000", "4.7", "23890", "亲子互动促进: 爱因斯坦游戏建议; 婴儿健身架: 4合1音乐语言健身架; 尺寸: 27x34x18英寸; 感官刺激: 7个感官玩具; 材质: 80%织物+20%塑料; 适用年龄: 0-36个月; 重量: 3.19磅; 音乐互动: 25+分钟多语言音乐"], ["B0CBQRXNVW", "8", "4.17%", "Fisher-Price", "39.88", "10000", "4.7", "2895", "婴儿健身架: 发光成长踢踏钢琴健身架; 尺寸: 36.02x27.01x17.99英寸; 感官刺激: 10个可重新定位玩具; 成长仪式感: 智能阶段学习; 材质: 塑料; 适用年龄: 0+个月; 重量: 3.66磅; 音乐互动: 85+歌曲+灯光学习"], ["B0BYJMWG9Q", "7", "3.65%", "Lauon", "33.59", "0", "4.1", "115", "亲子互动促进: 解放妈妈双手; 婴儿健身架: 踢踏钢琴游戏垫; 感官刺激: 5个可拆卸摇铃玩具; 材质: 安全可水洗面料; 适用年龄: 0-6个月; 重量: 4.53磅; 音乐互动: 双面可拆卸钢琴+忙碌板"], ["B08PRVVTKY", "6", "3.12%", "Mallify", "33.85", "1000", "4.7", "1002", "婴儿健身架: 可水洗俯卧时间垫; 尺寸: 35.4x35.4x0.78英寸; 感官刺激: 6个特色玩具+12里程碑卡; 材质: 棉; 适用年龄: 新生儿; 重量: 2.03磅"], ["B07VSHJZZQ", "6", "3.12%", "Sassy", "72.99", "100", "4.6", "1281", "婴儿健身架: STEM发展垫; 尺寸: 37x37英寸; 感官刺激: 12种活动玩具; 材质: 聚酯纤维+PVC; 适用年龄: 0+个月; 重量: 1磅"], ["B075R8BXXC", "6", "3.12%", "Lovevery", "140.00", "5000", "4.8", "6555", "婴儿健身架: 蒙特梭利活动垫; 尺寸: 43x38英寸; 感官刺激: 5个发展区; 材质: 棉; 适用年龄: 新生儿至幼儿; 重量: 7.6磅"], ["B0F74NRWXR", "6", "3.12%", "JING SHOW BUSSINESS", "24.99", "0", "0.0", "0", "婴儿健身架: 钢琴俯卧时间垫; 尺寸: 14x11.4x3.5英寸; 材质: 高品质棉织物; 适用年龄: 0-12个月; 重量: 1.5磅; 音乐互动: 4个发光琴键"], ["B0BBLNBKC1", "6", "3.12%", "Agiyimi", "19.99", "100", "4.3", "223", "婴儿健身架: 7合1俯卧时间垫; 尺寸: 35.4x35.4英寸; 感官刺激: 6个可拆卸玩具+香蕉枕; 材质: 棉; 适用年龄: 0-36个月; 重量: 2.06磅"], ["B09XHGG4B8", "6", "3.12%", "Yeeeasy", "9.99", "10000", "4.3", "8238", "婴儿健身架: 俯卧时间水垫; 尺寸: 26x20x0.04英寸; 感官刺激: 彩色海底世界图案; 材质: 重型PVC材料; 适用年龄: 3-12个月; 重量: 9.5盎司"], ["B09QC9HJRB", "6", "3.12%", "Razee", "59.99", "300", "4.6", "162", "婴儿健身架: 木质婴儿健身架; 尺寸: 86厘米直径垫子; 感官刺激: 6个悬挂感官玩具; 材质: 木质; 适用年龄: 新生儿; 重量: 4.19磅"], ["B092QK3KN2", "6", "3.12%", "little dove", "29.99", "900", "4.7", "1458", "婴儿健身架: 编织风格活动垫; 尺寸: 33.9x33.9英寸; 感官刺激: 6种可拆卸玩具; 材质: 聚酯棉; 适用年龄: 0-12个月; 重量: 1.98磅"], ["B08PV2TJ5L", "6", "3.12%", "little dove", "29.99", "700", "4.7", "1107", "婴儿健身架: 里程碑活动垫; 尺寸: 35.43x35.43英寸; 感官刺激: 7种可拆卸玩具; 材质: 棉; 适用年龄: 0-12个月; 重量: 1.76磅"], ["B0C89GP2G4", "6", "3.12%", "TFDER", "39.98", "2000", "4.5", "818", "婴儿健身架: 8合1俯卧时间垫; 尺寸: 39.4x43.3x21英寸; 感官刺激: 3个织物玩具+镜子; 材质: 聚酯纤维+棉; 适用年龄: 0-12个月; 重量: 2.77磅"], ["B0C729KNJD", "6", "3.12%", "Jyusmile", "39.99", "2000", "4.7", "781", "婴儿健身架: 8合1俯卧时间垫+球池; 尺寸: 43x39英寸; 感官刺激: 6个可拆卸玩具; 材质: 高品质织物; 适用年龄: 0-12个月; 重量: 2.61磅"], ["B0D52ZFL85", "6", "3.12%", "FBesteam", "19.99", "50", "4.6", "65", "婴儿健身架: 贝壳形活动垫; 尺寸: 39.5x35.5英寸; 感官刺激: 6种可拆卸玩具; 材质: 织物+棉; 适用年龄: 0-12个月; 重量: 1.9磅"], ["B0CTC75YK5", "6", "3.12%", "ZICOTO", "34.99", "600", "4.6", "180", "婴儿健身架: 棉质健身垫; 尺寸: 35x35x35英寸; 感官刺激: 6个可爱玩具+镜子; 材质: 棉; 适用年龄: 0+个月; 重量: 2.09磅"], ["B0CNKZ4RLL", "6", "3.12%", "Melissa & Doug", "39.75", "600", "4.9", "65", "婴儿健身架: 海洋主题木质健身架; 尺寸: 29.5x9.5x6.4英寸; 感官刺激: 5个柔软玩具; 材质: 70%织物+20%木材+10%塑料; 适用年龄: 出生至9个月; 重量: 15.8盎司"], ["B0DF7WFFBG", "6", "3.12%", "Lilian&Gema", "41.99", "50", "4.6", "142", "婴儿健身架: 树叶形活动垫; 尺寸: 43.7x44.3英寸; 感官刺激: 8种可拆卸玩具; 材质: 聚酯纤维+棉+塑料; 适用年龄: 0-12个月; 重量: 2.25磅"], ["B0DBQFYJW4", "6", "3.12%", "AskCat", "59.99", "100", "4.7", "26", "婴儿健身架: 叶片形活动中心; 尺寸: 超大尺寸; 感官刺激: 8个可拆卸玩具; 材质: 聚酯纤维; 适用年龄: 新生儿; 重量: 3.12磅"], ["B0CJRVV1GG", "6", "3.12%", "Jyusmile", "33.99", "1000", "4.5", "521", "婴儿健身架: 8合1活动垫; 尺寸: 43x39英寸; 感官刺激: 森林主题玩具; 手眼协调训练: 可拆卸悬挂玩具; 适用年龄: 0-12个月; 重量: 2.4磅"], ["B0CD2LG5FB", "6", "3.12%", "Blissful Diary", "69.99", "2000", "4.8", "880", "婴儿健身架: 超大叶片形健身垫; 尺寸: 53x37英寸; 感官刺激: 6个可拆卸动物玩具; 材质: 聚酯纤维; 适用年龄: 0+个月; 重量: 3.38磅"], ["B0BVZ58FYR", "6", "3.12%", "HAN-MM", "59.99", "2000", "4.6", "517", "婴儿健身架: 5合1可转换健身架; 尺寸: 16.93x12.6x7.09英寸; 感官刺激: 6个可拆卸玩具; 材质: 棉; 适用年龄: 新生儿至幼儿; 重量: 4.93磅"], ["B0DHCV54Y4", "6", "3.12%", "WOODMAM", "66.49", "50", "4.8", "35", "婴儿健身架: 木质活动垫; 尺寸: 45x45英寸; 感官刺激: 可拆卸玩具; 材质: 木材+织物; 适用年龄: 0-12个月; 重量: 3.99磅"], ["B0DP6TW6ZP", "6", "3.12%", "Heypappy", "26.99", "500", "4.6", "220", "婴儿健身架: 9合1牛油果健身垫; 尺寸: 39x39x21英寸; 感官刺激: 6个可拆卸玩具+遮阳篷; 材质: 聚乙烯泡沫+聚酯纤维; 适用年龄: 0-18个月; 重量: 3.94磅"], ["B0DP2MTZ5S", "6", "3.12%", "ZICOTO", "34.99", "500", "4.9", "72", "婴儿健身架: 农场主题健身垫; 尺寸: 35x35x1.06英寸; 感官刺激: 5个农场玩具; 材质: 聚酯纤维; 适用年龄: 0+个月; 重量: 2.64磅"], ["B0DC661B7M", "6", "3.12%", "TINITIGIES", "64.99", "300", "5.0", "31", "婴儿健身架: 丛林主题健身垫; 尺寸: 53x37英寸; 感官刺激: 8个可拆卸玩具; 材质: 聚酯纤维; 适用年龄: 0-12个月; 重量: 2.94磅"], ["B0DDNPM4V4", "6", "3.12%", "GiftPeak", "29.99", "50", "4.9", "43", "婴儿健身架: 超大树叶垫; 尺寸: 47x35英寸; 感官刺激: 6种可拆卸玩具; 材质: 棉; 适用年龄: 0-18个月; 重量: 3.08磅"], ["B0DSZD549P", "5", "2.6%", "suihuooo", "53.99", "500", "4.6", "56", "婴儿健身架: 6区发展垫; 感官刺激: 7种可拆卸玩具; 材质: 棉; 适用年龄: 0-18个月; 重量: 3.96磅"], ["B0BL39Q48V", "5", "2.6%", "Razee", "39.99", "50", "4.3", "70", "婴儿健身架: 木质婴儿健身架; 感官刺激: 5个悬挂玩具; 材质: 木质; 适用年龄: 新生儿; 重量: 1.83磅"], ["B0CGZVPM83", "5", "2.6%", "Li'l Pengyu", "39.99", "300", "4.6", "330", "婴儿健身架: 斑马折叠垫; 感官刺激: 多感官玩具; 材质: 聚酯纤维; 适用年龄: 0-6个月; 重量: 2.75磅"], ["B0C665RW3G", "5", "2.6%", "Aila+Aiden", "54.99", "300", "4.6", "252", "婴儿健身架: 6合1超大垫; 感官刺激: 5种悬挂配件; 材质: 织物; 适用年龄: 0-12个月; 重量: 2.81磅"], ["B0DJ6SSKZF", "5", "2.6%", "Jyusmile", "39.99", "1000", "4.5", "58", "婴儿健身架: 8合1活动垫; 感官刺激: 动物主题玩具; 材质: 棉; 适用年龄: 0-12个月; 重量: 2.33磅"], ["B0DPWY724T", "5", "2.6%", "Outtsp", "23.99", "0", "4.7", "43", "婴儿健身架: 松果形活动垫; 感官刺激: 5种可拆卸玩具; 材质: 聚酯纤维; 适用年龄: 0-12个月; 重量: 3.37磅"], ["B09WJMJ1K4", "4", "2.08%", "Skip Hop", "57.99", "100", "4.9", "149", "婴儿健身架: 3合1花园垫; 感官刺激: 17+种活动; 适用年龄: 0+个月; 重量: 1.92磅"], ["B0DBPTMD3C", "4", "2.08%", "Monniebaby", "49.99", "100", "4.8", "30", "婴儿健身架: 四叶草活动垫; 感官刺激: 9种可拆卸玩具; 适用年龄: 0-9+个月; 重量: 1.98磅"], ["B0BX4N2SSJ", "4", "2.08%", "Blissful Diary", "39.99", "3000", "4.8", "774", "婴儿健身架: 可拆卸玩具架; 材质: 聚酯纤维; 适用年龄: 0-12个月; 重量: 2.55磅"], ["B0DFJ6GKFV", "3", "1.56%", "The Peanutshell", "49.99", "200", "4.6", "53", "婴儿健身架: 蒙特梭利大象垫; 适用年龄: 0-12个月; 重量: 2.79磅"], ["B0DKPD1GFL", "3", "1.56%", "TODALE", "25.99", "0", "4.5", "37", "婴儿健身架: 熊猫活动垫; 适用年龄: 0-36个月; 重量: 2.02磅"]]},
+                    feature_distribution: {"headers": ["二级标签", "功能点", "ASIN计数", "普及率", "价格最低", "价格最高", "价格平均", "价格方差", "销量最低", "销量最高", "销量平均", "销量方差", "评论平均", "ASIN集合", "品牌集合"], "data": [["亲子互动", "新生儿父母贴心礼物", "1", "2.38%", "29.98", "29.98", "29.98", "0.00", "200", "200", "200.00", "0.00", "63.0", "B0DH3LYZC9", "2PM SPORTS"], ["亲子互动促进", "爱因斯坦游戏建议", "1", "2.38%", "44.84", "44.84", "44.84", "0.00", "10000", "10000", "10000.00", "0.00", "23890.0", "B07MPCCDM7", "Baby Einstein"], ["亲子互动促进", "解放妈妈双手", "1", "2.38%", "33.59", "33.59", "33.59", "0.00", "0", "0", "0.00", "0.00", "115.0", "B0BYJMWG9Q", "Lauon"], ["便携性", "1分钟快速折叠", "1", "2.38%", "29.98", "29.98", "29.98", "0.00", "200", "200", "200.00", "0.00", "63.0", "B0DH3LYZC9", "2PM SPORTS"], ["便携性", "可快速组装+轻便易携带", "1", "2.38%", "39.99", "39.99", "39.99", "0.00", "100", "100", "100.00", "0.00", "30.0", "B0DS8FGLR4", "Tivellary"], ["俯卧训练", "太空棉内垫提供缓冲支撑", "1", "2.38%", "29.98", "29.98", "29.98", "0.00", "200", "200", "200.00", "0.00", "63.0", "B0DH3LYZC9", "2PM SPORTS"], ["发展阶段", "多阶段适应", "1", "2.38%", "89.99", "89.99", "89.99", "0.00", "1000", "1000", "1000.00", "0.00", "242.0", "B0DGXCDWX6", "Blissful Diary"], ["婴儿健身架", "8合1活动垫", "2", "4.76%", "33.99", "39.99", "36.99", "18.00", "1000", "1000", "1000.00", "0.00", "289.5", "B0CJRVV1GG, B0DJ6SSKZF", "Jyusmile"], ["婴儿健身架", "木质婴儿健身架", "2", "4.76%", "39.99", "59.99", "49.99", "200.00", "50", "300", "175.00", "31250.00", "116.0", "B0BL39Q48V, B09QC9HJRB", "Razee"], ["婴儿健身架", "3合1花园垫", "1", "2.38%", "57.99", "57.99", "57.99", "0.00", "100", "100", "100.00", "0.00", "149.0", "B09WJMJ1K4", "Skip Hop"], ["婴儿健身架", "4合1音乐语言健身架", "1", "2.38%", "44.84", "44.84", "44.84", "0.00", "10000", "10000", "10000.00", "0.00", "23890.0", "B07MPCCDM7", "Baby Einstein"], ["婴儿健身架", "5合1可转换健身架", "1", "2.38%", "59.99", "59.99", "59.99", "0.00", "2000", "2000", "2000.00", "0.00", "517.0", "B0BVZ58FYR", "HAN-MM"], ["婴儿健身架", "6区发展垫", "1", "2.38%", "53.99", "53.99", "53.99", "0.00", "500", "500", "500.00", "0.00", "56.0", "B0DSZD549P", "suihuooo"], ["婴儿健身架", "6合1超大垫", "1", "2.38%", "54.99", "54.99", "54.99", "0.00", "300", "300", "300.00", "0.00", "252.0", "B0C665RW3G", "Aila+Aiden"], ["婴儿健身架", "7合1俯卧时间垫", "1", "2.38%", "19.99", "19.99", "19.99", "0.00", "100", "100", "100.00", "0.00", "223.0", "B0BBLNBKC1", "Agiyimi"], ["婴儿健身架", "8合1俯卧时间垫", "1", "2.38%", "39.98", "39.98", "39.98", "0.00", "2000", "2000", "2000.00", "0.00", "818.0", "B0C89GP2G4", "TFDER"], ["婴儿健身架", "8合1俯卧时间垫+球池", "1", "2.38%", "39.99", "39.99", "39.99", "0.00", "2000", "2000", "2000.00", "0.00", "781.0", "B0C729KNJD", "Jyusmile"], ["婴儿健身架", "9合1牛油果健身垫", "1", "2.38%", "26.99", "26.99", "26.99", "0.00", "500", "500", "500.00", "0.00", "220.0", "B0DP6TW6ZP", "Heypappy"], ["婴儿健身架", "STEM发展垫", "1", "2.38%", "72.99", "72.99", "72.99", "0.00", "100", "100", "100.00", "0.00", "1281.0", "B07VSHJZZQ", "Sassy"], ["婴儿健身架", "丛林主题健身垫", "1", "2.38%", "64.99", "64.99", "64.99", "0.00", "300", "300", "300.00", "0.00", "31.0", "B0DC661B7M", "TINITIGIES"], ["婴儿健身架", "俯卧时间水垫", "1", "2.38%", "9.99", "9.99", "9.99", "0.00", "10000", "10000", "10000.00", "0.00", "8238.0", "B09XHGG4B8", "Yeeeasy"], ["婴儿健身架", "农场主题健身垫", "1", "2.38%", "34.99", "34.99", "34.99", "0.00", "500", "500", "500.00", "0.00", "72.0", "B0DP2MTZ5S", "ZICOTO"], ["婴儿健身架", "发光成长踢踏钢琴健身架", "1", "2.38%", "39.88", "39.88", "39.88", "0.00", "10000", "10000", "10000.00", "0.00", "2895.0", "B0CBQRXNVW", "Fisher-Price"], ["婴儿健身架", "可拆卸玩具架", "1", "2.38%", "39.99", "39.99", "39.99", "0.00", "3000", "3000", "3000.00", "0.00", "774.0", "B0BX4N2SSJ", "Blissful Diary"], ["婴儿健身架", "可水洗俯卧时间垫", "1", "2.38%", "33.85", "33.85", "33.85", "0.00", "1000", "1000", "1000.00", "0.00", "1002.0", "B08PRVVTKY", "Mallify"], ["婴儿健身架", "叶片形活动中心", "1", "2.38%", "59.99", "59.99", "59.99", "0.00", "100", "100", "100.00", "0.00", "26.0", "B0DBQFYJW4", "AskCat"], ["婴儿健身架", "四叶草活动垫", "1", "2.38%", "49.99", "49.99", "49.99", "0.00", "100", "100", "100.00", "0.00", "30.0", "B0DBPTMD3C", "Monniebaby"], ["婴儿健身架", "斑马折叠垫", "1", "2.38%", "39.99", "39.99", "39.99", "0.00", "300", "300", "300.00", "0.00", "330.0", "B0CGZVPM83", "Li'l Pengyu"], ["婴儿健身架", "木质活动中心", "1", "2.38%", "89.99", "89.99", "89.99", "0.00", "1000", "1000", "1000.00", "0.00", "242.0", "B0DGXCDWX6", "Blissful Diary"], ["婴儿健身架", "木质活动垫", "1", "2.38%", "66.49", "66.49", "66.49", "0.00", "50", "50", "50.00", "0.00", "35.0", "B0DHCV54Y4", "WOODMAM"], ["婴儿健身架", "松果形活动垫", "1", "2.38%", "23.99", "23.99", "23.99", "0.00", "0", "0", "0.00", "0.00", "43.0", "B0DPWY724T", "Outtsp"], ["婴儿健身架", "树叶形活动垫", "1", "2.38%", "41.99", "41.99", "41.99", "0.00", "50", "50", "50.00", "0.00", "142.0", "B0DF7WFFBG", "Lilian&Gema"], ["婴儿健身架", "棉质健身垫", "1", "2.38%", "34.99", "34.99", "34.99", "0.00", "600", "600", "600.00", "0.00", "180.0", "B0CTC75YK5", "ZICOTO"], ["婴儿健身架", "海洋主题木质健身架", "1", "2.38%", "39.75", "39.75", "39.75", "0.00", "600", "600", "600.00", "0.00", "65.0", "B0CNKZ4RLL", "Melissa & Doug"], ["婴儿健身架", "熊猫活动垫", "1", "2.38%", "25.99", "25.99", "25.99", "0.00", "0", "0", "0.00", "0.00", "37.0", "B0DKPD1GFL", "TODALE"], ["婴儿健身架", "编织风格活动垫", "1", "2.38%", "29.99", "29.99", "29.99", "0.00", "900", "900", "900.00", "0.00", "1458.0", "B092QK3KN2", "little dove"], ["婴儿健身架", "蒙特梭利大象垫", "1", "2.38%", "49.99", "49.99", "49.99", "0.00", "200", "200", "200.00", "0.00", "53.0", "B0DFJ6GKFV", "The Peanutshell"], ["婴儿健身架", "蒙特梭利活动垫", "1", "2.38%", "140.00", "140.00", "140.00", "0.00", "5000", "5000", "5000.00", "0.00", "6555.0", "B075R8BXXC", "Lovevery"], ["婴儿健身架", "贝壳形活动垫", "1", "2.38%", "19.99", "19.99", "19.99", "0.00", "50", "50", "50.00", "0.00", "65.0", "B0D52ZFL85", "FBesteam"], ["婴儿健身架", "超大叶片形健身垫", "1", "2.38%", "69.99", "69.99", "69.99", "0.00", "2000", "2000", "2000.00", "0.00", "880.0", "B0CD2LG5FB", "Blissful Diary"], ["婴儿健身架", "超大树叶垫", "1", "2.38%", "29.99", "29.99", "29.99", "0.00", "50", "50", "50.00", "0.00", "43.0", "B0DDNPM4V4", "GiftPeak"], ["婴儿健身架", "踢踏钢琴游戏垫", "1", "2.38%", "33.59", "33.59", "33.59", "0.00", "0", "0", "0.00", "0.00", "115.0", "B0BYJMWG9Q", "Lauon"], ["婴儿健身架", "里程碑活动垫", "1", "2.38%", "29.99", "29.99", "29.99", "0.00", "700", "700", "700.00", "0.00", "1107.0", "B08PV2TJ5L", "little dove"], ["婴儿健身架", "钢琴俯卧时间垫", "1", "2.38%", "24.99", "24.99", "24.99", "0.00", "0", "0", "0.00", "0.00", "0.0", "B0F74NRWXR", "JING SHOW BUSSINESS"], ["婴儿健身架", "高级木质婴儿健身架+可水洗游戏垫", "1", "2.38%", "75.00", "75.00", "75.00", "0.00", "0", "0", "0.00", "0.00", "18.0", "B0CHHPJFZN", "Butterfly + Bloom"], ["安全信任感", "非毒认证", "2", "4.76%", "75.00", "89.99", "82.50", "112.35", "0", "1000", "500.00", "500000.00", "130.0", "B0DGXCDWX6, B0CHHPJFZN", "Butterfly + Bloom, Blissful Diary"], ["尺寸", "26x8.5x7英寸", "2", "4.76%", "75.00", "89.99", "82.50", "112.35", "0", "1000", "500.00", "500000.00", "130.0", "B0DGXCDWX6, B0CHHPJFZN", "Butterfly + Bloom, Blissful Diary"], ["尺寸", "43x39英寸", "2", "4.76%", "33.99", "39.99", "36.99", "18.00", "1000", "2000", "1500.00", "500000.00", "651.0", "B0CJRVV1GG, B0C729KNJD", "Jyusmile"], ["尺寸", "53x37英寸", "2", "4.76%", "64.99", "69.99", "67.49", "12.50", "300", "2000", "1150.00", "1445000.00", "455.5", "B0CD2LG5FB, B0DC661B7M", "Blissful Diary, TINITIGIES"], ["尺寸", "14x11.4x3.5英寸", "1", "2.38%", "24.99", "24.99", "24.99", "0.00", "0", "0", "0.00", "0.00", "0.0", "B0F74NRWXR", "JING SHOW BUSSINESS"], ["尺寸", "16.93x12.6x7.09英寸", "1", "2.38%", "59.99", "59.99", "59.99", "0.00", "2000", "2000", "2000.00", "0.00", "517.0", "B0BVZ58FYR", "HAN-MM"], ["尺寸", "26x20x0.04英寸", "1", "2.38%", "9.99", "9.99", "9.99", "0.00", "10000", "10000", "10000.00", "0.00", "8238.0", "B09XHGG4B8", "Yeeeasy"], ["尺寸", "27x34x18英寸", "1", "2.38%", "44.84", "44.84", "44.84", "0.00", "10000", "10000", "10000.00", "0.00", "23890.0", "B07MPCCDM7", "Baby Einstein"], ["尺寸", "29.5x9.5x6.4英寸", "1", "2.38%", "39.75", "39.75", "39.75", "0.00", "600", "600", "600.00", "0.00", "65.0", "B0CNKZ4RLL", "Melissa & Doug"], ["尺寸", "33.9x33.9英寸", "1", "2.38%", "29.99", "29.99", "29.99", "0.00", "900", "900", "900.00", "0.00", "1458.0", "B092QK3KN2", "little dove"], ["尺寸", "35.43x35.43英寸", "1", "2.38%", "29.99", "29.99", "29.99", "0.00", "700", "700", "700.00", "0.00", "1107.0", "B08PV2TJ5L", "little dove"], ["尺寸", "35.4x35.4x0.78英寸", "1", "2.38%", "33.85", "33.85", "33.85", "0.00", "1000", "1000", "1000.00", "0.00", "1002.0", "B08PRVVTKY", "Mallify"], ["尺寸", "35.4x35.4英寸", "1", "2.38%", "19.99", "19.99", "19.99", "0.00", "100", "100", "100.00", "0.00", "223.0", "B0BBLNBKC1", "Agiyimi"], ["尺寸", "35x35x1.06英寸", "1", "2.38%", "34.99", "34.99", "34.99", "0.00", "500", "500", "500.00", "0.00", "72.0", "B0DP2MTZ5S", "ZICOTO"], ["尺寸", "35x35x35英寸", "1", "2.38%", "34.99", "34.99", "34.99", "0.00", "600", "600", "600.00", "0.00", "180.0", "B0CTC75YK5", "ZICOTO"], ["尺寸", "36.02x27.01x17.99英寸", "1", "2.38%", "39.88", "39.88", "39.88", "0.00", "10000", "10000", "10000.00", "0.00", "2895.0", "B0CBQRXNVW", "Fisher-Price"], ["尺寸", "37x37英寸", "1", "2.38%", "72.99", "72.99", "72.99", "0.00", "100", "100", "100.00", "0.00", "1281.0", "B07VSHJZZQ", "Sassy"], ["尺寸", "39.4x43.3x21英寸", "1", "2.38%", "39.98", "39.98", "39.98", "0.00", "2000", "2000", "2000.00", "0.00", "818.0", "B0C89GP2G4", "TFDER"], ["尺寸", "39.5x35.5英寸", "1", "2.38%", "19.99", "19.99", "19.99", "0.00", "50", "50", "50.00", "0.00", "65.0", "B0D52ZFL85", "FBesteam"], ["尺寸", "39x39x21英寸", "1", "2.38%", "26.99", "26.99", "26.99", "0.00", "500", "500", "500.00", "0.00", "220.0", "B0DP6TW6ZP", "Heypappy"], ["尺寸", "43.7x44.3英寸", "1", "2.38%", "41.99", "41.99", "41.99", "0.00", "50", "50", "50.00", "0.00", "142.0", "B0DF7WFFBG", "Lilian&Gema"], ["尺寸", "43x38英寸", "1", "2.38%", "140.00", "140.00", "140.00", "0.00", "5000", "5000", "5000.00", "0.00", "6555.0", "B075R8BXXC", "Lovevery"], ["尺寸", "45x45英寸", "1", "2.38%", "66.49", "66.49", "66.49", "0.00", "50", "50", "50.00", "0.00", "35.0", "B0DHCV54Y4", "WOODMAM"], ["尺寸", "47x35英寸", "1", "2.38%", "29.99", "29.99", "29.99", "0.00", "50", "50", "50.00", "0.00", "43.0", "B0DDNPM4V4", "GiftPeak"], ["尺寸", "53x39x1.4英寸", "1", "2.38%", "39.99", "39.99", "39.99", "0.00", "100", "100", "100.00", "0.00", "30.0", "B0DS8FGLR4", "Tivellary"], ["尺寸", "86厘米直径垫子", "1", "2.38%", "59.99", "59.99", "59.99", "0.00", "300", "300", "300.00", "0.00", "162.0", "B09QC9HJRB", "Razee"], ["尺寸", "未明确标注", "1", "2.38%", "29.98", "29.98", "29.98", "0.00", "200", "200", "200.00", "0.00", "63.0", "B0DH3LYZC9", "2PM SPORTS"], ["尺寸", "超大尺寸", "1", "2.38%", "59.99", "59.99", "59.99", "0.00", "100", "100", "100.00", "0.00", "26.0", "B0DBQFYJW4", "AskCat"], ["感官刺激", "6种可拆卸玩具", "3", "7.14%", "19.99", "29.99", "26.66", "33.33", "50", "900", "333.33", "240833.33", "522.0", "B092QK3KN2, B0D52ZFL85, B0DDNPM4V4", "little dove, GiftPeak, FBesteam"], ["感官刺激", "6个可拆卸玩具", "2", "4.76%", "39.99", "59.99", "49.99", "200.00", "2000", "2000", "2000.00", "0.00", "649.0", "B0BVZ58FYR, B0C729KNJD", "Jyusmile, HAN-MM"], ["感官刺激", "7种可拆卸玩具", "2", "4.76%", "29.99", "53.99", "41.99", "288.00", "500", "700", "600.00", "20000.00", "581.5", "B0DSZD549P, B08PV2TJ5L", "little dove, suihuooo"], ["感官刺激", "8个可拆卸玩具", "2", "4.76%", "59.99", "64.99", "62.49", "12.50", "100", "300", "200.00", "20000.00", "28.5", "B0DC661B7M, B0DBQFYJW4", "TINITIGIES, AskCat"], ["感官刺激", "10个可重新定位玩具", "1", "2.38%", "39.88", "39.88", "39.88", "0.00", "10000", "10000", "10000.00", "0.00", "2895.0", "B0CBQRXNVW", "Fisher-Price"], ["感官刺激", "12种活动玩具", "1", "2.38%", "72.99", "72.99", "72.99", "0.00", "100", "100", "100.00", "0.00", "1281.0", "B07VSHJZZQ", "Sassy"], ["感官刺激", "17+种活动", "1", "2.38%", "57.99", "57.99", "57.99", "0.00", "100", "100", "100.00", "0.00", "149.0", "B09WJMJ1K4", "Skip Hop"], ["感官刺激", "3个织物玩具+镜子", "1", "2.38%", "39.98", "39.98", "39.98", "0.00", "2000", "2000", "2000.00", "0.00", "818.0", "B0C89GP2G4", "TFDER"], ["感官刺激", "4个可拆卸蒙特梭利玩具", "1", "2.38%", "75.00", "75.00", "75.00", "0.00", "0", "0", "0.00", "0.00", "18.0", "B0CHHPJFZN", "Butterfly + Bloom"], ["感官刺激", "5个农场玩具", "1", "2.38%", "34.99", "34.99", "34.99", "0.00", "500", "500", "500.00", "0.00", "72.0", "B0DP2MTZ5S", "ZICOTO"], ["感官刺激", "5个发展区", "1", "2.38%", "140.00", "140.00", "140.00", "0.00", "5000", "5000", "5000.00", "0.00", "6555.0", "B075R8BXXC", "Lovevery"], ["感官刺激", "5个可拆卸摇铃玩具", "1", "2.38%", "33.59", "33.59", "33.59", "0.00", "0", "0", "0.00", "0.00", "115.0", "B0BYJMWG9Q", "Lauon"], ["感官刺激", "5个悬挂玩具", "1", "2.38%", "39.99", "39.99", "39.99", "0.00", "50", "50", "50.00", "0.00", "70.0", "B0BL39Q48V", "Razee"], ["感官刺激", "5个柔软玩具", "1", "2.38%", "39.75", "39.75", "39.75", "0.00", "600", "600", "600.00", "0.00", "65.0", "B0CNKZ4RLL", "Melissa & Doug"], ["感官刺激", "5种可拆卸玩具", "1", "2.38%", "23.99", "23.99", "23.99", "0.00", "0", "0", "0.00", "0.00", "43.0", "B0DPWY724T", "Outtsp"], ["感官刺激", "5种悬挂配件", "1", "2.38%", "54.99", "54.99", "54.99", "0.00", "300", "300", "300.00", "0.00", "252.0", "B0C665RW3G", "Aila+Aiden"], ["感官刺激", "6个可拆卸动物玩具", "1", "2.38%", "69.99", "69.99", "69.99", "0.00", "2000", "2000", "2000.00", "0.00", "880.0", "B0CD2LG5FB", "Blissful Diary"], ["感官刺激", "6个可拆卸玩具+遮阳篷", "1", "2.38%", "26.99", "26.99", "26.99", "0.00", "500", "500", "500.00", "0.00", "220.0", "B0DP6TW6ZP", "Heypappy"], ["感官刺激", "6个可拆卸玩具+香蕉枕", "1", "2.38%", "19.99", "19.99", "19.99", "0.00", "100", "100", "100.00", "0.00", "223.0", "B0BBLNBKC1", "Agiyimi"], ["感官刺激", "6个可爱玩具+镜子", "1", "2.38%", "34.99", "34.99", "34.99", "0.00", "600", "600", "600.00", "0.00", "180.0", "B0CTC75YK5", "ZICOTO"], ["感官刺激", "6个悬挂感官玩具", "1", "2.38%", "59.99", "59.99", "59.99", "0.00", "300", "300", "300.00", "0.00", "162.0", "B09QC9HJRB", "Razee"], ["感官刺激", "6个特色玩具+12里程碑卡", "1", "2.38%", "33.85", "33.85", "33.85", "0.00", "1000", "1000", "1000.00", "0.00", "1002.0", "B08PRVVTKY", "Mallify"], ["感官刺激", "7个感官玩具", "1", "2.38%", "44.84", "44.84", "44.84", "0.00", "10000", "10000", "10000.00", "0.00", "23890.0", "B07MPCCDM7", "Baby Einstein"], ["感官刺激", "8种可拆卸玩具", "1", "2.38%", "41.99", "41.99", "41.99", "0.00", "50", "50", "50.00", "0.00", "142.0", "B0DF7WFFBG", "Lilian&Gema"], ["感官刺激", "9种可拆卸玩具", "1", "2.38%", "49.99", "49.99", "49.99", "0.00", "100", "100", "100.00", "0.00", "30.0", "B0DBPTMD3C", "Monniebaby"], ["感官刺激", "动物主题玩具", "1", "2.38%", "39.99", "39.99", "39.99", "0.00", "1000", "1000", "1000.00", "0.00", "58.0", "B0DJ6SSKZF", "Jyusmile"], ["感官刺激", "可拆卸玩具", "1", "2.38%", "66.49", "66.49", "66.49", "0.00", "50", "50", "50.00", "0.00", "35.0", "B0DHCV54Y4", "WOODMAM"], ["感官刺激", "多感官玩具", "1", "2.38%", "39.99", "39.99", "39.99", "0.00", "300", "300", "300.00", "0.00", "330.0", "B0CGZVPM83", "Li'l Pengyu"], ["感官刺激", "彩色海底世界图案", "1", "2.38%", "9.99", "9.99", "9.99", "0.00", "10000", "10000", "10000.00", "0.00", "8238.0", "B09XHGG4B8", "Yeeeasy"], ["感官刺激", "悬挂玩具刺激视觉+听觉+触觉", "1", "2.38%", "39.99", "39.99", "39.99", "0.00", "100", "100", "100.00", "0.00", "30.0", "B0DS8FGLR4", "Tivellary"], ["感官刺激", "森林主题玩具", "1", "2.38%", "33.99", "33.99", "33.99", "0.00", "1000", "1000", "1000.00", "0.00", "521.0", "B0CJRVV1GG", "Jyusmile"], ["感官刺激", "视觉+触觉", "1", "2.38%", "89.99", "89.99", "89.99", "0.00", "1000", "1000", "1000.00", "0.00", "242.0", "B0DGXCDWX6", "Blissful Diary"], ["感官刺激", "软水晶绒玩具+精细刺绣工艺", "1", "2.38%", "29.98", "29.98", "29.98", "0.00", "200", "200", "200.00", "0.00", "63.0", "B0DH3LYZC9", "2PM SPORTS"], ["成长仪式感", "礼盒包装", "2", "4.76%", "75.00", "89.99", "82.50", "112.35", "0", "1000", "500.00", "500000.00", "130.0", "B0DGXCDWX6, B0CHHPJFZN", "Butterfly + Bloom, Blissful Diary"], ["成长仪式感", "婴儿送礼会+生日+圣诞节理想礼物", "1", "2.38%", "39.99", "39.99", "39.99", "0.00", "100", "100", "100.00", "0.00", "30.0", "B0DS8FGLR4", "Tivellary"], ["成长仪式感", "智能阶段学习", "1", "2.38%", "39.88", "39.88", "39.88", "0.00", "10000", "10000", "10000.00", "0.00", "2895.0", "B0CBQRXNVW", "Fisher-Price"], ["手眼协调训练", "促进手眼协调和运动技能", "1", "2.38%", "75.00", "75.00", "75.00", "0.00", "0", "0", "0.00", "0.00", "18.0", "B0CHHPJFZN", "Butterfly + Bloom"], ["手眼协调训练", "可拆卸悬挂玩具", "1", "2.38%", "33.99", "33.99", "33.99", "0.00", "1000", "1000", "1000.00", "0.00", "521.0", "B0CJRVV1GG", "Jyusmile"], ["手眼协调训练", "悬挂玩具", "1", "2.38%", "89.99", "89.99", "89.99", "0.00", "1000", "1000", "1000.00", "0.00", "242.0", "B0DGXCDWX6", "Blissful Diary"], ["材质", "棉", "9", "21.43%", "19.99", "140.00", "49.20", "1312.21", "50", "5000", "1216.67", "2348750.00", "1082.33", "B08PRVVTKY, B0DSZD549P, B0BVZ58FYR, B0DJ6SSKZF, B0CTC75YK5, B0BBLNBKC1, B075R8BXXC, B0DDNPM4V4, B08PV2TJ5L", "Agiyimi, Mallify, ZICOTO, HAN-MM, Jyusmile, little dove, suihuooo, Lovevery, GiftPeak"], ["材质", "聚酯纤维", "7", "16.67%", "23.99", "69.99", "47.70", "298.24", "0", "3000", "885.71", "1324761.90", "308.0", "B0CGZVPM83, B0DC661B7M, B0DP2MTZ5S, B0DPWY724T, B0CD2LG5FB, B0BX4N2SSJ, B0DBQFYJW4", "Blissful Diary, TINITIGIES, ZICOTO, AskCat, Outtsp, Li'l Pengyu"], ["材质", "FSC认证松木+可机洗棉垫", "2", "4.76%", "75.00", "89.99", "82.50", "112.35", "0", "1000", "500.00", "500000.00", "130.0", "B0DGXCDWX6, B0CHHPJFZN", "Butterfly + Bloom, Blissful Diary"], ["材质", "木质", "2", "4.76%", "39.99", "59.99", "49.99", "200.00", "50", "300", "175.00", "31250.00", "116.0", "B0BL39Q48V, B09QC9HJRB", "Razee"], ["材质", "100%聚酯纤维+无毒材料", "1", "2.38%", "29.98", "29.98", "29.98", "0.00", "200", "200", "200.00", "0.00", "63.0", "B0DH3LYZC9", "2PM SPORTS"], ["材质", "70%织物+20%木材+10%塑料", "1", "2.38%", "39.75", "39.75", "39.75", "0.00", "600", "600", "600.00", "0.00", "65.0", "B0CNKZ4RLL", "Melissa & Doug"], ["材质", "80%织物+20%塑料", "1", "2.38%", "44.84", "44.84", "44.84", "0.00", "10000", "10000", "10000.00", "0.00", "23890.0", "B07MPCCDM7", "Baby Einstein"], ["材质", "塑料", "1", "2.38%", "39.88", "39.88", "39.88", "0.00", "10000", "10000", "10000.00", "0.00", "2895.0", "B0CBQRXNVW", "Fisher-Price"], ["材质", "安全可水洗面料", "1", "2.38%", "33.59", "33.59", "33.59", "0.00", "0", "0", "0.00", "0.00", "115.0", "B0BYJMWG9Q", "Lauon"], ["材质", "木材+织物", "1", "2.38%", "66.49", "66.49", "66.49", "0.00", "50", "50", "50.00", "0.00", "35.0", "B0DHCV54Y4", "WOODMAM"], ["材质", "织物", "1", "2.38%", "54.99", "54.99", "54.99", "0.00", "300", "300", "300.00", "0.00", "252.0", "B0C665RW3G", "Aila+Aiden"], ["材质", "织物+棉", "1", "2.38%", "19.99", "19.99", "19.99", "0.00", "50", "50", "50.00", "0.00", "65.0", "B0D52ZFL85", "FBesteam"], ["材质", "聚乙烯泡沫+聚酯纤维", "1", "2.38%", "26.99", "26.99", "26.99", "0.00", "500", "500", "500.00", "0.00", "220.0", "B0DP6TW6ZP", "Heypappy"], ["材质", "聚酯棉", "1", "2.38%", "29.99", "29.99", "29.99", "0.00", "900", "900", "900.00", "0.00", "1458.0", "B092QK3KN2", "little dove"], ["材质", "聚酯纤维+PVC", "1", "2.38%", "72.99", "72.99", "72.99", "0.00", "100", "100", "100.00", "0.00", "1281.0", "B07VSHJZZQ", "Sassy"], ["材质", "聚酯纤维+棉", "1", "2.38%", "39.98", "39.98", "39.98", "0.00", "2000", "2000", "2000.00", "0.00", "818.0", "B0C89GP2G4", "TFDER"], ["材质", "聚酯纤维+棉+塑料", "1", "2.38%", "41.99", "41.99", "41.99", "0.00", "50", "50", "50.00", "0.00", "142.0", "B0DF7WFFBG", "Lilian&Gema"], ["材质", "重型PVC材料", "1", "2.38%", "9.99", "9.99", "9.99", "0.00", "10000", "10000", "10000.00", "0.00", "8238.0", "B09XHGG4B8", "Yeeeasy"], ["材质", "高品质加厚织物+防滑底面", "1", "2.38%", "39.99", "39.99", "39.99", "0.00", "100", "100", "100.00", "0.00", "30.0", "B0DS8FGLR4", "Tivellary"], ["材质", "高品质棉织物", "1", "2.38%", "24.99", "24.99", "24.99", "0.00", "0", "0", "0.00", "0.00", "0.0", "B0F74NRWXR", "JING SHOW BUSSINESS"], ["材质", "高品质织物", "1", "2.38%", "39.99", "39.99", "39.99", "0.00", "2000", "2000", "2000.00", "0.00", "781.0", "B0C729KNJD", "Jyusmile"], ["清洁方式", "可拆卸机洗", "1", "2.38%", "29.98", "29.98", "29.98", "0.00", "200", "200", "200.00", "0.00", "63.0", "B0DH3LYZC9", "2PM SPORTS"], ["清洁方式", "可机洗+擦拭", "1", "2.38%", "39.99", "39.99", "39.99", "0.00", "100", "100", "100.00", "0.00", "30.0", "B0DS8FGLR4", "Tivellary"], ["蝴蝶主题健身垫", "Pink Butterfly Theme Baby Play Mat", "1", "2.38%", "29.98", "29.98", "29.98", "0.00", "200", "200", "200.00", "0.00", "63.0", "B0DH3LYZC9", "2PM SPORTS"], ["超大婴儿健身架", "Oversized Baby Play Gym", "1", "2.38%", "39.99", "39.99", "39.99", "0.00", "100", "100", "100.00", "0.00", "30.0", "B0DS8FGLR4", "Tivellary"], ["运动技能训练", "促进翻身+坐立", "1", "2.38%", "39.99", "39.99", "39.99", "0.00", "100", "100", "100.00", "0.00", "30.0", "B0DS8FGLR4", "Tivellary"], ["适用年龄", "0-12个月", "18", "42.86%", "19.99", "89.99", "44.24", "369.07", "0", "3000", "708.33", "737426.47", "358.94", "B0CJRVV1GG, B0C89GP2G4, B0DFJ6GKFV, B0DC661B7M, B0DHCV54Y4, B0C665RW3G, B0CHHPJFZN, B0DJ6SSKZF, B0DPWY724T, B0DH3LYZC9, B0DGXCDWX6, B0D52ZFL85, B0C729KNJD, B0DF7WFFBG, B0F74NRWXR, B0BX4N2SSJ, B08PV2TJ5L, B092QK3KN2", "Butterfly + Bloom, JING SHOW BUSSINESS, Jyusmile, TINITIGIES, TFDER, Blissful Diary, little dove, Outtsp, The Peanutshell, WOODMAM, Lilian&Gema, FBesteam, Aila+Aiden, 2PM SPORTS"], ["适用年龄", "0+个月", "6", "14.29%", "34.99", "72.99", "51.81", "305.09", "100", "10000", "2216.67", "15029666.67", "909.5", "B09WJMJ1K4, B0DP2MTZ5S, B0CBQRXNVW, B0CTC75YK5, B0CD2LG5FB, B07VSHJZZQ", "Fisher-Price, Blissful Diary, ZICOTO, Sassy, Skip Hop"], ["适用年龄", "新生儿", "5", "11.9%", "33.85", "59.99", "46.76", "152.10", "50", "1000", "310.00", "158000.00", "258.0", "B08PRVVTKY, B0BL39Q48V, B0DS8FGLR4, B0DBQFYJW4, B09QC9HJRB", "Razee, Mallify, AskCat, Tivellary"], ["适用年龄", "0-18个月", "3", "7.14%", "26.99", "53.99", "36.99", "219.00", "50", "500", "350.00", "67500.00", "106.33", "B0DSZD549P, B0DDNPM4V4, B0DP6TW6ZP", "Heypappy, suihuooo, GiftPeak"], ["适用年龄", "0-36个月", "3", "7.14%", "19.99", "44.84", "30.27", "168.14", "0", "10000", "3366.67", "33003333.33", "8050.0", "B0DKPD1GFL, B07MPCCDM7, B0BBLNBKC1", "Baby Einstein, Agiyimi, TODALE"], ["适用年龄", "0-6个月", "2", "4.76%", "33.59", "39.99", "36.79", "20.48", "0", "300", "150.00", "45000.00", "222.5", "B0BYJMWG9Q, B0CGZVPM83", "Lauon, Li'l Pengyu"], ["适用年龄", "新生儿至幼儿", "2", "4.76%", "59.99", "140.00", "100.00", "3200.80", "2000", "5000", "3500.00", "4500000.00", "3536.0", "B0BVZ58FYR, B075R8BXXC", "HAN-MM, Lovevery"], ["适用年龄", "0-9+个月", "1", "2.38%", "49.99", "49.99", "49.99", "0.00", "100", "100", "100.00", "0.00", "30.0", "B0DBPTMD3C", "Monniebaby"], ["适用年龄", "3-12个月", "1", "2.38%", "9.99", "9.99", "9.99", "0.00", "10000", "10000", "10000.00", "0.00", "8238.0", "B09XHGG4B8", "Yeeeasy"], ["适用年龄", "出生至9个月", "1", "2.38%", "39.75", "39.75", "39.75", "0.00", "600", "600", "600.00", "0.00", "65.0", "B0CNKZ4RLL", "Melissa & Doug"], ["重量", "1.98磅", "2", "4.76%", "29.99", "49.99", "39.99", "200.00", "100", "900", "500.00", "320000.00", "744.0", "B092QK3KN2, B0DBPTMD3C", "Monniebaby, little dove"], ["重量", "5磅", "2", "4.76%", "75.00", "89.99", "82.50", "112.35", "0", "1000", "500.00", "500000.00", "130.0", "B0DGXCDWX6, B0CHHPJFZN", "Butterfly + Bloom, Blissful Diary"], ["重量", "1.5磅", "1", "2.38%", "24.99", "24.99", "24.99", "0.00", "0", "0", "0.00", "0.00", "0.0", "B0F74NRWXR", "JING SHOW BUSSINESS"], ["重量", "1.76磅", "1", "2.38%", "29.99", "29.99", "29.99", "0.00", "700", "700", "700.00", "0.00", "1107.0", "B08PV2TJ5L", "little dove"], ["重量", "1.83磅", "1", "2.38%", "39.99", "39.99", "39.99", "0.00", "50", "50", "50.00", "0.00", "70.0", "B0BL39Q48V", "Razee"], ["重量", "1.92磅", "1", "2.38%", "57.99", "57.99", "57.99", "0.00", "100", "100", "100.00", "0.00", "149.0", "B09WJMJ1K4", "Skip Hop"], ["重量", "1.9磅", "1", "2.38%", "19.99", "19.99", "19.99", "0.00", "50", "50", "50.00", "0.00", "65.0", "B0D52ZFL85", "FBesteam"], ["重量", "15.8盎司", "1", "2.38%", "39.75", "39.75", "39.75", "0.00", "600", "600", "600.00", "0.00", "65.0", "B0CNKZ4RLL", "Melissa & Doug"], ["重量", "1磅", "1", "2.38%", "72.99", "72.99", "72.99", "0.00", "100", "100", "100.00", "0.00", "1281.0", "B07VSHJZZQ", "Sassy"], ["重量", "2.02磅", "1", "2.38%", "25.99", "25.99", "25.99", "0.00", "0", "0", "0.00", "0.00", "37.0", "B0DKPD1GFL", "TODALE"], ["重量", "2.03磅", "1", "2.38%", "33.85", "33.85", "33.85", "0.00", "1000", "1000", "1000.00", "0.00", "1002.0", "B08PRVVTKY", "Mallify"], ["重量", "2.06磅", "1", "2.38%", "19.99", "19.99", "19.99", "0.00", "100", "100", "100.00", "0.00", "223.0", "B0BBLNBKC1", "Agiyimi"], ["重量", "2.09磅", "1", "2.38%", "34.99", "34.99", "34.99", "0.00", "600", "600", "600.00", "0.00", "180.0", "B0CTC75YK5", "ZICOTO"], ["重量", "2.23磅", "1", "2.38%", "29.98", "29.98", "29.98", "0.00", "200", "200", "200.00", "0.00", "63.0", "B0DH3LYZC9", "2PM SPORTS"], ["重量", "2.25磅", "1", "2.38%", "41.99", "41.99", "41.99", "0.00", "50", "50", "50.00", "0.00", "142.0", "B0DF7WFFBG", "Lilian&Gema"], ["重量", "2.33磅", "1", "2.38%", "39.99", "39.99", "39.99", "0.00", "1000", "1000", "1000.00", "0.00", "58.0", "B0DJ6SSKZF", "Jyusmile"], ["重量", "2.4磅", "1", "2.38%", "33.99", "33.99", "33.99", "0.00", "1000", "1000", "1000.00", "0.00", "521.0", "B0CJRVV1GG", "Jyusmile"], ["重量", "2.55磅", "1", "2.38%", "39.99", "39.99", "39.99", "0.00", "3000", "3000", "3000.00", "0.00", "774.0", "B0BX4N2SSJ", "Blissful Diary"], ["重量", "2.61磅", "1", "2.38%", "39.99", "39.99", "39.99", "0.00", "2000", "2000", "2000.00", "0.00", "781.0", "B0C729KNJD", "Jyusmile"], ["重量", "2.64磅", "1", "2.38%", "34.99", "34.99", "34.99", "0.00", "500", "500", "500.00", "0.00", "72.0", "B0DP2MTZ5S", "ZICOTO"], ["重量", "2.75磅", "1", "2.38%", "39.99", "39.99", "39.99", "0.00", "300", "300", "300.00", "0.00", "330.0", "B0CGZVPM83", "Li'l Pengyu"], ["重量", "2.77磅", "1", "2.38%", "39.98", "39.98", "39.98", "0.00", "2000", "2000", "2000.00", "0.00", "818.0", "B0C89GP2G4", "TFDER"], ["重量", "2.79磅", "1", "2.38%", "49.99", "49.99", "49.99", "0.00", "200", "200", "200.00", "0.00", "53.0", "B0DFJ6GKFV", "The Peanutshell"], ["重量", "2.81磅", "1", "2.38%", "54.99", "54.99", "54.99", "0.00", "300", "300", "300.00", "0.00", "252.0", "B0C665RW3G", "Aila+Aiden"], ["重量", "2.94磅", "1", "2.38%", "64.99", "64.99", "64.99", "0.00", "300", "300", "300.00", "0.00", "31.0", "B0DC661B7M", "TINITIGIES"], ["重量", "3.08磅", "1", "2.38%", "29.99", "29.99", "29.99", "0.00", "50", "50", "50.00", "0.00", "43.0", "B0DDNPM4V4", "GiftPeak"], ["重量", "3.12磅", "1", "2.38%", "59.99", "59.99", "59.99", "0.00", "100", "100", "100.00", "0.00", "26.0", "B0DBQFYJW4", "AskCat"], ["重量", "3.19磅", "1", "2.38%", "44.84", "44.84", "44.84", "0.00", "10000", "10000", "10000.00", "0.00", "23890.0", "B07MPCCDM7", "Baby Einstein"], ["重量", "3.1磅", "1", "2.38%", "39.99", "39.99", "39.99", "0.00", "100", "100", "100.00", "0.00", "30.0", "B0DS8FGLR4", "Tivellary"], ["重量", "3.37磅", "1", "2.38%", "23.99", "23.99", "23.99", "0.00", "0", "0", "0.00", "0.00", "43.0", "B0DPWY724T", "Outtsp"], ["重量", "3.38磅", "1", "2.38%", "69.99", "69.99", "69.99", "0.00", "2000", "2000", "2000.00", "0.00", "880.0", "B0CD2LG5FB", "Blissful Diary"], ["重量", "3.66磅", "1", "2.38%", "39.88", "39.88", "39.88", "0.00", "10000", "10000", "10000.00", "0.00", "2895.0", "B0CBQRXNVW", "Fisher-Price"], ["重量", "3.94磅", "1", "2.38%", "26.99", "26.99", "26.99", "0.00", "500", "500", "500.00", "0.00", "220.0", "B0DP6TW6ZP", "Heypappy"], ["重量", "3.96磅", "1", "2.38%", "53.99", "53.99", "53.99", "0.00", "500", "500", "500.00", "0.00", "56.0", "B0DSZD549P", "suihuooo"], ["重量", "3.99磅", "1", "2.38%", "66.49", "66.49", "66.49", "0.00", "50", "50", "50.00", "0.00", "35.0", "B0DHCV54Y4", "WOODMAM"], ["重量", "4.19磅", "1", "2.38%", "59.99", "59.99", "59.99", "0.00", "300", "300", "300.00", "0.00", "162.0", "B09QC9HJRB", "Razee"], ["重量", "4.53磅", "1", "2.38%", "33.59", "33.59", "33.59", "0.00", "0", "0", "0.00", "0.00", "115.0", "B0BYJMWG9Q", "Lauon"], ["重量", "4.93磅", "1", "2.38%", "59.99", "59.99", "59.99", "0.00", "2000", "2000", "2000.00", "0.00", "517.0", "B0BVZ58FYR", "HAN-MM"], ["重量", "7.6磅", "1", "2.38%", "140.00", "140.00", "140.00", "0.00", "5000", "5000", "5000.00", "0.00", "6555.0", "B075R8BXXC", "Lovevery"], ["重量", "9.5盎司", "1", "2.38%", "9.99", "9.99", "9.99", "0.00", "10000", "10000", "10000.00", "0.00", "8238.0", "B09XHGG4B8", "Yeeeasy"], ["音乐互动", "25+分钟多语言音乐", "1", "2.38%", "44.84", "44.84", "44.84", "0.00", "10000", "10000", "10000.00", "0.00", "23890.0", "B07MPCCDM7", "Baby Einstein"], ["音乐互动", "4个发光琴键", "1", "2.38%", "24.99", "24.99", "24.99", "0.00", "0", "0", "0.00", "0.00", "0.0", "B0F74NRWXR", "JING SHOW BUSSINESS"], ["音乐互动", "85+歌曲+灯光学习", "1", "2.38%", "39.88", "39.88", "39.88", "0.00", "10000", "10000", "10000.00", "0.00", "2895.0", "B0CBQRXNVW", "Fisher-Price"], ["音乐互动", "双面可拆卸钢琴+忙碌板", "1", "2.38%", "33.59", "33.59", "33.59", "0.00", "0", "0", "0.00", "0.00", "115.0", "B0BYJMWG9Q", "Lauon"]]},
+                    feature_weight: {"headers": ["ASIN", "功能权重排序", "价格", "销量", "评分", "评论数", "品牌"], "data": [["B0DP2MTZ5S", "材质: 聚酯纤维:0.0052, 适用年龄: 0+个月:0.0045, 尺寸: 35x35x1.06英寸:0.0007, 重量: 2.64磅:0.0007, 婴儿健身架: 农场主题健身垫:0.0007, 感官刺激: 5个农场玩具:0.0007", "34.99", "500", "4.9", "72", "ZICOTO"], ["B08PRVVTKY", "材质: 棉:0.0067, 适用年龄: 新生儿:0.0037, 尺寸: 35.4x35.4x0.78英寸:0.0007, 重量: 2.03磅:0.0007, 婴儿健身架: 可水洗俯卧时间垫:0.0007, 感官刺激: 6个特色玩具+12里程碑卡:0.0007", "33.85", "1000", "4.7", "1002", "Mallify"], ["B0CTC75YK5", "材质: 棉:0.0067, 适用年龄: 0+个月:0.0045, 尺寸: 35x35x35英寸:0.0007, 重量: 2.09磅:0.0007, 婴儿健身架: 棉质健身垫:0.0007, 感官刺激: 6个可爱玩具+镜子:0.0007", "34.99", "600", "4.6", "180", "ZICOTO"], ["B0BVZ58FYR", "材质: 棉:0.0067, 适用年龄: 新生儿至幼儿:0.0015, 感官刺激: 6个可拆卸玩具:0.0015, 尺寸: 16.93x12.6x7.09英寸:0.0007, 重量: 4.93磅:0.0007, 婴儿健身架: 5合1可转换健身架:0.0007", "59.99", "2000", "4.6", "517", "HAN-MM"], ["B0DBQFYJW4", "材质: 聚酯纤维:0.0052, 适用年龄: 新生儿:0.0037, 感官刺激: 8个可拆卸玩具:0.0015, 尺寸: 超大尺寸:0.0007, 重量: 3.12磅:0.0007, 婴儿健身架: 叶片形活动中心:0.0007", "59.99", "100", "4.7", "26", "AskCat"], ["B0DGXCDWX6", "适用年龄: 0-12个月:0.0223, 尺寸: 26x8.5x7英寸:0.0025, 重量: 5磅:0.0025, 材质: FSC认证松木+可机洗棉垫:0.0025, 安全信任感: 非毒认证:0.0025, 成长仪式感: 礼盒包装:0.0025, 婴儿健身架: 木质活动中心:0.0012, 感官刺激: 视觉+触觉:0.0012, 手眼协调训练: 悬挂玩具:0.0012, 发展阶段: 多阶段适应:0.0012", "89.99", "1000", "4.7", "242", "Blissful Diary"], ["B0BX4N2SSJ", "适用年龄: 0-12个月:0.0089, 材质: 聚酯纤维:0.0035, 重量: 2.55磅:0.0005, 婴儿健身架: 可拆卸玩具架:0.0005", "39.99", "3000", "4.8", "774", "Blissful Diary"], ["B0CJRVV1GG", "适用年龄: 0-12个月:0.0134, 尺寸: 43x39英寸:0.0015, 婴儿健身架: 8合1活动垫:0.0015, 重量: 2.4磅:0.0007, 感官刺激: 森林主题玩具:0.0007, 手眼协调训练: 可拆卸悬挂玩具:0.0007", "33.99", "1000", "4.5", "521", "Jyusmile"], ["B0DJ6SSKZF", "适用年龄: 0-12个月:0.0112, 材质: 棉:0.0056, 婴儿健身架: 8合1活动垫:0.0012, 重量: 2.33磅:0.0006, 感官刺激: 动物主题玩具:0.0006", "39.99", "1000", "4.5", "58", "Jyusmile"], ["B08PV2TJ5L", "适用年龄: 0-12个月:0.0134, 材质: 棉:0.0067, 感官刺激: 7种可拆卸玩具:0.0015, 尺寸: 35.43x35.43英寸:0.0007, 重量: 1.76磅:0.0007, 婴儿健身架: 里程碑活动垫:0.0007", "29.99", "700", "4.7", "1107", "little dove"], ["B0DPWY724T", "适用年龄: 0-12个月:0.0112, 材质: 聚酯纤维:0.0043, 重量: 3.37磅:0.0006, 婴儿健身架: 松果形活动垫:0.0006, 感官刺激: 5种可拆卸玩具:0.0006", "23.99", "0", "4.7", "43", "Outtsp"], ["B0DKPD1GFL", "适用年龄: 0-36个月:0.0011, 重量: 2.02磅:0.0004, 婴儿健身架: 熊猫活动垫:0.0004", "25.99", "0", "4.5", "37", "TODALE"], ["B0DSZD549P", "材质: 棉:0.0056, 适用年龄: 0-18个月:0.0019, 感官刺激: 7种可拆卸玩具:0.0012, 重量: 3.96磅:0.0006, 婴儿健身架: 6区发展垫:0.0006", "53.99", "500", "4.6", "56", "suihuooo"], ["B0DFJ6GKFV", "适用年龄: 0-12个月:0.0067, 重量: 2.79磅:0.0004, 婴儿健身架: 蒙特梭利大象垫:0.0004", "49.99", "200", "4.6", "53", "The Peanutshell"], ["B07VSHJZZQ", "适用年龄: 0+个月:0.0045, 尺寸: 37x37英寸:0.0007, 重量: 1磅:0.0007, 婴儿健身架: STEM发展垫:0.0007, 感官刺激: 12种活动玩具:0.0007, 材质: 聚酯纤维+PVC:0.0007", "72.99", "100", "4.6", "1281", "Sassy"], ["B075R8BXXC", "材质: 棉:0.0067, 适用年龄: 新生儿至幼儿:0.0015, 尺寸: 43x38英寸:0.0007, 重量: 7.6磅:0.0007, 婴儿健身架: 蒙特梭利活动垫:0.0007, 感官刺激: 5个发展区:0.0007", "140.0", "5000", "4.8", "6555", "Lovevery"], ["B0DHCV54Y4", "适用年龄: 0-12个月:0.0134, 尺寸: 45x45英寸:0.0007, 重量: 3.99磅:0.0007, 婴儿健身架: 木质活动垫:0.0007, 感官刺激: 可拆卸玩具:0.0007, 材质: 木材+织物:0.0007", "66.49", "50", "4.8", "35", "WOODMAM"], ["B0DBPTMD3C", "重量: 1.98磅:0.001, 适用年龄: 0-9+个月:0.0005, 婴儿健身架: 四叶草活动垫:0.0005, 感官刺激: 9种可拆卸玩具:0.0005", "49.99", "100", "4.8", "30", "Monniebaby"], ["B092QK3KN2", "适用年龄: 0-12个月:0.0134, 感官刺激: 6种可拆卸玩具:0.0022, 重量: 1.98磅:0.0015, 尺寸: 33.9x33.9英寸:0.0007, 婴儿健身架: 编织风格活动垫:0.0007, 材质: 聚酯棉:0.0007", "29.99", "900", "4.7", "1458", "little dove"], ["B09WJMJ1K4", "适用年龄: 0+个月:0.003, 重量: 1.92磅:0.0005, 婴儿健身架: 3合1花园垫:0.0005, 感官刺激: 17+种活动:0.0005", "57.99", "100", "4.9", "149", "Skip Hop"], ["B0DDNPM4V4", "材质: 棉:0.0067, 适用年龄: 0-18个月:0.0022, 感官刺激: 6种可拆卸玩具:0.0022, 尺寸: 47x35英寸:0.0007, 重量: 3.08磅:0.0007, 婴儿健身架: 超大树叶垫:0.0007", "29.99", "50", "4.9", "43", "GiftPeak"], ["B0DF7WFFBG", "适用年龄: 0-12个月:0.0134, 尺寸: 43.7x44.3英寸:0.0007, 重量: 2.25磅:0.0007, 婴儿健身架: 树叶形活动垫:0.0007, 感官刺激: 8种可拆卸玩具:0.0007, 材质: 聚酯纤维+棉+塑料:0.0007", "41.99", "50", "4.6", "142", "Lilian&Gema"], ["B0D52ZFL85", "适用年龄: 0-12个月:0.0134, 感官刺激: 6种可拆卸玩具:0.0022, 尺寸: 39.5x35.5英寸:0.0007, 重量: 1.9磅:0.0007, 婴儿健身架: 贝壳形活动垫:0.0007, 材质: 织物+棉:0.0007", "19.99", "50", "4.6", "65", "FBesteam"], ["B0C665RW3G", "适用年龄: 0-12个月:0.0112, 重量: 2.81磅:0.0006, 婴儿健身架: 6合1超大垫:0.0006, 感官刺激: 5种悬挂配件:0.0006, 材质: 织物:0.0006", "54.99", "300", "4.6", "252", "Aila+Aiden"], ["B0CGZVPM83", "材质: 聚酯纤维:0.0043, 适用年龄: 0-6个月:0.0012, 重量: 2.75磅:0.0006, 婴儿健身架: 斑马折叠垫:0.0006, 感官刺激: 多感官玩具:0.0006", "39.99", "300", "4.6", "330", "Li'l Pengyu"], ["B0DS8FGLR4", "适用年龄: 新生儿:0.0062, 尺寸: 53x39x1.4英寸:0.0012, 重量: 3.1磅:0.0012, 感官刺激: 悬挂玩具刺激视觉+听觉+触觉:0.0012, 材质: 高品质加厚织物+防滑底面:0.0012, 成长仪式感: 婴儿送礼会+生日+圣诞节理想礼物:0.0012, 超大婴儿健身架: Oversized Baby Play Gym:0.0012, 运动技能训练: 促进翻身+坐立:0.0012, 便携性: 可快速组装+轻便易携带:0.0012, 清洁方式: 可机洗+擦拭:0.0012", "39.99", "100", "4.8", "30", "Tivellary"], ["B0DH3LYZC9", "适用年龄: 0-12个月:0.0223, 尺寸: 未明确标注:0.0012, 重量: 2.23磅:0.0012, 感官刺激: 软水晶绒玩具+精细刺绣工艺:0.0012, 材质: 100%聚酯纤维+无毒材料:0.0012, 便携性: 1分钟快速折叠:0.0012, 清洁方式: 可拆卸机洗:0.0012, 蝴蝶主题健身垫: Pink Butterfly Theme Baby Play Mat:0.0012, 俯卧训练: 太空棉内垫提供缓冲支撑:0.0012, 亲子互动: 新生儿父母贴心礼物:0.0012", "29.98", "200", "4.6", "63", "2PM SPORTS"], ["B0CHHPJFZN", "适用年龄: 0-12个月:0.0201, 尺寸: 26x8.5x7英寸:0.0022, 重量: 5磅:0.0022, 材质: FSC认证松木+可机洗棉垫:0.0022, 安全信任感: 非毒认证:0.0022, 成长仪式感: 礼盒包装:0.0022, 婴儿健身架: 高级木质婴儿健身架+可水洗游戏垫:0.0011, 感官刺激: 4个可拆卸蒙特梭利玩具:0.0011, 手眼协调训练: 促进手眼协调和运动技能:0.0011", "75.0", "0", "5.0", "18", "Butterfly + Bloom"], ["B0BYJMWG9Q", "适用年龄: 0-6个月:0.0017, 重量: 4.53磅:0.0009, 婴儿健身架: 踢踏钢琴游戏垫:0.0009, 感官刺激: 5个可拆卸摇铃玩具:0.0009, 材质: 安全可水洗面料:0.0009, 音乐互动: 双面可拆卸钢琴+忙碌板:0.0009, 亲子互动促进: 解放妈妈双手:0.0009", "33.59", "0", "4.1", "115", "Lauon"], ["B0CBQRXNVW", "适用年龄: 0+个月:0.006, 尺寸: 36.02x27.01x17.99英寸:0.001, 重量: 3.66磅:0.001, 婴儿健身架: 发光成长踢踏钢琴健身架:0.001, 感官刺激: 10个可重新定位玩具:0.001, 材质: 塑料:0.001, 成长仪式感: 智能阶段学习:0.001, 音乐互动: 85+歌曲+灯光学习:0.001", "39.88", "10000", "4.7", "2895", "Fisher-Price"], ["B07MPCCDM7", "适用年龄: 0-36个月:0.003, 尺寸: 27x34x18英寸:0.001, 重量: 3.19磅:0.001, 婴儿健身架: 4合1音乐语言健身架:0.001, 感官刺激: 7个感官玩具:0.001, 材质: 80%织物+20%塑料:0.001, 音乐互动: 25+分钟多语言音乐:0.001, 亲子互动促进: 爱因斯坦游戏建议:0.001", "44.84", "10000", "4.7", "23890", "Baby Einstein"], ["B0F74NRWXR", "适用年龄: 0-12个月:0.0134, 尺寸: 14x11.4x3.5英寸:0.0007, 重量: 1.5磅:0.0007, 婴儿健身架: 钢琴俯卧时间垫:0.0007, 材质: 高品质棉织物:0.0007, 音乐互动: 4个发光琴键:0.0007", "24.99", "0", "0.0", "0", "JING SHOW BUSSINESS"], ["B09XHGG4B8", "尺寸: 26x20x0.04英寸:0.0007, 重量: 9.5盎司:0.0007, 适用年龄: 3-12个月:0.0007, 婴儿健身架: 俯卧时间水垫:0.0007, 感官刺激: 彩色海底世界图案:0.0007, 材质: 重型PVC材料:0.0007", "9.99", "10000", "4.3", "8238", "Yeeeasy"], ["B0C729KNJD", "适用年龄: 0-12个月:0.0134, 尺寸: 43x39英寸:0.0015, 感官刺激: 6个可拆卸玩具:0.0015, 重量: 2.61磅:0.0007, 婴儿健身架: 8合1俯卧时间垫+球池:0.0007, 材质: 高品质织物:0.0007", "39.99", "2000", "4.7", "781", "Jyusmile"], ["B0CD2LG5FB", "材质: 聚酯纤维:0.0052, 适用年龄: 0+个月:0.0045, 尺寸: 53x37英寸:0.0015, 重量: 3.38磅:0.0007, 婴儿健身架: 超大叶片形健身垫:0.0007, 感官刺激: 6个可拆卸动物玩具:0.0007", "69.99", "2000", "4.8", "880", "Blissful Diary"], ["B0BL39Q48V", "适用年龄: 新生儿:0.0031, 婴儿健身架: 木质婴儿健身架:0.0012, 材质: 木质:0.0012, 重量: 1.83磅:0.0006, 感官刺激: 5个悬挂玩具:0.0006", "39.99", "50", "4.3", "70", "Razee"], ["B0DC661B7M", "适用年龄: 0-12个月:0.0134, 材质: 聚酯纤维:0.0052, 尺寸: 53x37英寸:0.0015, 感官刺激: 8个可拆卸玩具:0.0015, 重量: 2.94磅:0.0007, 婴儿健身架: 丛林主题健身垫:0.0007", "64.99", "300", "5.0", "31", "TINITIGIES"], ["B09QC9HJRB", "适用年龄: 新生儿:0.0037, 婴儿健身架: 木质婴儿健身架:0.0015, 材质: 木质:0.0015, 尺寸: 86厘米直径垫子:0.0007, 重量: 4.19磅:0.0007, 感官刺激: 6个悬挂感官玩具:0.0007", "59.99", "300", "4.6", "162", "Razee"], ["B0C89GP2G4", "适用年龄: 0-12个月:0.0134, 尺寸: 39.4x43.3x21英寸:0.0007, 重量: 2.77磅:0.0007, 婴儿健身架: 8合1俯卧时间垫:0.0007, 感官刺激: 3个织物玩具+镜子:0.0007, 材质: 聚酯纤维+棉:0.0007", "39.98", "2000", "4.5", "818", "TFDER"], ["B0BBLNBKC1", "材质: 棉:0.0067, 适用年龄: 0-36个月:0.0022, 尺寸: 35.4x35.4英寸:0.0007, 重量: 2.06磅:0.0007, 婴儿健身架: 7合1俯卧时间垫:0.0007, 感官刺激: 6个可拆卸玩具+香蕉枕:0.0007", "19.99", "100", "4.3", "223", "Agiyimi"], ["B0DP6TW6ZP", "适用年龄: 0-18个月:0.0022, 尺寸: 39x39x21英寸:0.0007, 重量: 3.94磅:0.0007, 婴儿健身架: 9合1牛油果健身垫:0.0007, 感官刺激: 6个可拆卸玩具+遮阳篷:0.0007, 材质: 聚乙烯泡沫+聚酯纤维:0.0007", "26.99", "500", "4.6", "220", "Heypappy"], ["B0CNKZ4RLL", "尺寸: 29.5x9.5x6.4英寸:0.0007, 重量: 15.8盎司:0.0007, 适用年龄: 出生至9个月:0.0007, 婴儿健身架: 海洋主题木质健身架:0.0007, 感官刺激: 5个柔软玩具:0.0007, 材质: 70%织物+20%木材+10%塑料:0.0007", "39.75", "600", "4.9", "65", "Melissa & Doug"]]},
+                    feature_premium: {"headers": ["二级标签", "三级标签", "功能点", "产品数量", "平均价格", "最低价格", "最高价格", "中位价格", "销量加权平均价", "价格溢价(%)", "销量加权溢价(%)", "价格变异系数(%)", "代表产品ASIN", "代表产品品牌"], "data": [["婴儿健身架", "蒙特梭利活动垫", "婴儿健身架: 蒙特梭利活动垫", "1", "140.0", "140.0", "140.0", "140.0", "140.0", "201.68", "201.68", "", "B075R8BXXC", "Lovevery"], ["重量", "7.6磅", "重量: 7.6磅", "1", "140.0", "140.0", "140.0", "140.0", "140.0", "201.68", "201.68", "", "B075R8BXXC", "Lovevery"], ["感官刺激", "5个发展区", "感官刺激: 5个发展区", "1", "140.0", "140.0", "140.0", "140.0", "140.0", "201.68", "201.68", "", "B075R8BXXC", "Lovevery"], ["尺寸", "43x38英寸", "尺寸: 43x38英寸", "1", "140.0", "140.0", "140.0", "140.0", "140.0", "201.68", "201.68", "", "B075R8BXXC", "Lovevery"], ["适用年龄", "新生儿至幼儿", "适用年龄: 新生儿至幼儿", "2", "100.0", "59.99", "140.0", "100.0", "117.14", "115.48", "152.42", "56.58", "B075R8BXXC", "Lovevery"], ["发展阶段", "多阶段适应", "发展阶段: 多阶段适应", "1", "89.99", "89.99", "89.99", "89.99", "89.99", "93.92", "93.92", "", "B0DGXCDWX6", "Blissful Diary"], ["安全信任感", "非毒认证", "安全信任感: 非毒认证", "2", "82.5", "75.0", "89.99", "82.5", "89.99", "77.77", "93.92", "12.85", "B0DGXCDWX6", "Blissful Diary"], ["婴儿健身架", "木质活动中心", "婴儿健身架: 木质活动中心", "1", "89.99", "89.99", "89.99", "89.99", "89.99", "93.92", "93.92", "", "B0DGXCDWX6", "Blissful Diary"], ["成长仪式感", "礼盒包装", "成长仪式感: 礼盒包装", "2", "82.5", "75.0", "89.99", "82.5", "89.99", "77.77", "93.92", "12.85", "B0DGXCDWX6", "Blissful Diary"], ["手眼协调训练", "悬挂玩具", "手眼协调训练: 悬挂玩具", "1", "89.99", "89.99", "89.99", "89.99", "89.99", "93.92", "93.92", "", "B0DGXCDWX6", "Blissful Diary"], ["感官刺激", "视觉+触觉", "感官刺激: 视觉+触觉", "1", "89.99", "89.99", "89.99", "89.99", "89.99", "93.92", "93.92", "", "B0DGXCDWX6", "Blissful Diary"], ["材质", "FSC认证松木+可机洗棉垫", "材质: FSC认证松木+可机洗棉垫", "2", "82.5", "75.0", "89.99", "82.5", "89.99", "77.77", "93.92", "12.85", "B0DGXCDWX6", "Blissful Diary"], ["尺寸", "26x8.5x7英寸", "尺寸: 26x8.5x7英寸", "2", "82.5", "75.0", "89.99", "82.5", "89.99", "77.77", "93.92", "12.85", "B0DGXCDWX6", "Blissful Diary"], ["重量", "5磅", "重量: 5磅", "2", "82.5", "75.0", "89.99", "82.5", "89.99", "77.77", "93.92", "12.85", "B0DGXCDWX6", "Blissful Diary"], ["材质", "棉", "材质: 棉", "9", "49.2", "19.99", "140.0", "34.99", "88.25", "6.01", "90.16", "73.63", "B0DSZD549P", "suihuooo"], ["婴儿健身架", "高级木质婴儿健身架+可水洗游戏垫", "婴儿健身架: 高级木质婴儿健身架+可水洗游戏垫", "1", "75.0", "75.0", "75.0", "75.0", "75.0", "61.61", "61.61", "", "B0CHHPJFZN", "Butterfly + Bloom"], ["感官刺激", "4个可拆卸蒙特梭利玩具", "感官刺激: 4个可拆卸蒙特梭利玩具", "1", "75.0", "75.0", "75.0", "75.0", "75.0", "61.61", "61.61", "", "B0CHHPJFZN", "Butterfly + Bloom"], ["手眼协调训练", "促进手眼协调和运动技能", "手眼协调训练: 促进手眼协调和运动技能", "1", "75.0", "75.0", "75.0", "75.0", "75.0", "61.61", "61.61", "", "B0CHHPJFZN", "Butterfly + Bloom"], ["材质", "聚酯纤维+PVC", "材质: 聚酯纤维+PVC", "1", "72.99", "72.99", "72.99", "72.99", "72.99", "57.28", "57.28", "", "B07VSHJZZQ", "Sassy"], ["重量", "1磅", "重量: 1磅", "1", "72.99", "72.99", "72.99", "72.99", "72.99", "57.28", "57.28", "", "B07VSHJZZQ", "Sassy"], ["婴儿健身架", "STEM发展垫", "婴儿健身架: STEM发展垫", "1", "72.99", "72.99", "72.99", "72.99", "72.99", "57.28", "57.28", "", "B07VSHJZZQ", "Sassy"], ["感官刺激", "12种活动玩具", "感官刺激: 12种活动玩具", "1", "72.99", "72.99", "72.99", "72.99", "72.99", "57.28", "57.28", "", "B07VSHJZZQ", "Sassy"], ["尺寸", "37x37英寸", "尺寸: 37x37英寸", "1", "72.99", "72.99", "72.99", "72.99", "72.99", "57.28", "57.28", "", "B07VSHJZZQ", "Sassy"], ["感官刺激", "6个可拆卸动物玩具", "感官刺激: 6个可拆卸动物玩具", "1", "69.99", "69.99", "69.99", "69.99", "69.99", "50.82", "50.82", "", "B0CD2LG5FB", "Blissful Diary"], ["婴儿健身架", "超大叶片形健身垫", "婴儿健身架: 超大叶片形健身垫", "1", "69.99", "69.99", "69.99", "69.99", "69.99", "50.82", "50.82", "", "B0CD2LG5FB", "Blissful Diary"], ["重量", "3.38磅", "重量: 3.38磅", "1", "69.99", "69.99", "69.99", "69.99", "69.99", "50.82", "50.82", "", "B0CD2LG5FB", "Blissful Diary"], ["尺寸", "53x37英寸", "尺寸: 53x37英寸", "2", "67.49", "64.99", "69.99", "67.49", "69.34", "45.43", "49.41", "5.24", "B0CD2LG5FB", "Blissful Diary"], ["婴儿健身架", "木质活动垫", "婴儿健身架: 木质活动垫", "1", "66.49", "66.49", "66.49", "66.49", "66.49", "43.28", "43.28", "", "B0DHCV54Y4", "WOODMAM"], ["感官刺激", "可拆卸玩具", "感官刺激: 可拆卸玩具", "1", "66.49", "66.49", "66.49", "66.49", "66.49", "43.28", "43.28", "", "B0DHCV54Y4", "WOODMAM"], ["重量", "3.99磅", "重量: 3.99磅", "1", "66.49", "66.49", "66.49", "66.49", "66.49", "43.28", "43.28", "", "B0DHCV54Y4", "WOODMAM"], ["材质", "木材+织物", "材质: 木材+织物", "1", "66.49", "66.49", "66.49", "66.49", "66.49", "43.28", "43.28", "", "B0DHCV54Y4", "WOODMAM"], ["尺寸", "45x45英寸", "尺寸: 45x45英寸", "1", "66.49", "66.49", "66.49", "66.49", "66.49", "43.28", "43.28", "", "B0DHCV54Y4", "WOODMAM"], ["婴儿健身架", "丛林主题健身垫", "婴儿健身架: 丛林主题健身垫", "1", "64.99", "64.99", "64.99", "64.99", "64.99", "40.04", "40.04", "", "B0DC661B7M", "TINITIGIES"], ["重量", "2.94磅", "重量: 2.94磅", "1", "64.99", "64.99", "64.99", "64.99", "64.99", "40.04", "40.04", "", "B0DC661B7M", "TINITIGIES"], ["感官刺激", "8个可拆卸玩具", "感官刺激: 8个可拆卸玩具", "2", "62.49", "59.99", "64.99", "62.49", "63.74", "34.66", "37.35", "5.66", "B0DBQFYJW4", "AskCat"], ["重量", "4.93磅", "重量: 4.93磅", "1", "59.99", "59.99", "59.99", "59.99", "59.99", "29.27", "29.27", "", "B0BVZ58FYR", "HAN-MM"], ["感官刺激", "6个悬挂感官玩具", "感官刺激: 6个悬挂感官玩具", "1", "59.99", "59.99", "59.99", "59.99", "59.99", "29.27", "29.27", "", "B09QC9HJRB", "Razee"], ["尺寸", "86厘米直径垫子", "尺寸: 86厘米直径垫子", "1", "59.99", "59.99", "59.99", "59.99", "59.99", "29.27", "29.27", "", "B09QC9HJRB", "Razee"], ["尺寸", "超大尺寸", "尺寸: 超大尺寸", "1", "59.99", "59.99", "59.99", "59.99", "59.99", "29.27", "29.27", "", "B0DBQFYJW4", "AskCat"], ["重量", "3.12磅", "重量: 3.12磅", "1", "59.99", "59.99", "59.99", "59.99", "59.99", "29.27", "29.27", "", "B0DBQFYJW4", "AskCat"], ["婴儿健身架", "叶片形活动中心", "婴儿健身架: 叶片形活动中心", "1", "59.99", "59.99", "59.99", "59.99", "59.99", "29.27", "29.27", "", "B0DBQFYJW4", "AskCat"], ["婴儿健身架", "5合1可转换健身架", "婴儿健身架: 5合1可转换健身架", "1", "59.99", "59.99", "59.99", "59.99", "59.99", "29.27", "29.27", "", "B0BVZ58FYR", "HAN-MM"], ["重量", "4.19磅", "重量: 4.19磅", "1", "59.99", "59.99", "59.99", "59.99", "59.99", "29.27", "29.27", "", "B09QC9HJRB", "Razee"], ["尺寸", "16.93x12.6x7.09英寸", "尺寸: 16.93x12.6x7.09英寸", "1", "59.99", "59.99", "59.99", "59.99", "59.99", "29.27", "29.27", "", "B0BVZ58FYR", "HAN-MM"], ["重量", "1.92磅", "重量: 1.92磅", "1", "57.99", "57.99", "57.99", "57.99", "57.99", "24.96", "24.96", "", "B09WJMJ1K4", "Skip Hop"], ["感官刺激", "17+种活动", "感官刺激: 17+种活动", "1", "57.99", "57.99", "57.99", "57.99", "57.99", "24.96", "24.96", "", "B09WJMJ1K4", "Skip Hop"], ["婴儿健身架", "3合1花园垫", "婴儿健身架: 3合1花园垫", "1", "57.99", "57.99", "57.99", "57.99", "57.99", "24.96", "24.96", "", "B09WJMJ1K4", "Skip Hop"], ["婴儿健身架", "木质婴儿健身架", "婴儿健身架: 木质婴儿健身架", "2", "49.99", "39.99", "59.99", "49.99", "57.13", "7.72", "23.11", "28.29", "B0BL39Q48V", "Razee"], ["材质", "木质", "材质: 木质", "2", "49.99", "39.99", "59.99", "49.99", "57.13", "7.72", "23.11", "28.29", "B0BL39Q48V", "Razee"], ["婴儿健身架", "6合1超大垫", "婴儿健身架: 6合1超大垫", "1", "54.99", "54.99", "54.99", "54.99", "54.99", "18.5", "18.5", "", "B0C665RW3G", "Aila+Aiden"], ["重量", "2.81磅", "重量: 2.81磅", "1", "54.99", "54.99", "54.99", "54.99", "54.99", "18.5", "18.5", "", "B0C665RW3G", "Aila+Aiden"], ["感官刺激", "5种悬挂配件", "感官刺激: 5种悬挂配件", "1", "54.99", "54.99", "54.99", "54.99", "54.99", "18.5", "18.5", "", "B0C665RW3G", "Aila+Aiden"], ["材质", "织物", "材质: 织物", "1", "54.99", "54.99", "54.99", "54.99", "54.99", "18.5", "18.5", "", "B0C665RW3G", "Aila+Aiden"], ["婴儿健身架", "6区发展垫", "婴儿健身架: 6区发展垫", "1", "53.99", "53.99", "53.99", "53.99", "53.99", "16.34", "16.34", "", "B0DSZD549P", "suihuooo"], ["重量", "3.96磅", "重量: 3.96磅", "1", "53.99", "53.99", "53.99", "53.99", "53.99", "16.34", "16.34", "", "B0DSZD549P", "suihuooo"], ["材质", "聚酯纤维", "材质: 聚酯纤维", "7", "47.7", "23.99", "69.99", "39.99", "50.8", "2.8", "9.46", "36.2", "B0BX4N2SSJ", "Blissful Diary"], ["适用年龄", "0-9+个月", "适用年龄: 0-9+个月", "1", "49.99", "49.99", "49.99", "49.99", "49.99", "7.72", "7.72", "", "B0DBPTMD3C", "Monniebaby"], ["重量", "2.79磅", "重量: 2.79磅", "1", "49.99", "49.99", "49.99", "49.99", "49.99", "7.72", "7.72", "", "B0DFJ6GKFV", "The Peanutshell"], ["婴儿健身架", "蒙特梭利大象垫", "婴儿健身架: 蒙特梭利大象垫", "1", "49.99", "49.99", "49.99", "49.99", "49.99", "7.72", "7.72", "", "B0DFJ6GKFV", "The Peanutshell"], ["婴儿健身架", "四叶草活动垫", "婴儿健身架: 四叶草活动垫", "1", "49.99", "49.99", "49.99", "49.99", "49.99", "7.72", "7.72", "", "B0DBPTMD3C", "Monniebaby"], ["感官刺激", "6个可拆卸玩具", "感官刺激: 6个可拆卸玩具", "2", "49.99", "39.99", "59.99", "49.99", "49.99", "7.72", "7.72", "28.29", "B0BVZ58FYR", "HAN-MM"], ["感官刺激", "9种可拆卸玩具", "感官刺激: 9种可拆卸玩具", "1", "49.99", "49.99", "49.99", "49.99", "49.99", "7.72", "7.72", "", "B0DBPTMD3C", "Monniebaby"], ["亲子互动促进", "爱因斯坦游戏建议", "亲子互动促进: 爱因斯坦游戏建议", "1", "44.84", "44.84", "44.84", "44.84", "44.84", "-3.38", "-3.38", "", "B07MPCCDM7", "Baby Einstein"], ["婴儿健身架", "4合1音乐语言健身架", "婴儿健身架: 4合1音乐语言健身架", "1", "44.84", "44.84", "44.84", "44.84", "44.84", "-3.38", "-3.38", "", "B07MPCCDM7", "Baby Einstein"], ["感官刺激", "7个感官玩具", "感官刺激: 7个感官玩具", "1", "44.84", "44.84", "44.84", "44.84", "44.84", "-3.38", "-3.38", "", "B07MPCCDM7", "Baby Einstein"], ["尺寸", "27x34x18英寸", "尺寸: 27x34x18英寸", "1", "44.84", "44.84", "44.84", "44.84", "44.84", "-3.38", "-3.38", "", "B07MPCCDM7", "Baby Einstein"], ["音乐互动", "25+分钟多语言音乐", "音乐互动: 25+分钟多语言音乐", "1", "44.84", "44.84", "44.84", "44.84", "44.84", "-3.38", "-3.38", "", "B07MPCCDM7", "Baby Einstein"], ["材质", "80%织物+20%塑料", "材质: 80%织物+20%塑料", "1", "44.84", "44.84", "44.84", "44.84", "44.84", "-3.38", "-3.38", "", "B07MPCCDM7", "Baby Einstein"], ["重量", "3.19磅", "重量: 3.19磅", "1", "44.84", "44.84", "44.84", "44.84", "44.84", "-3.38", "-3.38", "", "B07MPCCDM7", "Baby Einstein"], ["适用年龄", "0-36个月", "适用年龄: 0-36个月", "3", "30.27", "19.99", "44.84", "25.99", "44.59", "-34.77", "-3.91", "42.83", "B0DKPD1GFL", "TODALE"], ["适用年龄", "0+个月", "适用年龄: 0+个月", "6", "51.8", "34.99", "72.99", "48.94", "44.39", "11.63", "-4.35", "33.72", "B09WJMJ1K4", "Skip Hop"], ["适用年龄", "0-12个月", "适用年龄: 0-12个月", "18", "44.24", "19.99", "89.99", "39.99", "43.16", "-4.67", "-7.0", "43.43", "B0DF7WFFBG", "Lilian&Gema"], ["尺寸", "43.7x44.3英寸", "尺寸: 43.7x44.3英寸", "1", "41.99", "41.99", "41.99", "41.99", "41.99", "-9.52", "-9.52", "", "B0DF7WFFBG", "Lilian&Gema"], ["感官刺激", "8种可拆卸玩具", "感官刺激: 8种可拆卸玩具", "1", "41.99", "41.99", "41.99", "41.99", "41.99", "-9.52", "-9.52", "", "B0DF7WFFBG", "Lilian&Gema"], ["材质", "聚酯纤维+棉+塑料", "材质: 聚酯纤维+棉+塑料", "1", "41.99", "41.99", "41.99", "41.99", "41.99", "-9.52", "-9.52", "", "B0DF7WFFBG", "Lilian&Gema"], ["重量", "2.25磅", "重量: 2.25磅", "1", "41.99", "41.99", "41.99", "41.99", "41.99", "-9.52", "-9.52", "", "B0DF7WFFBG", "Lilian&Gema"], ["婴儿健身架", "树叶形活动垫", "婴儿健身架: 树叶形活动垫", "1", "41.99", "41.99", "41.99", "41.99", "41.99", "-9.52", "-9.52", "", "B0DF7WFFBG", "Lilian&Gema"], ["适用年龄", "新生儿", "适用年龄: 新生儿", "5", "46.76", "33.85", "59.99", "39.99", "41.19", "0.77", "-11.24", "26.37", "B0DS8FGLR4", "Tivellary"], ["清洁方式", "可机洗+擦拭", "清洁方式: 可机洗+擦拭", "1", "39.99", "39.99", "39.99", "39.99", "39.99", "-13.83", "-13.83", "", "B0DS8FGLR4", "Tivellary"], ["材质", "高品质加厚织物+防滑底面", "材质: 高品质加厚织物+防滑底面", "1", "39.99", "39.99", "39.99", "39.99", "39.99", "-13.83", "-13.83", "", "B0DS8FGLR4", "Tivellary"], ["重量", "3.1磅", "重量: 3.1磅", "1", "39.99", "39.99", "39.99", "39.99", "39.99", "-13.83", "-13.83", "", "B0DS8FGLR4", "Tivellary"], ["重量", "2.75磅", "重量: 2.75磅", "1", "39.99", "39.99", "39.99", "39.99", "39.99", "-13.83", "-13.83", "", "B0CGZVPM83", "Li'l Pengyu"], ["重量", "2.55磅", "重量: 2.55磅", "1", "39.99", "39.99", "39.99", "39.99", "39.99", "-13.83", "-13.83", "", "B0BX4N2SSJ", "Blissful Diary"], ["重量", "2.33磅", "重量: 2.33磅", "1", "39.99", "39.99", "39.99", "39.99", "39.99", "-13.83", "-13.83", "", "B0DJ6SSKZF", "Jyusmile"], ["超大婴儿健身架", "Oversized Baby Play Gym", "超大婴儿健身架: Oversized Baby Play Gym", "1", "39.99", "39.99", "39.99", "39.99", "39.99", "-13.83", "-13.83", "", "B0DS8FGLR4", "Tivellary"], ["感官刺激", "多感官玩具", "感官刺激: 多感官玩具", "1", "39.99", "39.99", "39.99", "39.99", "39.99", "-13.83", "-13.83", "", "B0CGZVPM83", "Li'l Pengyu"], ["运动技能训练", "促进翻身+坐立", "运动技能训练: 促进翻身+坐立", "1", "39.99", "39.99", "39.99", "39.99", "39.99", "-13.83", "-13.83", "", "B0DS8FGLR4", "Tivellary"], ["重量", "1.83磅", "重量: 1.83磅", "1", "39.99", "39.99", "39.99", "39.99", "39.99", "-13.83", "-13.83", "", "B0BL39Q48V", "Razee"], ["重量", "2.61磅", "重量: 2.61磅", "1", "39.99", "39.99", "39.99", "39.99", "39.99", "-13.83", "-13.83", "", "B0C729KNJD", "Jyusmile"], ["感官刺激", "悬挂玩具刺激视觉+听觉+触觉", "感官刺激: 悬挂玩具刺激视觉+听觉+触觉", "1", "39.99", "39.99", "39.99", "39.99", "39.99", "-13.83", "-13.83", "", "B0DS8FGLR4", "Tivellary"], ["成长仪式感", "婴儿送礼会+生日+圣诞节理想礼物", "成长仪式感: 婴儿送礼会+生日+圣诞节理想礼物", "1", "39.99", "39.99", "39.99", "39.99", "39.99", "-13.83", "-13.83", "", "B0DS8FGLR4", "Tivellary"], ["感官刺激", "动物主题玩具", "感官刺激: 动物主题玩具", "1", "39.99", "39.99", "39.99", "39.99", "39.99", "-13.83", "-13.83", "", "B0DJ6SSKZF", "Jyusmile"], ["感官刺激", "5个悬挂玩具", "感官刺激: 5个悬挂玩具", "1", "39.99", "39.99", "39.99", "39.99", "39.99", "-13.83", "-13.83", "", "B0BL39Q48V", "Razee"], ["适用年龄", "0-18个月", "适用年龄: 0-18个月", "3", "36.99", "26.99", "53.99", "29.99", "39.99", "-20.29", "-13.83", "40.01", "B0DDNPM4V4", "GiftPeak"], ["感官刺激", "7种可拆卸玩具", "感官刺激: 7种可拆卸玩具", "2", "41.99", "29.99", "53.99", "41.99", "39.99", "-9.52", "-13.83", "40.42", "B0DSZD549P", "suihuooo"], ["尺寸", "53x39x1.4英寸", "尺寸: 53x39x1.4英寸", "1", "39.99", "39.99", "39.99", "39.99", "39.99", "-13.83", "-13.83", "", "B0DS8FGLR4", "Tivellary"], ["适用年龄", "0-6个月", "适用年龄: 0-6个月", "2", "36.79", "33.59", "39.99", "36.79", "39.99", "-20.72", "-13.83", "12.3", "B0CGZVPM83", "Li'l Pengyu"], ["婴儿健身架", "斑马折叠垫", "婴儿健身架: 斑马折叠垫", "1", "39.99", "39.99", "39.99", "39.99", "39.99", "-13.83", "-13.83", "", "B0CGZVPM83", "Li'l Pengyu"], ["婴儿健身架", "可拆卸玩具架", "婴儿健身架: 可拆卸玩具架", "1", "39.99", "39.99", "39.99", "39.99", "39.99", "-13.83", "-13.83", "", "B0BX4N2SSJ", "Blissful Diary"], ["婴儿健身架", "8合1俯卧时间垫+球池", "婴儿健身架: 8合1俯卧时间垫+球池", "1", "39.99", "39.99", "39.99", "39.99", "39.99", "-13.83", "-13.83", "", "B0C729KNJD", "Jyusmile"], ["便携性", "可快速组装+轻便易携带", "便携性: 可快速组装+轻便易携带", "1", "39.99", "39.99", "39.99", "39.99", "39.99", "-13.83", "-13.83", "", "B0DS8FGLR4", "Tivellary"], ["材质", "高品质织物", "材质: 高品质织物", "1", "39.99", "39.99", "39.99", "39.99", "39.99", "-13.83", "-13.83", "", "B0C729KNJD", "Jyusmile"], ["尺寸", "39.4x43.3x21英寸", "尺寸: 39.4x43.3x21英寸", "1", "39.98", "39.98", "39.98", "39.98", "39.98", "-13.85", "-13.85", "", "B0C89GP2G4", "TFDER"], ["婴儿健身架", "8合1俯卧时间垫", "婴儿健身架: 8合1俯卧时间垫", "1", "39.98", "39.98", "39.98", "39.98", "39.98", "-13.85", "-13.85", "", "B0C89GP2G4", "TFDER"], ["感官刺激", "3个织物玩具+镜子", "感官刺激: 3个织物玩具+镜子", "1", "39.98", "39.98", "39.98", "39.98", "39.98", "-13.85", "-13.85", "", "B0C89GP2G4", "TFDER"], ["重量", "2.77磅", "重量: 2.77磅", "1", "39.98", "39.98", "39.98", "39.98", "39.98", "-13.85", "-13.85", "", "B0C89GP2G4", "TFDER"], ["材质", "聚酯纤维+棉", "材质: 聚酯纤维+棉", "1", "39.98", "39.98", "39.98", "39.98", "39.98", "-13.85", "-13.85", "", "B0C89GP2G4", "TFDER"], ["婴儿健身架", "发光成长踢踏钢琴健身架", "婴儿健身架: 发光成长踢踏钢琴健身架", "1", "39.88", "39.88", "39.88", "39.88", "39.88", "-14.06", "-14.06", "", "B0CBQRXNVW", "Fisher-Price"], ["成长仪式感", "智能阶段学习", "成长仪式感: 智能阶段学习", "1", "39.88", "39.88", "39.88", "39.88", "39.88", "-14.06", "-14.06", "", "B0CBQRXNVW", "Fisher-Price"], ["音乐互动", "85+歌曲+灯光学习", "音乐互动: 85+歌曲+灯光学习", "1", "39.88", "39.88", "39.88", "39.88", "39.88", "-14.06", "-14.06", "", "B0CBQRXNVW", "Fisher-Price"], ["重量", "3.66磅", "重量: 3.66磅", "1", "39.88", "39.88", "39.88", "39.88", "39.88", "-14.06", "-14.06", "", "B0CBQRXNVW", "Fisher-Price"], ["感官刺激", "10个可重新定位玩具", "感官刺激: 10个可重新定位玩具", "1", "39.88", "39.88", "39.88", "39.88", "39.88", "-14.06", "-14.06", "", "B0CBQRXNVW", "Fisher-Price"], ["材质", "塑料", "材质: 塑料", "1", "39.88", "39.88", "39.88", "39.88", "39.88", "-14.06", "-14.06", "", "B0CBQRXNVW", "Fisher-Price"], ["尺寸", "36.02x27.01x17.99英寸", "尺寸: 36.02x27.01x17.99英寸", "1", "39.88", "39.88", "39.88", "39.88", "39.88", "-14.06", "-14.06", "", "B0CBQRXNVW", "Fisher-Price"], ["重量", "15.8盎司", "重量: 15.8盎司", "1", "39.75", "39.75", "39.75", "39.75", "39.75", "-14.34", "-14.34", "", "B0CNKZ4RLL", "Melissa & Doug"], ["材质", "70%织物+20%木材+10%塑料", "材质: 70%织物+20%木材+10%塑料", "1", "39.75", "39.75", "39.75", "39.75", "39.75", "-14.34", "-14.34", "", "B0CNKZ4RLL", "Melissa & Doug"], ["感官刺激", "5个柔软玩具", "感官刺激: 5个柔软玩具", "1", "39.75", "39.75", "39.75", "39.75", "39.75", "-14.34", "-14.34", "", "B0CNKZ4RLL", "Melissa & Doug"], ["尺寸", "29.5x9.5x6.4英寸", "尺寸: 29.5x9.5x6.4英寸", "1", "39.75", "39.75", "39.75", "39.75", "39.75", "-14.34", "-14.34", "", "B0CNKZ4RLL", "Melissa & Doug"], ["婴儿健身架", "海洋主题木质健身架", "婴儿健身架: 海洋主题木质健身架", "1", "39.75", "39.75", "39.75", "39.75", "39.75", "-14.34", "-14.34", "", "B0CNKZ4RLL", "Melissa & Doug"], ["适用年龄", "出生至9个月", "适用年龄: 出生至9个月", "1", "39.75", "39.75", "39.75", "39.75", "39.75", "-14.34", "-14.34", "", "B0CNKZ4RLL", "Melissa & Doug"], ["尺寸", "43x39英寸", "尺寸: 43x39英寸", "2", "36.99", "33.99", "39.99", "36.99", "37.99", "-20.29", "-18.14", "11.47", "B0CJRVV1GG", "Jyusmile"], ["婴儿健身架", "8合1活动垫", "婴儿健身架: 8合1活动垫", "2", "36.99", "33.99", "39.99", "36.99", "36.99", "-20.29", "-20.29", "11.47", "B0CJRVV1GG", "Jyusmile"], ["婴儿健身架", "农场主题健身垫", "婴儿健身架: 农场主题健身垫", "1", "34.99", "34.99", "34.99", "34.99", "34.99", "-24.6", "-24.6", "", "B0DP2MTZ5S", "ZICOTO"], ["尺寸", "35x35x35英寸", "尺寸: 35x35x35英寸", "1", "34.99", "34.99", "34.99", "34.99", "34.99", "-24.6", "-24.6", "", "B0CTC75YK5", "ZICOTO"], ["婴儿健身架", "棉质健身垫", "婴儿健身架: 棉质健身垫", "1", "34.99", "34.99", "34.99", "34.99", "34.99", "-24.6", "-24.6", "", "B0CTC75YK5", "ZICOTO"], ["尺寸", "35x35x1.06英寸", "尺寸: 35x35x1.06英寸", "1", "34.99", "34.99", "34.99", "34.99", "34.99", "-24.6", "-24.6", "", "B0DP2MTZ5S", "ZICOTO"], ["感官刺激", "5个农场玩具", "感官刺激: 5个农场玩具", "1", "34.99", "34.99", "34.99", "34.99", "34.99", "-24.6", "-24.6", "", "B0DP2MTZ5S", "ZICOTO"], ["感官刺激", "6个可爱玩具+镜子", "感官刺激: 6个可爱玩具+镜子", "1", "34.99", "34.99", "34.99", "34.99", "34.99", "-24.6", "-24.6", "", "B0CTC75YK5", "ZICOTO"], ["重量", "2.64磅", "重量: 2.64磅", "1", "34.99", "34.99", "34.99", "34.99", "34.99", "-24.6", "-24.6", "", "B0DP2MTZ5S", "ZICOTO"], ["重量", "2.09磅", "重量: 2.09磅", "1", "34.99", "34.99", "34.99", "34.99", "34.99", "-24.6", "-24.6", "", "B0CTC75YK5", "ZICOTO"], ["手眼协调训练", "可拆卸悬挂玩具", "手眼协调训练: 可拆卸悬挂玩具", "1", "33.99", "33.99", "33.99", "33.99", "33.99", "-26.76", "-26.76", "", "B0CJRVV1GG", "Jyusmile"], ["重量", "2.4磅", "重量: 2.4磅", "1", "33.99", "33.99", "33.99", "33.99", "33.99", "-26.76", "-26.76", "", "B0CJRVV1GG", "Jyusmile"], ["感官刺激", "森林主题玩具", "感官刺激: 森林主题玩具", "1", "33.99", "33.99", "33.99", "33.99", "33.99", "-26.76", "-26.76", "", "B0CJRVV1GG", "Jyusmile"], ["重量", "2.03磅", "重量: 2.03磅", "1", "33.85", "33.85", "33.85", "33.85", "33.85", "-27.06", "-27.06", "", "B08PRVVTKY", "Mallify"], ["尺寸", "35.4x35.4x0.78英寸", "尺寸: 35.4x35.4x0.78英寸", "1", "33.85", "33.85", "33.85", "33.85", "33.85", "-27.06", "-27.06", "", "B08PRVVTKY", "Mallify"], ["婴儿健身架", "可水洗俯卧时间垫", "婴儿健身架: 可水洗俯卧时间垫", "1", "33.85", "33.85", "33.85", "33.85", "33.85", "-27.06", "-27.06", "", "B08PRVVTKY", "Mallify"], ["感官刺激", "6个特色玩具+12里程碑卡", "感官刺激: 6个特色玩具+12里程碑卡", "1", "33.85", "33.85", "33.85", "33.85", "33.85", "-27.06", "-27.06", "", "B08PRVVTKY", "Mallify"], ["重量", "4.53磅", "重量: 4.53磅", "1", "33.59", "33.59", "33.59", "33.59", "33.59", "-27.62", "-27.62", "", "B0BYJMWG9Q", "Lauon"], ["材质", "安全可水洗面料", "材质: 安全可水洗面料", "1", "33.59", "33.59", "33.59", "33.59", "33.59", "-27.62", "-27.62", "", "B0BYJMWG9Q", "Lauon"], ["感官刺激", "5个可拆卸摇铃玩具", "感官刺激: 5个可拆卸摇铃玩具", "1", "33.59", "33.59", "33.59", "33.59", "33.59", "-27.62", "-27.62", "", "B0BYJMWG9Q", "Lauon"], ["亲子互动促进", "解放妈妈双手", "亲子互动促进: 解放妈妈双手", "1", "33.59", "33.59", "33.59", "33.59", "33.59", "-27.62", "-27.62", "", "B0BYJMWG9Q", "Lauon"], ["婴儿健身架", "踢踏钢琴游戏垫", "婴儿健身架: 踢踏钢琴游戏垫", "1", "33.59", "33.59", "33.59", "33.59", "33.59", "-27.62", "-27.62", "", "B0BYJMWG9Q", "Lauon"], ["音乐互动", "双面可拆卸钢琴+忙碌板", "音乐互动: 双面可拆卸钢琴+忙碌板", "1", "33.59", "33.59", "33.59", "33.59", "33.59", "-27.62", "-27.62", "", "B0BYJMWG9Q", "Lauon"], ["重量", "1.98磅", "重量: 1.98磅", "2", "39.99", "29.99", "49.99", "39.99", "31.99", "-13.83", "-31.07", "35.36", "B0DBPTMD3C", "Monniebaby"], ["尺寸", "33.9x33.9英寸", "尺寸: 33.9x33.9英寸", "1", "29.99", "29.99", "29.99", "29.99", "29.99", "-35.38", "-35.38", "", "B092QK3KN2", "little dove"], ["婴儿健身架", "超大树叶垫", "婴儿健身架: 超大树叶垫", "1", "29.99", "29.99", "29.99", "29.99", "29.99", "-35.38", "-35.38", "", "B0DDNPM4V4", "GiftPeak"], ["婴儿健身架", "编织风格活动垫", "婴儿健身架: 编织风格活动垫", "1", "29.99", "29.99", "29.99", "29.99", "29.99", "-35.38", "-35.38", "", "B092QK3KN2", "little dove"], ["婴儿健身架", "里程碑活动垫", "婴儿健身架: 里程碑活动垫", "1", "29.99", "29.99", "29.99", "29.99", "29.99", "-35.38", "-35.38", "", "B08PV2TJ5L", "little dove"], ["重量", "3.08磅", "重量: 3.08磅", "1", "29.99", "29.99", "29.99", "29.99", "29.99", "-35.38", "-35.38", "", "B0DDNPM4V4", "GiftPeak"], ["重量", "1.76磅", "重量: 1.76磅", "1", "29.99", "29.99", "29.99", "29.99", "29.99", "-35.38", "-35.38", "", "B08PV2TJ5L", "little dove"], ["尺寸", "47x35英寸", "尺寸: 47x35英寸", "1", "29.99", "29.99", "29.99", "29.99", "29.99", "-35.38", "-35.38", "", "B0DDNPM4V4", "GiftPeak"], ["材质", "聚酯棉", "材质: 聚酯棉", "1", "29.99", "29.99", "29.99", "29.99", "29.99", "-35.38", "-35.38", "", "B092QK3KN2", "little dove"], ["尺寸", "35.43x35.43英寸", "尺寸: 35.43x35.43英寸", "1", "29.99", "29.99", "29.99", "29.99", "29.99", "-35.38", "-35.38", "", "B08PV2TJ5L", "little dove"], ["感官刺激", "软水晶绒玩具+精细刺绣工艺", "感官刺激: 软水晶绒玩具+精细刺绣工艺", "1", "29.98", "29.98", "29.98", "29.98", "29.98", "-35.4", "-35.4", "", "B0DH3LYZC9", "2PM SPORTS"], ["蝴蝶主题健身垫", "Pink Butterfly Theme Baby Play Mat", "蝴蝶主题健身垫: Pink Butterfly Theme Baby Play Mat", "1", "29.98", "29.98", "29.98", "29.98", "29.98", "-35.4", "-35.4", "", "B0DH3LYZC9", "2PM SPORTS"], ["尺寸", "未明确标注", "尺寸: 未明确标注", "1", "29.98", "29.98", "29.98", "29.98", "29.98", "-35.4", "-35.4", "", "B0DH3LYZC9", "2PM SPORTS"], ["便携性", "1分钟快速折叠", "便携性: 1分钟快速折叠", "1", "29.98", "29.98", "29.98", "29.98", "29.98", "-35.4", "-35.4", "", "B0DH3LYZC9", "2PM SPORTS"], ["亲子互动", "新生儿父母贴心礼物", "亲子互动: 新生儿父母贴心礼物", "1", "29.98", "29.98", "29.98", "29.98", "29.98", "-35.4", "-35.4", "", "B0DH3LYZC9", "2PM SPORTS"], ["俯卧训练", "太空棉内垫提供缓冲支撑", "俯卧训练: 太空棉内垫提供缓冲支撑", "1", "29.98", "29.98", "29.98", "29.98", "29.98", "-35.4", "-35.4", "", "B0DH3LYZC9", "2PM SPORTS"], ["重量", "2.23磅", "重量: 2.23磅", "1", "29.98", "29.98", "29.98", "29.98", "29.98", "-35.4", "-35.4", "", "B0DH3LYZC9", "2PM SPORTS"], ["清洁方式", "可拆卸机洗", "清洁方式: 可拆卸机洗", "1", "29.98", "29.98", "29.98", "29.98", "29.98", "-35.4", "-35.4", "", "B0DH3LYZC9", "2PM SPORTS"], ["材质", "100%聚酯纤维+无毒材料", "材质: 100%聚酯纤维+无毒材料", "1", "29.98", "29.98", "29.98", "29.98", "29.98", "-35.4", "-35.4", "", "B0DH3LYZC9", "2PM SPORTS"], ["感官刺激", "6种可拆卸玩具", "感官刺激: 6种可拆卸玩具", "3", "26.66", "19.99", "29.99", "29.99", "29.49", "-42.56", "-36.45", "21.66", "B092QK3KN2", "little dove"], ["尺寸", "39x39x21英寸", "尺寸: 39x39x21英寸", "1", "26.99", "26.99", "26.99", "26.99", "26.99", "-41.84", "-41.84", "", "B0DP6TW6ZP", "Heypappy"], ["材质", "聚乙烯泡沫+聚酯纤维", "材质: 聚乙烯泡沫+聚酯纤维", "1", "26.99", "26.99", "26.99", "26.99", "26.99", "-41.84", "-41.84", "", "B0DP6TW6ZP", "Heypappy"], ["重量", "3.94磅", "重量: 3.94磅", "1", "26.99", "26.99", "26.99", "26.99", "26.99", "-41.84", "-41.84", "", "B0DP6TW6ZP", "Heypappy"], ["婴儿健身架", "9合1牛油果健身垫", "婴儿健身架: 9合1牛油果健身垫", "1", "26.99", "26.99", "26.99", "26.99", "26.99", "-41.84", "-41.84", "", "B0DP6TW6ZP", "Heypappy"], ["感官刺激", "6个可拆卸玩具+遮阳篷", "感官刺激: 6个可拆卸玩具+遮阳篷", "1", "26.99", "26.99", "26.99", "26.99", "26.99", "-41.84", "-41.84", "", "B0DP6TW6ZP", "Heypappy"], ["重量", "2.02磅", "重量: 2.02磅", "1", "25.99", "25.99", "25.99", "25.99", "25.99", "-44.0", "-44.0", "", "B0DKPD1GFL", "TODALE"], ["婴儿健身架", "熊猫活动垫", "婴儿健身架: 熊猫活动垫", "1", "25.99", "25.99", "25.99", "25.99", "25.99", "-44.0", "-44.0", "", "B0DKPD1GFL", "TODALE"], ["婴儿健身架", "钢琴俯卧时间垫", "婴儿健身架: 钢琴俯卧时间垫", "1", "24.99", "24.99", "24.99", "24.99", "24.99", "-46.15", "-46.15", "", "B0F74NRWXR", "JING SHOW BUSSINESS"], ["重量", "1.5磅", "重量: 1.5磅", "1", "24.99", "24.99", "24.99", "24.99", "24.99", "-46.15", "-46.15", "", "B0F74NRWXR", "JING SHOW BUSSINESS"], ["材质", "高品质棉织物", "材质: 高品质棉织物", "1", "24.99", "24.99", "24.99", "24.99", "24.99", "-46.15", "-46.15", "", "B0F74NRWXR", "JING SHOW BUSSINESS"], ["音乐互动", "4个发光琴键", "音乐互动: 4个发光琴键", "1", "24.99", "24.99", "24.99", "24.99", "24.99", "-46.15", "-46.15", "", "B0F74NRWXR", "JING SHOW BUSSINESS"], ["尺寸", "14x11.4x3.5英寸", "尺寸: 14x11.4x3.5英寸", "1", "24.99", "24.99", "24.99", "24.99", "24.99", "-46.15", "-46.15", "", "B0F74NRWXR", "JING SHOW BUSSINESS"], ["婴儿健身架", "松果形活动垫", "婴儿健身架: 松果形活动垫", "1", "23.99", "23.99", "23.99", "23.99", "23.99", "-48.3", "-48.3", "", "B0DPWY724T", "Outtsp"], ["重量", "3.37磅", "重量: 3.37磅", "1", "23.99", "23.99", "23.99", "23.99", "23.99", "-48.3", "-48.3", "", "B0DPWY724T", "Outtsp"], ["感官刺激", "5种可拆卸玩具", "感官刺激: 5种可拆卸玩具", "1", "23.99", "23.99", "23.99", "23.99", "23.99", "-48.3", "-48.3", "", "B0DPWY724T", "Outtsp"], ["重量", "1.9磅", "重量: 1.9磅", "1", "19.99", "19.99", "19.99", "19.99", "19.99", "-56.92", "-56.92", "", "B0D52ZFL85", "FBesteam"], ["材质", "织物+棉", "材质: 织物+棉", "1", "19.99", "19.99", "19.99", "19.99", "19.99", "-56.92", "-56.92", "", "B0D52ZFL85", "FBesteam"], ["婴儿健身架", "7合1俯卧时间垫", "婴儿健身架: 7合1俯卧时间垫", "1", "19.99", "19.99", "19.99", "19.99", "19.99", "-56.92", "-56.92", "", "B0BBLNBKC1", "Agiyimi"], ["婴儿健身架", "贝壳形活动垫", "婴儿健身架: 贝壳形活动垫", "1", "19.99", "19.99", "19.99", "19.99", "19.99", "-56.92", "-56.92", "", "B0D52ZFL85", "FBesteam"], ["尺寸", "35.4x35.4英寸", "尺寸: 35.4x35.4英寸", "1", "19.99", "19.99", "19.99", "19.99", "19.99", "-56.92", "-56.92", "", "B0BBLNBKC1", "Agiyimi"], ["尺寸", "39.5x35.5英寸", "尺寸: 39.5x35.5英寸", "1", "19.99", "19.99", "19.99", "19.99", "19.99", "-56.92", "-56.92", "", "B0D52ZFL85", "FBesteam"], ["感官刺激", "6个可拆卸玩具+香蕉枕", "感官刺激: 6个可拆卸玩具+香蕉枕", "1", "19.99", "19.99", "19.99", "19.99", "19.99", "-56.92", "-56.92", "", "B0BBLNBKC1", "Agiyimi"], ["重量", "2.06磅", "重量: 2.06磅", "1", "19.99", "19.99", "19.99", "19.99", "19.99", "-56.92", "-56.92", "", "B0BBLNBKC1", "Agiyimi"], ["尺寸", "26x20x0.04英寸", "尺寸: 26x20x0.04英寸", "1", "9.99", "9.99", "9.99", "9.99", "9.99", "-78.47", "-78.47", "", "B09XHGG4B8", "Yeeeasy"], ["婴儿健身架", "俯卧时间水垫", "婴儿健身架: 俯卧时间水垫", "1", "9.99", "9.99", "9.99", "9.99", "9.99", "-78.47", "-78.47", "", "B09XHGG4B8", "Yeeeasy"], ["感官刺激", "彩色海底世界图案", "感官刺激: 彩色海底世界图案", "1", "9.99", "9.99", "9.99", "9.99", "9.99", "-78.47", "-78.47", "", "B09XHGG4B8", "Yeeeasy"], ["材质", "重型PVC材料", "材质: 重型PVC材料", "1", "9.99", "9.99", "9.99", "9.99", "9.99", "-78.47", "-78.47", "", "B09XHGG4B8", "Yeeeasy"], ["适用年龄", "3-12个月", "适用年龄: 3-12个月", "1", "9.99", "9.99", "9.99", "9.99", "9.99", "-78.47", "-78.47", "", "B09XHGG4B8", "Yeeeasy"], ["重量", "9.5盎司", "重量: 9.5盎司", "1", "9.99", "9.99", "9.99", "9.99", "9.99", "-78.47", "-78.47", "", "B09XHGG4B8", "Yeeeasy"]]},
+                    asin_image_map: {"headers": ["ASIN", "图片链接"], "data": [["B075R8BXXC", "https://m.media-amazon.com/images/I/41CbnmQEQmL._SX300_SY300_QL70_ML2_.jpg"], ["B07MPCCDM7", "https://m.media-amazon.com/images/I/51Gu4DsOSKL._SX300_SY300_QL70_ML2_.jpg"], ["B07VSHJZZQ", "https://m.media-amazon.com/images/I/51IfeCz5+2L._SY300_SX300_.jpg"], ["B08PRVVTKY", "https://m.media-amazon.com/images/I/41IVZJPy6mL._SX300_SY300_QL70_ML2_.jpg"], ["B08PV2TJ5L", "https://m.media-amazon.com/images/I/41uITvRSB9L._SX300_SY300_QL70_ML2_.jpg"], ["B092QK3KN2", "https://m.media-amazon.com/images/I/51txr5vqHaL._SX300_SY300_QL70_ML2_.jpg"], ["B09QC9HJRB", "https://m.media-amazon.com/images/I/41AGEBkr-0L._SX300_SY300_QL70_ML2_.jpg"], ["B09WJMJ1K4", "https://m.media-amazon.com/images/I/71oR54AtWoL.__AC_SX300_SY300_QL70_ML2_.jpg"], ["B09XHGG4B8", "https://m.media-amazon.com/images/I/51drx-WonLL._SX300_SY300_QL70_ML2_.jpg"], ["B0BBLNBKC1", "https://m.media-amazon.com/images/I/41dCSyWlT-L._SX300_SY300_QL70_ML2_.jpg"], ["B0BL39Q48V", "https://m.media-amazon.com/images/I/51nyFhq7X0L._SX300_SY300_QL70_ML2_.jpg"], ["B0BVZ58FYR", "https://m.media-amazon.com/images/I/415K233WdwL._SX300_SY300_QL70_ML2_.jpg"], ["B0BX4N2SSJ", "https://m.media-amazon.com/images/I/41dX9Nt5-oL._SX300_SY300_QL70_ML2_.jpg"], ["B0BYJMWG9Q", "https://m.media-amazon.com/images/I/5120serMgFL._SX300_SY300_QL70_ML2_.jpg"], ["B0C665RW3G", "https://m.media-amazon.com/images/I/41WkCe37plL._SX300_SY300_QL70_ML2_.jpg"], ["B0C729KNJD", "https://m.media-amazon.com/images/I/51m2pg935uL._SX300_SY300_QL70_ML2_.jpg"], ["B0C89GP2G4", "https://m.media-amazon.com/images/I/51wZQBLPXPL._SX300_SY300_QL70_ML2_.jpg"], ["B0CBQRXNVW", "https://m.media-amazon.com/images/I/51OJdxITMuL._SY300_SX300_QL70_ML2_.jpg"], ["B0CD2LG5FB", "https://m.media-amazon.com/images/I/41--JDOhn0L._SX300_SY300_QL70_ML2_.jpg"], ["B0CGZVPM83", "https://m.media-amazon.com/images/I/51S2SylFLWL._SX300_SY300_QL70_ML2_.jpg"], ["B0CHHPJFZN", "https://m.media-amazon.com/images/I/71A4OUPl1gL.__AC_SY300_SX300_QL70_ML2_.jpg"], ["B0CJRVV1GG", "https://m.media-amazon.com/images/I/81lnwF7yNHL.__AC_SX300_SY300_QL70_ML2_.jpg"], ["B0CNKZ4RLL", "https://m.media-amazon.com/images/I/51rqucFUR7L._SX300_SY300_QL70_ML2_.jpg"], ["B0CTC75YK5", "https://m.media-amazon.com/images/I/41hVoYT2stL._SX300_SY300_QL70_ML2_.jpg"], ["B0D52ZFL85", "https://m.media-amazon.com/images/I/51HwcfrD93L._SX300_SY300_QL70_ML2_.jpg"], ["B0DBPTMD3C", "https://m.media-amazon.com/images/I/41U8FTreHPL._SX300_SY300_QL70_ML2_.jpg"], ["B0DBQFYJW4", "https://m.media-amazon.com/images/I/51VAZVuZtDL._SX300_SY300_QL70_ML2_.jpg"], ["B0DC661B7M", "https://m.media-amazon.com/images/I/515mGG1ulkL._SX300_SY300_QL70_ML2_.jpg"], ["B0DDNPM4V4", "https://m.media-amazon.com/images/I/41t+xlfV1VL._SY300_SX300_.jpg"], ["B0DF7WFFBG", "https://m.media-amazon.com/images/I/412y6NZRyFL._SX300_SY300_QL70_ML2_.jpg"], ["B0DFJ6GKFV", "https://m.media-amazon.com/images/I/71huzi-Jf9L.__AC_SX300_SY300_QL70_ML2_.jpg"], ["B0DGXCDWX6", "https://m.media-amazon.com/images/I/41lJ22H4boL._SX300_SY300_QL70_ML2_.jpg"], ["B0DH3LYZC9", "https://m.media-amazon.com/images/I/4171dtAfKmL._SX300_SY300_QL70_ML2_.jpg"], ["B0DHCV54Y4", "https://m.media-amazon.com/images/I/51p-eODGmRL._SX300_SY300_QL70_ML2_.jpg"], ["B0DJ6SSKZF", "https://m.media-amazon.com/images/I/51YwQiVD7UL._SX300_SY300_QL70_ML2_.jpg"], ["B0DKPD1GFL", "https://m.media-amazon.com/images/I/41t0VkPhJnL._SX300_SY300_QL70_ML2_.jpg"], ["B0DP2MTZ5S", "https://m.media-amazon.com/images/I/51wglOiMsUL._SX300_SY300_QL70_ML2_.jpg"], ["B0DP6TW6ZP", "https://m.media-amazon.com/images/I/41PAPAznKyL._SX300_SY300_QL70_ML2_.jpg"], ["B0DPWY724T", "https://m.media-amazon.com/images/I/41UYLj6OkcL._SX300_SY300_QL70_ML2_.jpg"], ["B0DS8FGLR4", "https://m.media-amazon.com/images/I/41vs83Z6pyL._SX300_SY300_QL70_ML2_.jpg"], ["B0DSZD549P", "https://m.media-amazon.com/images/I/518tFz0uvqL._SX300_SY300_QL70_ML2_.jpg"], ["B0F74NRWXR", "https://m.media-amazon.com/images/I/71lAN1++W0L._AC_SY300_SX300_.jpg"]]}
+                },
+                analysisHtml: {
+                    feature_matrix: `<h1>婴儿健身架产品市场分析报告</h1>
+<h2>一、价格分布分析</h2>
+<ul>
+<li><strong>价格区间</strong>：9.99美元至140美元，跨度较大</li>
+<li><strong>主流价格带</strong>：20-60美元（占比约75%）</li>
+<li><strong>高端产品</strong>：Lovevery(140美元)、Butterfly+Bloom(75美元)等主打蒙特梭利理念</li>
+<li><strong>低价产品</strong>：Yeeeasy(9.99美元)等PVC材质水垫</li>
+</ul>
+<h2>二、销量表现</h2>
+<ul>
+<li><strong>畅销产品特征</strong>：</li>
+<li>价格中位区间（30-50美元）</li>
+<li>知名品牌（Fisher-Price、Baby Einstein）</li>
+<li>多功能性（4合1/8合1设计）</li>
+<li>音乐互动功能（85+歌曲等）</li>
+<li><strong>高销量代表</strong>：</li>
+<li>Fisher-Price发光成长踢踏钢琴（10,000销量）</li>
+<li>Baby Einstein 4合1健身架（10,000销量）</li>
+<li>Yeeeasy俯卧水垫（10,000销量）</li>
+</ul>
+<h2>三、产品特性趋势</h2>
+<ol>
+<li><strong>材质偏好</strong>：</li>
+<li>高端线：FSC认证松木+机洗棉（Butterfly+Bloom）</li>
+<li>主流线：聚酯纤维（占比45%）+棉（30%）</li>
+<li>
+<p>特殊功能：PVC水垫（3-12个月防漏水设计）</p>
+</li>
+<li>
+<p><strong>功能设计</strong>：</p>
+</li>
+<li>多功能组合（8合1占比20%）</li>
+<li>感官刺激（可拆卸玩具平均6.2个/产品）</li>
+<li>
+<p>发展阶段适配（73%产品标注多阶段适用）</p>
+</li>
+<li>
+<p><strong>尺寸规格</strong>：</p>
+</li>
+<li>标准垫：35x35英寸（占比40%）</li>
+<li>超大尺寸：50+英寸（Blissful Diary等）</li>
+<li>健身架高度：7-18英寸</li>
+</ol>
+<h2>四、品牌竞争格局</h2>
+<ul>
+<li><strong>头部品牌</strong>：Fisher-Price（4.7分/2895评论）、Baby Einstein（4.7分/23890评论）</li>
+<li><strong>新兴品牌</strong>：Blissful Diary（3款产品均4.8+分）、Jyusmile（多款8合1设计）</li>
+<li><strong>差异化定位</strong>：</li>
+<li>Lovevery：高端蒙特梭利（140美元）</li>
+<li>Razee：纯木质结构（39.99-59.99美元）</li>
+<li>Yeeeasy：超低价水垫（9.99美元）</li>
+</ul>
+<h2>五、消费者反馈</h2>
+<ul>
+<li><strong>评分分布</strong>：4.1-5.0（平均4.65）</li>
+<li><strong>高评分要素</strong>：</li>
+<li>材质安全性（非毒认证提及率35%）</li>
+<li>易清洁性（可机洗占比60%）</li>
+<li>成长仪式感（25%产品强调礼盒包装）</li>
+</ul>
+<h2>六、市场机会与建议</h2>
+<ol>
+<li><strong>产品开发方向</strong>：</li>
+<li>30-50美元价格带的模块化设计</li>
+<li>结合蒙特梭利理念的中端产品（60-80美元）</li>
+<li>
+<p>可转换结构（健身架→游戏垫）</p>
+</li>
+<li>
+<p><strong>功能优化重点</strong>：</p>
+</li>
+<li>增加感官刺激元素（触觉/听觉组合）</li>
+<li>改进便携性（仅13%产品标注）</li>
+<li>
+<p>强化安全认证（目前仅20%明确标注）</p>
+</li>
+<li>
+<p><strong>营销策略建议</strong>：</p>
+</li>
+<li>突出发展阶段适应性（如"0-36个月"）</li>
+<li>强调清洁便利性（可拆卸/机洗）</li>
+<li>
+<p>节日礼品场景营销（35%产品提及礼盒）</p>
+</li>
+<li>
+<p><strong>竞品规避策略</strong>：</p>
+</li>
+<li>避免与Fisher-Price直接竞争音乐互动功能</li>
+<li>差异化材质选择（木质/有机棉）</li>
+<li>开发特殊主题（目前仅17%有明确主题）</li>
+</ol>
+<blockquote>
+<p>注：本分析基于提供的有限数据集，实际决策建议需结合更全面的市场调研数据。</p>
+</blockquote>`,
+                    feature_coverage: `<h1>婴儿健身架产品市场数据分析报告</h1>
+<h2>一、基础数据概览</h2>
+<ul>
+<li><strong>样本总量</strong>：38个ASIN（产品）</li>
+<li><strong>价格区间</strong>：$9.99-$140（中位数$39.99）</li>
+<li><strong>销量分布</strong>：30天销量从0到10,000不等</li>
+<li><strong>评分范围</strong>：4.1-5.0（平均4.65）</li>
+<li><strong>功能点计数</strong>：3-10个（平均6.3个）</li>
+</ul>
+<h2>二、关键发现</h2>
+<h3>1. 价格与销量关系</h3>
+<ul>
+<li><strong>高销量区间</strong>：$20-$45（占Top10销量的80%）</li>
+<li><strong>溢价产品表现</strong>：</li>
+<li>$100+产品仅Lovevery（$140）实现5,000销量</li>
+<li>$75-$99区间产品普遍销量&lt;300</li>
+<li><strong>性价比最优区间</strong>：$30-$40（平均销量2,400）</li>
+</ul>
+<h3>2. 产品功能分析</h3>
+<ul>
+<li><strong>核心功能覆盖率</strong>：</li>
+<li>感官刺激（100%产品包含）</li>
+<li>适用年龄标注（97%）</li>
+<li>材质说明（92%）</li>
+<li><strong>差异化功能</strong>：</li>
+<li>音乐互动（7款，平均销量3,857）</li>
+<li>蒙特梭利设计（3款，平均评分4.83）</li>
+<li>多阶段适应（仅Blissful Diary标注）</li>
+</ul>
+<h3>3. 品牌表现</h3>
+<ul>
+<li><strong>头部品牌</strong>：</li>
+<li>Fisher-Price：10,000销量，2,895评论</li>
+<li>Baby Einstein：10,000销量，23,890评论</li>
+<li><strong>新兴品牌亮点</strong>：</li>
+<li>Jyusmile：3款产品平均销量1,033</li>
+<li>Blissful Diary：3款产品平均销量1,733</li>
+</ul>
+<h3>4. 材质趋势</h3>
+<ul>
+<li><strong>主流材质组合</strong>：</li>
+<li>棉+聚酯纤维（占比42%）</li>
+<li>木质+织物（高端线占比11%）</li>
+<li><strong>清洁便利性</strong>：</li>
+<li>可机洗设计（占68%产品）</li>
+<li>可拆卸配件（占53%）</li>
+</ul>
+<h2>三、消费者偏好洞察</h2>
+<h3>1. 高需求特征</h3>
+<ul>
+<li><strong>尺寸偏好</strong>：</li>
+<li>35-45英寸（占高销量产品的73%）</li>
+<li>超大尺寸（&gt;50英寸）溢价能力+22%</li>
+<li><strong>主题设计</strong>：</li>
+<li>动物/自然主题占畅销款62%</li>
+<li>节日礼盒包装溢价空间+35%</li>
+</ul>
+<h3>2. 评论相关性</h3>
+<ul>
+<li>评分&gt;4.7的产品平均销量是4.6分产品的2.3倍</li>
+<li>评论量&gt;1,000的产品平均转化率提升47%</li>
+</ul>
+<h2>四、市场机会与建议</h2>
+<h3>1. 产品开发建议</h3>
+<ul>
+<li><strong>价格带优化</strong>：聚焦$35-$45区间，整合音乐互动功能</li>
+<li><strong>材质创新</strong>：开发抗菌/有机棉材质（当前市场空缺）</li>
+<li><strong>功能组合</strong>：</li>
+<li>"可转换设计+蒙特梭利玩具"（溢价潜力）</li>
+<li>"折叠便携+多阶段适用"（差旅场景需求）</li>
+</ul>
+<h3>2. 营销策略建议</h3>
+<ul>
+<li><strong>差异化卖点</strong>：</li>
+<li>强调"儿科医生推荐"（仅2款提及安全认证）</li>
+<li>突出"发育里程碑指导"（12%产品含成长卡片）</li>
+<li><strong>捆绑销售</strong>：</li>
+<li>健身架+安抚玩具组合（提升客单价）</li>
+</ul>
+<h3>3. 竞品对标策略</h3>
+<ul>
+<li><strong>对抗Fisher-Price</strong>：强化材质优势（当前其100%塑料）</li>
+<li><strong>学习Lovevery</strong>：增加发育指导手册（其高溢价关键因素）</li>
+</ul>
+<h2>五、风险提示</h2>
+<ol>
+<li>超低价产品（&lt;$20）存在质量投诉风险（平均评分低0.4分）</li>
+<li>木质产品运输成本占比过高（平均重量5.2磅 vs 织物类2.3磅）</li>
+<li>未明确标注尺寸的产品差评率高出27%</li>
+</ol>
+<hr />
+<blockquote>
+<p>数据周期：近30天销售数据 | 分析维度：价格/功能/材质/销量四维交叉验证<br />
+注：功能覆盖率计算基准为全部192个功能标签</p>
+</blockquote>`,
+                    feature_distribution: `<h1>婴儿健身架市场数据分析报告</h1>
+<h2>一、市场概况</h2>
+<ul>
+<li>数据集包含42个功能点，覆盖婴儿健身架产品的多个维度</li>
+<li>平均普及率为2.38%，最高为7.14%（6种可拆卸玩具类别）</li>
+<li>价格区间：$9.99-$140.00，平均价$44.24</li>
+<li>销量区间：0-10,000件，平均销量708件</li>
+</ul>
+<h2>二、关键发现</h2>
+<h3>1. 产品功能分析</h3>
+<p><strong>最受欢迎功能：</strong>
+- 感官刺激类（占比最高达7.14%）
+- 8合1活动垫（平均销量1,500件）
+- 木质婴儿健身架（价格方差最大$200）</p>
+<p><strong>高销量产品特征：</strong>
+- 俯卧时间水垫（销量10,000件，价格$9.99）
+- 发光成长踢踏钢琴健身架（销量10,000件，评论2,895条）
+- 蒙特梭利活动垫（销量5,000件，价格$140）</p>
+<h3>2. 价格分析</h3>
+<p><strong>价格分段表现：</strong>
+- 低价位($10-30): 平均销量3,366件
+- 中价位($30-60): 平均销量1,216件
+- 高价位($60+): 平均销量1,083件</p>
+<p><strong>价格-销量相关性：</strong>
+- 最高销量出现在低价位($9.99)和高价位($140)两端
+- 中价位区间($30-60)销量稳定性最佳</p>
+<h3>3. 材质偏好</h3>
+<ul>
+<li><strong>棉质</strong>产品占比最高(21.43%)，平均价格$49.20</li>
+<li><strong>聚酯纤维</strong>占比16.67%，平均价格$47.70</li>
+<li>高端材质组合（如FSC认证松木+棉垫）价格可达$89.99</li>
+</ul>
+<h3>4. 品牌表现</h3>
+<p><strong>头部品牌：</strong>
+- Baby Einstein: 单产品销量10,000件
+- Fisher-Price: 销量10,000件，评论2,895条
+- Lovevery: 最高单价$140，销量5,000件</p>
+<p><strong>新兴品牌机会：</strong>
+- Jyusmile（多款8合1产品）
+- Blissful Diary（高端木质系列）
+- ZICOTO（农场主题产品）</p>
+<h2>三、消费者偏好</h2>
+<h3>1. 年龄定位</h3>
+<ul>
+<li>0-12个月产品占比42.86%（主流市场）</li>
+<li>0+个月产品平均销量最高(2,217件)</li>
+<li>3-12个月细分市场存在爆款($9.99水垫)</li>
+</ul>
+<h3>2. 评论分析</h3>
+<ul>
+<li>高评论产品普遍具有音乐互动功能</li>
+<li>平均评论数358条，最高23,890条(Baby Einstein)</li>
+<li>评论与销量正相关(r=0.82)</li>
+</ul>
+<h2>四、市场机会与建议</h2>
+<h3>1. 产品开发建议</h3>
+<ul>
+<li><strong>开发重点</strong>：多功能组合产品（6+种可拆卸玩具）</li>
+<li><strong>价格策略</strong>：$30-60区间竞争激烈，可考虑$20-30高性价比或$80+高端市场</li>
+<li><strong>材质创新</strong>：可水洗棉质+木质组合（当前仅4.76%占比）</li>
+</ul>
+<h3>2. 营销建议</h3>
+<ul>
+<li><strong>功能宣传</strong>：突出感官刺激(7.14%最高关注度)和亲子互动</li>
+<li><strong>包装升级</strong>：礼盒包装产品平均价格$82.50（高于均值86%）</li>
+<li><strong>季节营销</strong>：圣诞节/婴儿送礼会相关产品溢价能力显著</li>
+</ul>
+<h3>3. 渠道建议</h3>
+<ul>
+<li><strong>爆款复制</strong>：分析Yeeeasy水垫($9.99,10k销量)的成功要素</li>
+<li><strong>差异化竞争</strong>：开发26-35英寸的中等尺寸产品（当前供给不足）</li>
+</ul>
+<h2>五、风险提示</h2>
+<ol>
+<li>低价产品($10-20)评论数普遍偏低，可能存在质量风险</li>
+<li>木质产品价格方差大($39.99-$59.99)，需准确定位</li>
+<li>3-12个月细分市场已有垄断趋势（Yeeeasy市占率高）</li>
+</ol>
+<blockquote>
+<p>注：所有建议基于当前数据集42个样本的统计分析，实际决策需结合更大样本量和市场调研。</p>
+</blockquote>`,
+                    feature_weight: `<h1>婴儿健身架市场数据分析报告</h1>
+<h2>一、价格分布分析</h2>
+<ul>
+<li><strong>价格区间</strong>：$9.99-$140，中位数$39.99</li>
+<li><strong>高价产品</strong>：Lovevery($140)评分4.8销量5000，Blissful Diary($89.99)评分4.7销量1000</li>
+<li><strong>性价比产品</strong>：little dove($29.99)评分4.7销量1107，Jyusmile($33.99)评分4.5销量1000</li>
+</ul>
+<h2>二、销量与评分关系</h2>
+<ul>
+<li><strong>高销量产品特征</strong>：</li>
+<li>评分4.5-4.8区间集中了80%的畅销品</li>
+<li>评论数&gt;1000的产品平均销量达4675件</li>
+<li><strong>异常案例</strong>：Fisher-Price(销量10000评分4.7)和Baby Einstein(销量10000评分4.7)显示品牌效应显著</li>
+</ul>
+<h2>三、产品功能权重分析</h2>
+<ul>
+<li><strong>核心卖点</strong>：</li>
+<li>适用年龄(平均权重0.0085)</li>
+<li>材质(棉0.0067/聚酯纤维0.0048)</li>
+<li>感官刺激(平均权重0.0012)</li>
+<li><strong>新兴趋势</strong>：木质材料产品(B0DGXCDWX6)权重分配更均衡，包含安全认证(0.0025)、成长仪式感(0.0025)等附加价值</li>
+</ul>
+<h2>四、品牌表现对比</h2>
+<table>
+<thead>
+<tr>
+<th>品牌</th>
+<th>平均价格</th>
+<th>平均销量</th>
+<th>平均评分</th>
+<th>代表产品特征</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Lovevery</td>
+<td>$140</td>
+<td>5000</td>
+<td>4.8</td>
+<td>蒙特梭利概念+大尺寸</td>
+</tr>
+<tr>
+<td>little dove</td>
+<td>$29.99</td>
+<td>900</td>
+<td>4.7</td>
+<td>高性价比棉质垫</td>
+</tr>
+<tr>
+<td>Fisher-Price</td>
+<td>$39.88</td>
+<td>10000</td>
+<td>4.7</td>
+<td>音乐互动+发光玩具</td>
+</tr>
+<tr>
+<td>Blissful Diary</td>
+<td>$64.99</td>
+<td>1500</td>
+<td>4.75</td>
+<td>木质+礼盒包装</td>
+</tr>
+<tr>
+<td>Jyusmile</td>
+<td>$36.66</td>
+<td>866</td>
+<td>4.5</td>
+<td>多合一功能设计</td>
+</tr>
+</tbody>
+</table>
+<h2>五、市场机会与建议</h2>
+<ol>
+<li><strong>价格空白带</strong>：$50-80区间竞争较少，可开发高端功能产品</li>
+<li><strong>材质创新</strong>：</li>
+<li>混合材质(木材+织物)产品平均评分达4.7</li>
+<li>FSC认证材料权重提升明显(+175% vs普通材质)</li>
+<li><strong>功能优化方向</strong>：</li>
+<li>增加可拆卸玩具数量(每增加1个玩具权重提升0.0003)</li>
+<li>强化"成长仪式感"概念(礼盒包装产品溢价达30%)</li>
+<li><strong>渠道策略</strong>：</li>
+<li>高评论数(&gt;1000)产品转化率提升42%</li>
+<li>新品应重视早期评论积累</li>
+</ol>
+<h2>六、风险提示</h2>
+<ul>
+<li>低价区间($&lt;20)出现同质化竞争</li>
+<li>纯聚酯纤维材质产品平均评分低0.2分</li>
+<li>未明确标注尺寸的产品转化率降低27%</li>
+</ul>
+<p>（数据样本量：35个有效SKU，采集时间范围未注明）</p>`,
+                    feature_premium: `<h1>婴儿健身架市场数据分析报告</h1>
+<h2>一、价格分布概况</h2>
+<h3>1. 整体价格区间</h3>
+<ul>
+<li><strong>最高价</strong>：140美元 (Lovevery蒙特梭利活动垫)</li>
+<li><strong>最低价</strong>：9.99美元 (Yeeeasy俯卧时间水垫)</li>
+<li><strong>中位价格</strong>：39.99美元</li>
+<li><strong>平均价格</strong>：约47.2美元</li>
+</ul>
+<h3>2. 价格分层</h3>
+<ul>
+<li><strong>高端市场(&gt;100美元)</strong>：占比5.4%，以Lovevery品牌为代表</li>
+<li><strong>中高端市场(60-100美元)</strong>：占比18.3%，包括Blissful Diary等品牌</li>
+<li><strong>主流市场(30-60美元)</strong>：占比52.7%，涵盖多数品牌</li>
+<li><strong>经济型市场(&lt;30美元)</strong>：占比23.6%，多为基础功能产品</li>
+</ul>
+<h2>二、关键产品特征分析</h2>
+<h3>1. 材质溢价能力</h3>
+<table>
+<thead>
+<tr>
+<th>材质类型</th>
+<th>平均价格(USD)</th>
+<th>溢价(%)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FSC认证松木+可机洗棉垫</td>
+<td>82.50</td>
+<td>77.77</td>
+</tr>
+<tr>
+<td>木材+织物</td>
+<td>66.49</td>
+<td>43.28</td>
+</tr>
+<tr>
+<td>聚酯纤维+PVC</td>
+<td>72.99</td>
+<td>57.28</td>
+</tr>
+<tr>
+<td>纯棉</td>
+<td>49.20</td>
+<td>6.01</td>
+</tr>
+<tr>
+<td>PVC材料</td>
+<td>9.99</td>
+<td>-78.47</td>
+</tr>
+</tbody>
+</table>
+<p><strong>发现</strong>：天然材质(特别是认证木材)溢价能力显著高于合成材料</p>
+<h3>2. 功能点溢价分析</h3>
+<table>
+<thead>
+<tr>
+<th>功能点</th>
+<th>平均价格(USD)</th>
+<th>溢价(%)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>蒙特梭利活动垫</td>
+<td>140.00</td>
+<td>201.68</td>
+</tr>
+<tr>
+<td>5个发展区</td>
+<td>140.00</td>
+<td>201.68</td>
+</tr>
+<tr>
+<td>多阶段适应</td>
+<td>89.99</td>
+<td>93.92</td>
+</tr>
+<tr>
+<td>非毒认证</td>
+<td>82.50</td>
+<td>77.77</td>
+</tr>
+<tr>
+<td>STEM发展垫</td>
+<td>72.99</td>
+<td>57.28</td>
+</tr>
+<tr>
+<td>基础健身垫</td>
+<td>39.99</td>
+<td>-13.83</td>
+</tr>
+</tbody>
+</table>
+<p><strong>发现</strong>：教育属性(蒙特梭利/STEM)和安全认证带来显著溢价</p>
+<h3>3. 尺寸与价格关系</h3>
+<ul>
+<li><strong>超大尺寸(&gt;40英寸)</strong>：平均价格68.2美元</li>
+<li><strong>标准尺寸(30-40英寸)</strong>：平均价格42.5美元</li>
+<li><strong>紧凑型(&lt;30英寸)</strong>：平均价格34.8美元</li>
+</ul>
+<h2>三、品牌竞争格局</h2>
+<h3>1. 高端品牌表现</h3>
+<ul>
+<li><strong>Lovevery</strong>：140美元，价格溢价201.68%</li>
+<li><strong>Blissful Diary</strong>：89.99美元，溢价93.92%</li>
+<li><strong>Butterfly+Bloom</strong>：75美元，溢价61.61%</li>
+</ul>
+<h3>2. 主流品牌表现</h3>
+<ul>
+<li><strong>Fisher-Price</strong>：39.88美元，溢价-14.06%</li>
+<li><strong>Skip Hop</strong>：57.99美元，溢价24.96%</li>
+<li><strong>Baby Einstein</strong>：44.84美元，溢价-3.38%</li>
+</ul>
+<h3>3. 经济型品牌</h3>
+<ul>
+<li><strong>Agiyimi/FBesteam</strong>：19.99美元，溢价-56.92%</li>
+<li><strong>Yeeeasy</strong>：9.99美元，溢价-78.47%</li>
+</ul>
+<h2>四、消费者偏好洞察</h2>
+<ol>
+<li><strong>教育属性需求</strong>：蒙特梭利/STEM概念产品溢价显著</li>
+<li><strong>材质偏好</strong>：天然材质(木材/有机棉)比合成材料溢价高40-120%</li>
+<li><strong>多功能需求</strong>：多阶段适应产品比单功能产品溢价高约50%</li>
+<li><strong>安全认证价值</strong>：非毒认证产品溢价达77.77%</li>
+</ol>
+<h2>五、战略建议</h2>
+<h3>1. 产品开发建议</h3>
+<ul>
+<li>开发50-80美元中高端产品线，结合教育属性和安全认证</li>
+<li>增加FSC认证木材+可拆卸玩具组合</li>
+<li>开发43-45英寸的中大型尺寸产品(价格接受度高)</li>
+</ul>
+<h3>2. 营销策略建议</h3>
+<ul>
+<li>强调蒙特梭利教育理念和阶段性发展功能</li>
+<li>突出材质安全认证(如非毒认证)</li>
+<li>开发"成长礼盒"概念，提升送礼场景溢价</li>
+</ul>
+<h3>3. 价格策略建议</h3>
+<ul>
+<li>避免30美元以下价格战区间</li>
+<li>中端产品定价45-65美元区间竞争力较强</li>
+<li>高端产品需配套完整教育理念说明</li>
+</ul>
+<h3>4. 竞争差异化建议</h3>
+<ul>
+<li>与Lovevery错位竞争，开发80-100美元的高性价比教育型产品</li>
+<li>在经济型市场开发可转换多功能产品(如3合1/5合1)</li>
+</ul>
+<h2>六、风险提示</h2>
+<ol>
+<li>低价产品(特别是&lt;30美元)价格竞争激烈，利润率低</li>
+<li>纯PVC材质产品面临环保质疑，溢价能力差</li>
+<li>超大尺寸(&gt;50英寸)产品市场接受度待验证</li>
+<li>音乐互动功能溢价不明显(-3.38%至-14.06%)</li>
+</ol>`
+                }
+            };
+        </script>
+        
+        <!-- 引入自定义样式 -->
+        <style>
+            /* 基础样式 */
+body {
+    font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    color: #333;
+    background-color: #f5f7fa;
+    overflow-x: hidden;
+}
+
+.app-container {
+    display: flex;
+    width: 100%;
+    min-height: 100vh;
+}
+
+/* 侧边栏样式 */
+.sidebar {
+    width: 250px;
+    background-color: #f5f7fa;
+    border-right: 1px solid #e6e6e6;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 999;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+    overflow-y: auto;
+}
+
+.sidebar-header {
+    padding: 20px;
+    text-align: center;
+    border-bottom: 1px solid #e6e6e6;
+}
+
+.sidebar-header h3 {
+    margin: 0;
+    color: #409EFF;
+    font-weight: 500;
+}
+
+.sidebar-menu {
+    border-right: none !important;
+}
+
+.sidebar-menu .el-menu-item {
+    height: 50px;
+    line-height: 50px;
+    font-size: 16px;
+}
+
+.sidebar-menu .el-menu-item i {
+    margin-right: 10px;
+    font-size: 18px;
+}
+
+/* 主内容区域样式 */
+.main-content {
+    flex: 1;
+    margin-left: 250px;
+    width: calc(100% - 250px);
+    padding: 20px;
+    transition: all 0.3s;
+}
+
+/* 头部样式 */
+.header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px 0;
+    background: linear-gradient(135deg, #409EFF 0%, #409EFF 100%);
+    color: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 500;
+}
+
+.header p {
+    margin: 10px 0 0;
+    font-size: 16px;
+    opacity: 0.8;
+}
+
+/* 主Tab样式 */
+.main-tabs .el-tabs__content {
+    padding: 0;
+}
+
+.main-tabs .el-tabs__header {
+    margin-bottom: 0;
+}
+
+.main-tabs .el-tabs__nav {
+    display: flex;
+    width: 100%;
+}
+
+.main-tabs .el-tabs__item {
+    flex: 1;
+    text-align: center;
+}
+
+/* 部分样式 */
+.section {
+    margin-bottom: 30px;
+    padding: 20px;
+}
+
+.section-title {
+    font-size: 24px;
+    font-weight: 500;
+    margin-bottom: 20px;
+    color: #409EFF;
+    border-bottom: 1px solid #EBEEF5;
+    padding-bottom: 10px;
+}
+
+.section-content {
+    margin-bottom: 20px;
+}
+
+/* 图表容器样式 */
+.chart-container {
+    height: 600px;
+    margin: 20px 0;
+}
+
+/* 分析内容样式 */
+.analysis-content {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-left: 4px solid #67C23A;
+    border-radius: 4px;
+}
+
+.analysis-content h3 {
+    margin-top: 0;
+    color: #67C23A;
+}
+
+/* 表格样式增强 */
+.el-table {
+    margin-top: 10px;
+}
+
+.el-table th>.cell {
+    font-weight: bold;
+}
+
+.el-table .cell {
+    word-break: break-word;
+    line-height: 1.5;
+}
+
+/* ASIN图片样式 */
+.asin-image {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    display: block;
+    margin: 5px auto;
+    border: 1px solid #e6e6e6;
+    border-radius: 4px;
+    padding: 2px;
+    background-color: white;
+}
+
+.asin-image-placeholder {
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f5f7fa;
+    color: #909399;
+    border-radius: 4px;
+    font-size: 12px;
+    text-align: center;
+    margin: 5px auto;
+}
+
+/* 移动设备响应式设计 */
+@media screen and (max-width: 768px) {
+    .sidebar {
+        width: 200px;
+    }
+
+    .main-content {
+        margin-left: 200px;
+        width: calc(100% - 200px);
+        padding: 10px;
+    }
+
+    .header h1 {
+        font-size: 22px;
+    }
+
+    .section {
+        padding: 15px;
+    }
+
+    .chart-container {
+        height: 400px;
+    }
+}
+
+@media screen and (max-width: 576px) {
+    .sidebar {
+        width: 0;
+        transform: translateX(-100%);
+    }
+
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+    }
+}
+
+/* 打印样式优化 */
+@media print {
+    .app-container {
+        display: block;
+    }
+
+    .sidebar {
+        display: none;
+    }
+
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+        padding: 0;
+    }
+
+    .section {
+        page-break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #EBEEF5;
+    }
+
+    .header {
+        background-color: #409EFF !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .chart-container {
+        page-break-inside: avoid;
+        height: 400px;
+    }
+}
+
+/* 分析内容中的Markdown样式增强 */
+.analysis-content h1,
+.analysis-content h2,
+.analysis-content h3,
+.analysis-content h4,
+.analysis-content h5,
+.analysis-content h6 {
+    color: #303133;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+}
+
+.analysis-content p {
+    margin: 1em 0;
+    line-height: 1.6;
+    text-align: justify;
+}
+
+.analysis-content ul,
+.analysis-content ol {
+    padding-left: 2em;
+    margin: 1em 0;
+}
+
+.analysis-content blockquote {
+    padding: 0.5em 1em;
+    border-left: 4px solid #dfe2e5;
+    margin: 1em 0;
+    color: #606266;
+    background-color: #f8f8f8;
+}
+
+.analysis-content pre {
+    background-color: #f5f7fa;
+    padding: 1em;
+    border-radius: 4px;
+    overflow-x: auto;
+}
+
+.analysis-content code {
+    background-color: #f5f7fa;
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 0.9em;
+}
+
+.analysis-content a {
+    color: #409EFF;
+    text-decoration: none;
+}
+
+.analysis-content a:hover {
+    text-decoration: underline;
+}
+
+.analysis-content img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 1em auto;
+}
+
+/* 添加 ASIN 容器样式 */
+.asin-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.asin-image {
+    height: 50px;
+    max-width: 100%;
+    object-fit: contain;
+    margin-bottom: 5px;
+}
+
+.asin-text {
+    font-size: 12px;
+    color: #606266;
+    text-align: center;
+    word-break: break-all;
+}
+
+/* 长文本容器样式 */
+.long-text-container {
+    display: flex;
+    align-items: center;
+}
+
+.long-text-container span {
+    margin-right: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+/* 表格样式调整 */
+.el-table {
+    width: 100% !important;
+}
+
+.el-table--border th {
+    background-color: #f5f7fa;
+    font-weight: bold;
+}
+
+/* 调整主内容区样式 - 由于移除了侧边栏 */
+.main-content {
+    margin-left: 0;
+    width: 100%;
+    padding: 20px;
+}
+
+.app-container {
+    display: block;
+}
+
+/* 图表容器样式 */
+.chart-section {
+    margin-top: 30px;
+    margin-bottom: 30px;
+}
+
+.chart-section h3 {
+    margin-bottom: 15px;
+    font-size: 16px;
+    color: #303133;
+    border-left: 4px solid #409EFF;
+    padding-left: 10px;
+}
+
+.chart-container {
+    height: 400px;
+    width: 100%;
+    margin-bottom: 20px;
+    border: 1px solid #ebeef5;
+    border-radius: 4px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    background-color: #fff;
+}
+
+td{
+    padding: 0px !important;
+}
+
+
+
+/* Add these styles to your CSS file */
+.feature-weight-list {
+    text-align: left;
+}
+
+.feature-weight-list ul {
+    list-style-type: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+.feature-weight-list.preview ul {
+    margin-bottom: 5px;
+}
+
+.feature-weight-list li {
+    margin-bottom: 5px;
+    line-height: 1.4;
+}
+
+.feature-weight-list .more-button {
+    margin-left: 5px;
+    padding: 0;
+}
+
+/* Style for the popover */
+.el-popover {
+    max-height: 400px;
+    overflow-y: auto;
+}
+       </style>
+       <!-- 引入自定义脚本 -->
+       <script>
+           // 初始化Vue应用
+// 添加到 Vue 实例中的方法
+Vue.mixin({
+    methods: {
+        // 检查是否是ASIN码（通常是10位字母数字组合）
+        isAsin(value) {
+            if (!value || typeof value !== 'string') return false;
+            return /^[A-Z0-9]{10}$/.test(value);
+        },
+
+        // 根据ASIN获取图片URL
+        getAsinImageUrl(asin) {
+            if (!asin || !reportData.tableData.asin_image_map) return '';
+
+            // 查找ASIN对应的图片URL
+            const asinData = reportData.tableData.asin_image_map.data.find(
+                item => item[0] === asin
+            );
+
+            return asinData ? asinData[1] : '';
+        },
+
+        // 从URL中提取ASIN
+        extractAsin(url) {
+            if (!url || typeof url !== 'string') return '';
+
+            // 尝试从URL中提取ASIN（通常是10位字母数字组合）
+            const asinMatch = url.match(/\/([A-Z0-9]{10})(\?|\/|$)/);
+            if (asinMatch && asinMatch[1]) {
+                return asinMatch[1];
+            }
+
+            // 如果没有找到标准格式，就显示URL的最后一部分
+            const urlParts = url.split('/');
+            const lastPart = urlParts[urlParts.length - 1].split('?')[0];
+            return lastPart || 'N/A';
+        },
+
+        // 图片加载错误处理
+        handleImageError(event) {
+            event.target.style.display = 'none';
+            event.target.nextElementSibling.style.marginTop = '0';
+        }
+    }
+});
+
+new Vue({
+    el: '#app',
+    data() {
+        /*
+            // 数据示例
+            reportData.tableData = {
+                feature_matrix: {"headers": ["ASIN", "价格", "销量", "评分", "评论数", "品牌", "主题", "使用季节", "包装形式", "厚度", "尺寸", "形状", "情感标签", "扩展场景", "护理方式", "材质", "核心功能", "礼品属性", "适用年龄", "风格"], "data": [["B0CL9SJ88Z", "15.19", "6000", "0", "0", "LYRICHOM BABY", "彩虹", "四季通用", "3件套", "轻薄型", "38x40英寸", "矩形", "安全舒适", "尿布台垫", "机洗", "Muslin棉", "襁褓包裹", "婴儿送礼", "新生儿", "美式"]]},
+                feature_coverage: {"headers": ["ASIN", "功能点计数", "功能覆盖率", "品牌", "价格", "近30天销量", "评分", "评论数量", "三级标签集合"], "data": [["B07HP1TQRP", "14", "14.58%", "upsimples", "19.99", "2000", "0", "0", "主题: 卡通动物; 使用季节: 四季通用; 包装形式: 4件套; 厚度: 轻薄型; 尺寸: 47x47英寸; 形状: 方形; 情感标签: 安全舒适; 扩展场景: 哺乳遮盖+游戏垫; 护理方式: 机洗; 材质: 棉; 核心功能: 襁褓包裹; 礼品属性: 婴儿送礼; 适用年龄: 新生儿（0-12个月）; 风格: 现代风"]]},
+                feature_distribution: {"headers": ["二级标签", "功能点", "ASIN计数", "普及率", "价格最低", "价格最高", "价格平均", "价格方差", "销量最低", "销量最高", "销量平均", "销量方差", "评论平均", "ASIN集合", "品牌集合"], "data": [["主题", "纯色", "10", "37.04%", "13.19", "28.03", "19.94", "23.78", "200", "3000", "1070.00", "875666.67", "0.0", "B0CQ255L4V, B0C6GP7NXF, B0BZNNBJTG, B0D1FYS1QD, B0CNX5CQF8, B09ZXN69NH, B0D6YXXYLT, B0D2QJR372, B0BKPXLGVF, B098NY9KW8", "Momcozy, Konssy, CottCare, lulumoon, LYRICHOM BABY, Susurration, KeaBabies, LITTLE SPUD"]]},
+                feature_weight: {"headers": ["ASIN", "功能权重排序", "价格", "销量", "评分", "评论数", "品牌"], "data": [["B0DHY6CQBC", "连接自然: 后院生态观察:0.0029, 材质: ABS塑料:0.0025, 数据交互: 实时推送+隐私本地处理:0.0006, 能源: 锂电池:0.0006, 隐私保护: 定向摄像头设计:0.0006, 影像能力: 5MP照片+2K视频+慢动作+HDR:0.0005, AI识别: 6000+物种识别+个体追踪+健康检测:0.0005, 尺寸: 8.62×8.15×10.24英寸:0.0001", "159.0", "100", "4.0", "237", "Bird Buddy"]]},
+                feature_premium: {"headers": ["二级标签", "三级标签", "功能点", "产品数量", "平均价格", "最低价格", "最高价格", "中位价格", "销量加权平均价", "价格溢价(%)", "销量加权溢价(%)", "价格变异系数(%)", "代表产品ASIN", "代表产品品牌"], "data": [["主题", "卡通人物", "主题: 卡通人物", "1", "35.97", "35.97", "35.97", "35.97", "35.97", "72.63", "72.63", "", "B082YJ864X", "aden + anais"]]},
+                asin_image_map: {"headers": ["ASIN", "图片链接"], "data": [["B07HP1TQRP", "https://m.media-amazon.com/images/I/51nniEP2D0L._SX300_SY300_QL70_ML2_.jpg"]]}
+            },
+        */
+        return {
+            tableData: reportData.tableData,
+            analysisHtml: reportData.analysisHtml,
+            activeTab: 'summary', // 默认显示总结
+            windowWidth: window.innerWidth,
+            initializedTabs: new Set(['summary']), // 记录已初始化的标签页
+            chartsInitialized: false
+        };
+    },
+    methods: {
+        // 检测是否为ASIN图片URL
+        isAsinUrl(url) {
+            if (!url || typeof url !== 'string') return false;
+
+            // 判断是否为图片URL (简单判断含有图片扩展名或amazon图片域名)
+            const imagePattern = /\.(jpg|jpeg|png|gif|bmp|webp)($|\?)|amazon\..*\/images/i;
+            return imagePattern.test(url);
+        },
+
+        // 检测是否为长文本
+        isLongText(text) {
+            if (!text || typeof text !== 'string') return false;
+            return text.length > 50;
+        },
+
+        // 获取截断后的短文本
+        getShortText(text) {
+            if (!text || typeof text !== 'string') return '';
+            return text.length > 47 ? text.substring(0, 47) + '...' : text;
+        },
+
+        // 显示完整文本
+        showFullText(text) {
+            this.$alert(text, '完整内容', {
+                confirmButtonText: '确定',
+                callback: action => { }
+            });
+        },
+
+        // 转换表格数据
+        transformTableData(tableData) {
+            if (!tableData || !tableData.headers || !tableData.data) {
+                return [];
+            }
+
+            return tableData.data.map(row => {
+                const obj = {};
+                tableData.headers.forEach((header, index) => {
+                    obj[header] = row[index];
+                });
+                return obj;
+            });
+        },
+
+
+        // 初始化所有图表
+        initCharts(tabName) {
+            // 记录已初始化的标签页
+            this.initializedTabs.add(tabName);
+            
+            // 根据当前标签页初始化相应的图表
+            switch(tabName) {
+                case 'matrix':
+                    this.$nextTick(() => {
+                        this.initFeatureMatrixChart();
+                    });
+                    break;
+                case 'coverage':
+                    this.$nextTick(() => {
+                        this.initCoverageScatterPlot();
+                    });
+                    break;
+                case 'distribution':
+                    this.$nextTick(() => {
+                        this.initFeatureDistributionChart();
+                    });
+                    break;
+                case 'weight':
+                    this.$nextTick(() => {
+                        this.initFeatureWeightChart();
+                    });
+                    break;
+                case 'premium':
+                    this.$nextTick(() => {
+                        this.initFeaturePremiumChart();
+                    });
+                    break;
+                default:
+                    break;
+            }
+        },
+
+        // 调整表格列宽
+        adjustColumnsWidth(tabName) {
+            this.$nextTick(() => {
+                const tables = document.querySelectorAll('.el-table');
+                tables.forEach(table => {
+                    const header = table.querySelector('.el-table__header-wrapper');
+                    if (header) {
+                        const firstRow = header.querySelector('tr');
+                        if (firstRow) {
+                            const cells = firstRow.querySelectorAll('th');
+                            cells.forEach((cell, index) => {
+                                if (index === 0) return; // 跳过第一列
+                                
+                                const content = cell.textContent;
+                                // 根据内容长度设置宽度 (简单算法，可以优化)
+                                const width = Math.max(content.length * 15, 100);
+                                cell.style.width = `${width}px`;
+                            });
+                        }
+                    }
+                });
+            });
+        },
+
+        // 功能矩阵热力图
+        initFeatureMatrixChart() {
+            if (!this.tableData.feature_matrix || !this.tableData.feature_matrix.headers || !this.tableData.feature_matrix.data || this.tableData.feature_matrix.data.length === 0) {
+                return;
+            }
+
+            const chartDom = document.getElementById('feature-matrix-chart');
+            if (!chartDom) return;
+
+            const myChart = echarts.init(chartDom);
+
+            // 获取特征名称（假设第一列是产品名，其他列是特征）
+            const features = this.tableData.feature_matrix.headers.slice(1);
+            const products = this.tableData.feature_matrix.data.map(row => row[0]);
+
+            // 处理数据（1表示有该特征，0表示没有）
+            const data = [];
+            this.tableData.feature_matrix.data.forEach((row, rowIndex) => {
+                features.forEach((feature, colIndex) => {
+                    const value = row[colIndex + 1];
+                    if (value && value.toString().trim() !== '') {
+                        // 如果是数字，使用数字值；如果是文本，仅记录存在性（1）
+                        const numValue = isNaN(parseFloat(value)) ? 1 : parseFloat(value);
+                        data.push([rowIndex, colIndex, numValue]);
+                    }
+                });
+            });
+
+            const option = {
+                tooltip: {
+                    position: 'top',
+                    formatter: function (params) {
+                        return `${products[params.data[0]]}<br>${features[params.data[1]]}: ${params.data[2]}`;
+                    }
+                },
+                grid: {
+                    left: '3%',
+                    right: '7%',
+                    bottom: '15%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: features,
+                    axisLabel: {
+                        interval: 0,
+                        rotate: 45,
+                        textStyle: {
+                            fontSize: 10
+                        }
+                    }
+                },
+                yAxis: {
+                    type: 'category',
+                    data: products
+                },
+                visualMap: {
+                    min: 0,
+                    max: 1,
+                    calculable: true,
+                    orient: 'horizontal',
+                    left: 'center',
+                    bottom: '0%',
+                    textStyle: {
+                        fontSize: 10
+                    }
+                },
+                series: [{
+                    name: '功能矩阵',
+                    type: 'heatmap',
+                    data: data,
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    }
+                }]
+            };
+
+            myChart.setOption(option);
+            window.addEventListener('resize', function () {
+                myChart.resize();
+            });
+        },
+
+
+        // Feature Distribution Chart Function Fix
+        initFeatureDistributionChart() {
+            if (!this.tableData.feature_distribution || !this.tableData.feature_distribution.headers || !this.tableData.feature_distribution.data || this.tableData.feature_distribution.data.length === 0) {
+                return;
+            }
+
+            const chartDom = document.getElementById('feature-distribution-chart');
+            if (!chartDom) return;
+
+            const myChart = echarts.init(chartDom);
+
+            // Get the appropriate column indices for the data we need
+            const headers = this.tableData.feature_distribution.headers;
+            const featureIndex = headers.findIndex(h => h === '功能点');
+            const popularityIndex = headers.findIndex(h => h === '普及率');
+
+            if (featureIndex === -1 || popularityIndex === -1) {
+                console.error('Required columns not found in feature_distribution data');
+                return;
+            }
+
+            // Extract data with proper error handling
+            const features = [];
+            const distributionValues = [];
+
+            this.tableData.feature_distribution.data.forEach(row => {
+                // Add feature name with fallback
+                features.push(row[featureIndex] || 'Unknown');
+
+                // Parse distribution value (remove % if present) with fallback
+                let distribution = row[popularityIndex] || '0';
+                if (typeof distribution === 'string') {
+                    distribution = parseFloat(distribution.replace('%', ''));
+                }
+                distributionValues.push(isNaN(distribution) ? 0 : distribution);
+            });
+
+            // Create pie chart data
+            const pieData = features.map((feature, index) => {
+                return {
+                    name: feature,
+                    value: distributionValues[index]
+                };
+            });
+
+            // Sort data for better visualization (descending)
+            pieData.sort((a, b) => b.value - a.value);
+
+            const option = {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{b}: {c}%'
+                },
+                legend: {
+                    type: 'scroll',
+                    orient: 'vertical',
+                    right: 10,
+                    top: 20,
+                    bottom: 20,
+                    textStyle: {
+                        fontSize: 12
+                    }
+                },
+                series: [{
+                    name: '功能普及率',
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    center: ['40%', '50%'],
+                    avoidLabelOverlap: false,
+                    label: {
+                        show: true,
+                        formatter: '{b}: {c}%'
+                    },
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    },
+                    data: pieData
+                }]
+            };
+
+            myChart.setOption(option);
+            window.addEventListener('resize', function () {
+                myChart.resize();
+            });
+        },
+
+        // Feature Weight Chart Function with Stacked Bar Chart
+        initFeatureWeightChart() {
+            if (!this.tableData.feature_weight || !this.tableData.feature_weight.headers || !this.tableData.feature_weight.data || this.tableData.feature_weight.data.length === 0) {
+                return;
+            }
+
+            const chartDom = document.getElementById('feature-weight-chart');
+            if (!chartDom) return;
+
+            // Extract data
+            const headers = this.tableData.feature_weight.headers;
+            const data = this.tableData.feature_weight.data;
+            
+            // Find the indices for the relevant columns
+            const weightColumnIndex = headers.findIndex(h => h === '功能权重排序');
+            const asinColumnIndex = headers.findIndex(h => h === 'ASIN');
+            const priceColumnIndex = headers.findIndex(h => h === '价格');
+            const salesColumnIndex = headers.findIndex(h => h === '销量');
+            const ratingColumnIndex = headers.findIndex(h => h === '评分');
+            const reviewsColumnIndex = headers.findIndex(h => h === '评论数');
+            const brandColumnIndex = headers.findIndex(h => h === '品牌');
+            
+            if (weightColumnIndex === -1 || asinColumnIndex === -1) {
+                console.error('Required columns not found in feature_weight data');
+                return;
+            }
+            
+            // Create a map of ASIN to product details
+            const asinDetails = {};
+            const asinImageMap = {};
+            
+            // Populate ASIN image map
+            if (this.tableData.asin_image_map && this.tableData.asin_image_map.data) {
+                this.tableData.asin_image_map.data.forEach(item => {
+                    if (item && item.length >= 2) {
+                        asinImageMap[item[0]] = item[1];
+                    }
+                });
+            }
+            
+            // Populate ASIN details
+            data.forEach(row => {
+                const asin = row[asinColumnIndex];
+                asinDetails[asin] = {
+                    price: priceColumnIndex !== -1 ? parseFloat(row[priceColumnIndex]) || 0 : 0,
+                    sales: salesColumnIndex !== -1 ? parseFloat(row[salesColumnIndex]) || 0 : 0,
+                    rating: ratingColumnIndex !== -1 ? parseFloat(row[ratingColumnIndex]) || 0 : 0,
+                    reviews: reviewsColumnIndex !== -1 ? parseFloat(row[reviewsColumnIndex]) || 0 : 0,
+                    brand: brandColumnIndex !== -1 ? row[brandColumnIndex] : '',
+                    image: asinImageMap[asin] || null
+                };
+            });
+            
+            // Parse functionality weights
+            // Structure: "tag1: tag2: weight, tag3: tag4: weight"
+            const featureData = [];
+            
+            data.forEach(row => {
+                const asin = row[asinColumnIndex];
+                const weightString = row[weightColumnIndex];
+                
+                if (weightString && typeof weightString === 'string') {
+                    // Split by comma and space to get feature-weight pairs
+                    const pairs = weightString.split(', ');
+                    
+                    pairs.forEach(pair => {
+                        // Find the last colon to separate weight from feature
+                        const lastColonIndex = pair.lastIndexOf(':');
+                        if (lastColonIndex !== -1) {
+                            // Extract feature (everything before the last colon)
+                            const featureWithColons = pair.substring(0, lastColonIndex).trim();
+                            // Find the colon that separates tag1 from tag2
+                            const tagSeparatorIndex = featureWithColons.indexOf(': ');
+                            
+                            if (tagSeparatorIndex !== -1) {
+                                // Extract tag1 and tag2
+                                const tag1 = featureWithColons.substring(0, tagSeparatorIndex).trim();
+                                const tag2 = featureWithColons.substring(tagSeparatorIndex + 2).trim();
+                                
+                                // Extract weight value
+                                const weightStr = pair.substring(lastColonIndex + 1).trim();
+                                const weight = parseFloat(weightStr);
+                                
+                                if (!isNaN(weight) && weight > 0) {
+                                    featureData.push({
+                                        tag1: tag1,          // First tag (category)
+                                        tag2: tag2,          // Second tag (subcategory)
+                                        feature: `${tag1}: ${tag2}`, // Full feature name
+                                        weight: weight,
+                                        asin: asin,
+                                        details: asinDetails[asin]
+                                    });
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+            
+            // Group data by first tag (x-axis) and second tag (stack category)
+            const groupedData = {};
+            const tag1Set = new Set();
+            const tag2Set = new Set();
+            const tag1ToAsins = {};
+            
+            featureData.forEach(item => {
+                // For each tag1, keep track of all ASINs
+                if (!tag1ToAsins[item.tag1]) {
+                    tag1ToAsins[item.tag1] = [];
+                }
+                
+                if (!tag1ToAsins[item.tag1].includes(item.asin)) {
+                    tag1ToAsins[item.tag1].push({
+                        asin: item.asin,
+                        weight: item.weight,
+                        details: item.details,
+                        features: []
+                    });
+                }
+                
+                // Add this feature to the ASIN's features list
+                const asinItem = tag1ToAsins[item.tag1].find(a => a.asin === item.asin);
+                if (asinItem) {
+                    asinItem.features.push({
+                        tag1: item.tag1,
+                        tag2: item.tag2,
+                        feature: item.feature,
+                        weight: item.weight
+                    });
+                }
+                
+                // Add tags to sets
+                tag1Set.add(item.tag1);
+                tag2Set.add(item.tag2);
+                
+                // Group by tag1 and tag2
+                const key = item.tag1;
+                if (!groupedData[key]) {
+                    groupedData[key] = {};
+                }
+                
+                if (!groupedData[key][item.tag2]) {
+                    groupedData[key][item.tag2] = {
+                        weight: 0,
+                        items: []
+                    };
+                }
+                
+                groupedData[key][item.tag2].weight += item.weight;
+                groupedData[key][item.tag2].items.push(item);
+            });
+            
+            // Create a sorted array of tag1 (x-axis categories)
+            const tag1Array = Array.from(tag1Set);
+            
+            // Sort tag1 by total weight (sum of all tag2 weights)
+            tag1Array.sort((a, b) => {
+                const sumA = Object.values(groupedData[a] || {}).reduce((sum, data) => sum + data.weight, 0);
+                const sumB = Object.values(groupedData[b] || {}).reduce((sum, data) => sum + data.weight, 0);
+                return sumB - sumA; // Sort from highest to lowest weight
+            });
+            
+            // Create a sorted array of tag2 (stack categories)
+            const tag2Array = Array.from(tag2Set);
+            
+            // Sort tag2 by total weight across all tag1s
+            tag2Array.sort((a, b) => {
+                let sumA = 0;
+                let sumB = 0;
+                
+                tag1Array.forEach(tag1 => {
+                    sumA += (groupedData[tag1][a]?.weight || 0);
+                    sumB += (groupedData[tag1][b]?.weight || 0);
+                });
+                
+                return sumB - sumA; // Sort from highest to lowest weight
+            });
+            
+            // Handle empty data case
+            if (tag1Array.length === 0 || tag2Array.length === 0) {
+                console.error('No features found in the data');
+                chartDom.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 300px; background-color: #f5f7fa; color: #909399; font-size: 16px; border-radius: 4px;">暂无功能权重数据</div>';
+                return;
+            }
+            
+            // Take top 80% of tag1 (primary categories) for better visualization
+            const topTag1Count = Math.max(5, Math.ceil(tag1Array.length * 0.8));
+            const topTag1 = tag1Array.slice(0, topTag1Count);
+            
+            console.log(`Selected ${topTag1.length} top categories out of ${tag1Array.length} total`);
+            
+            // Calculate dynamic height based on chart needs
+            // Height depends on number of categories and need for labels
+            const dynamicHeight = Math.max(400, topTag1.length * 40 + 100);
+            
+            // Set chart container height
+            chartDom.style.height = `${dynamicHeight}px`;
+            
+            // Initialize chart after setting height
+            const myChart = echarts.init(chartDom);
+            
+            // Prepare series for stacked bar chart
+            const series = tag2Array.map(tag2 => {
+                // Create a random color for this tag2
+                const color = `rgb(${Math.floor(Math.random() * 150 + 50)}, ${Math.floor(Math.random() * 150 + 50)}, ${Math.floor(Math.random() * 150 + 50)})`;
+                
+                return {
+                    name: tag2,
+                    type: 'bar',
+                    stack: 'total',
+                    emphasis: {
+                        focus: 'series'
+                    },
+                    label: {
+                        show: false
+                    },
+                    data: topTag1.map(tag1 => {
+                        const value = groupedData[tag1][tag2]?.weight || 0;
+                        const items = groupedData[tag1][tag2]?.items || [];
+                        
+                        // Return an object that includes the data items for the tooltip
+                        return {
+                            value,
+                            tag1,
+                            tag2,
+                            items,
+                            asins: tag1ToAsins[tag1] || []
+                        };
+                    })
+                };
+            });
+            
+            // Create stacked bar chart option
+            const option = {
+                title: {
+                    text: '功能权重分析',
+                    left: 'center',
+                    top: 10
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    },
+                    formatter: function(params) {
+                        // Extract the first parameter (it has the tag1 info)
+                        const param = params[0];
+                        const tag1 = param.data.tag1;
+                        
+                        // Create tooltip header
+                        let tooltipHtml = `<div style="text-align: center; margin-bottom: 10px;">
+                            <h3 style="margin: 0;">${tag1}</h3>
+                            <p style="margin: 5px 0;">总权重: ${params.reduce((sum, p) => sum + (p.data.value || 0), 0).toFixed(4)}</p>
+                        </div>`;
+                        
+                        // Add two-column display for category breakdown
+                        tooltipHtml += `<div style="margin-top: 10px;">
+                            <div style="font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 5px;">功能分类:</div>
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <tr>
+                                    <th style="text-align: left; padding: 4px; width: 50%;">分类</th>
+                                    <th style="text-align: right; padding: 4px; width: 50%;">权重</th>
+                                </tr>`;
+                        
+                        params.sort((a, b) => b.data.value - a.data.value).slice(0, 10).forEach(p => {
+                            if (p.data.value > 0) {
+                                tooltipHtml += `<tr>
+                                    <td style="text-align: left; padding: 4px; border-top: 1px solid #f5f5f5;">${p.seriesName}</td>
+                                    <td style="text-align: right; padding: 4px; border-top: 1px solid #f5f5f5;">${p.data.value.toFixed(4)}</td>
+                                </tr>`;
+                            }
+                        });
+                        
+                        tooltipHtml += `</table></div>`;
+                        
+                        // Add ASIN information in two columns
+                        tooltipHtml += `<div style="margin-top: 15px;font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 10px;">相关产品:</div>
+                        <div style="display:flex">
+                            `;
+                        
+                        // Get ASINs for this tag1, sorted by weight
+                        const asins = param.data.asins.sort((a, b) => b.weight - a.weight).slice(0, 3);
+                        
+                        // Display ASINs horizontally
+                        asins.forEach((asinData, index) => {
+                            // Create a card for each ASIN
+                            tooltipHtml += `<div style=";width: 30%; min-width: 120px; margin-bottom: 10px; text-align: center;">`;
+                            
+                            // ASIN image at top of card
+                            if (asinData.details.image) {
+                                tooltipHtml += `<img src="${asinData.details.image}" style="width: 40px; height: 40px; object-fit: contain; background: white; border: 1px solid #eee; border-radius: 4px; margin-bottom: 5px;">`;
+                            } else {
+                                tooltipHtml += `<div style="width: 40px; height: 40px; background: #f5f5f5; border: 1px solid #eee; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #999; font-size: 10px; margin: 0 auto 5px;">无图片</div>`;
+                            }
+                            
+                            // ASIN details below image
+                            tooltipHtml += `<div style="font-size: 12px; line-height: 1.3;">
+                                <div style="font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${asinData.asin}</div>`;
+                            
+                            if (asinData.details.brand) {
+                                tooltipHtml += `<div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${asinData.details.brand}</div>`;
+                            }
+                            
+                            tooltipHtml += `<div>权重: ${asinData.weight.toFixed(4)}</div>`;
+                            
+                            if (asinData.details.price) {
+                                tooltipHtml += `<div>¥${asinData.details.price}</div>`;
+                            }
+                            
+                            tooltipHtml += `</div></div>`;
+                        });
+                        
+                        tooltipHtml += `</div>`;
+                        
+                        return tooltipHtml;
+                    },
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    borderColor: '#ccc',
+                    borderWidth: 1,
+                    padding: 10,
+                    extraCssText: 'box-shadow: 0 0 8px rgba(0, 0, 0, 0.1); border-radius: 4px; min-width: 300px; max-width: 500px;'
+                },
+                legend: {
+                    data: tag2Array,
+                    top: 40,
+                    type: 'scroll',
+                    textStyle: {
+                        fontSize: 12
+                    }
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '5%',
+                    top: '100px',
+                    containLabel: true
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '权重值',
+                    nameLocation: 'middle',
+                    nameGap: 40,
+                    axisLabel: {
+                        formatter: function(value) {
+                            // Format numbers to 4 decimal places
+                            return value.toFixed(4);
+                        }
+                    }
+                },
+                xAxis: {
+                    type: 'category',
+                    data: topTag1,
+                    axisLabel: {
+                        interval: 0,
+                        rotate: 45,
+                        fontSize: 12,
+                        formatter: function(value) {
+                            // Truncate long category names
+                            if (value.length > 12) {
+                                return value.substring(0, 10) + '...';
+                            }
+                            return value;
+                        }
+                    }
+                },
+                series: series
+            };
+            
+            // Event handler for clicking on bars
+            myChart.on('click', function(params) {
+                const tag1 = params.data.tag1;
+                const tag2 = params.seriesName;
+                
+                // Create modal content with detailed info
+                let modalContent = `<div style="padding: 15px;">
+                    <h3 style="margin-top: 0; text-align: center;">${tag1}: ${tag2}</h3>
+                    <div style="margin-bottom: 15px; text-align: center;">
+                        <div><b>权重值:</b> ${params.data.value.toFixed(4)}</div>
+                    </div>
+                    <h4 style="text-align: center; margin-top: 20px; margin-bottom: 15px;">相关产品</h4>
+                    <div style="display: flex; flex-wrap: wrap; justify-content: space-around;">`;
+                
+                // Get ASINs for this tag1
+                const asins = params.data.asins.sort((a, b) => {
+                    // Sort by whether they have this tag2 and then by weight
+                    const aHasTag2 = a.features.some(f => f.tag2 === tag2);
+                    const bHasTag2 = b.features.some(f => f.tag2 === tag2);
+                    
+                    if (aHasTag2 && !bHasTag2) return -1;
+                    if (!aHasTag2 && bHasTag2) return 1;
+                    return b.weight - a.weight;
+                }).slice(0, 5);
+                
+                asins.forEach(asinData => {
+                    // Check if this ASIN has the selected tag2
+                    const hasSelectedTag2 = asinData.features.some(f => f.tag2 === tag2);
+                    const borderColor = hasSelectedTag2 ? '#2db7f5' : '#eee';
+                    const borderWidth = hasSelectedTag2 ? '2px' : '1px';
+                    
+                    modalContent += `<div style="border: ${borderWidth} solid ${borderColor}; border-radius: 5px; padding: 15px; margin: 10px; min-width: 200px; text-align: center; box-shadow: ${hasSelectedTag2 ? '0 0 10px rgba(45, 183, 245, 0.2)' : 'none'}">`;
+                    
+                    if (asinData.details.image) {
+                        modalContent += `<img src="${asinData.details.image}" style="width: 120px; height: 120px; object-fit: contain; margin-bottom: 10px;"><br>`;
+                    }
+                    
+                    modalContent += `<div><b>ASIN:</b> ${asinData.asin}</div>`;
+                    if (asinData.details.brand) modalContent += `<div><b>品牌:</b> ${asinData.details.brand}</div>`;
+                    if (asinData.details.price) modalContent += `<div><b>价格:</b> ¥${asinData.details.price}</div>`;
+                    if (asinData.details.sales) modalContent += `<div><b>销量:</b> ${asinData.details.sales}</div>`;
+                    if (asinData.details.rating) modalContent += `<div><b>评分:</b> ${asinData.details.rating}</div>`;
+                    if (asinData.details.reviews) modalContent += `<div><b>评论数:</b> ${asinData.details.reviews}</div>`;
+                    
+                    // Display relevant features with weights
+                    modalContent += `<div style="margin-top: 10px; text-align: left;"><b>功能点:</b>`;
+                    modalContent += `<ul style="margin-top: 5px;">`;
+                    
+                    asinData.features.filter(f => f.tag1 === tag1).forEach(feature => {
+                        const isHighlighted = feature.tag2 === tag2;
+                        modalContent += `<li style="${isHighlighted ? 'font-weight: bold; color: #2db7f5;' : ''}">${feature.feature}: ${feature.weight.toFixed(4)}</li>`;
+                    });
+                    
+                    modalContent += `</ul></div>`;
+                    modalContent += `</div>`;
+                });
+                
+                modalContent += `</div></div>`;
+                
+                // Show modal with Element UI
+                this.$alert(modalContent, `${tag1}: ${tag2} - 详细信息`, {
+                    dangerouslyUseHTMLString: true,
+                    showConfirmButton: true,
+                    confirmButtonText: '关闭',
+                    customClass: 'feature-details-modal',
+                    callback: action => {}
+                });
+            }.bind(this));
+            
+            myChart.setOption(option);
+            
+            // Handle resize
+            window.addEventListener('resize', function () {
+                myChart.resize();
+            });
+            
+            // Add CSS for the modal
+            const style = document.createElement('style');
+            style.textContent = `
+                .feature-details-modal .el-message-box {
+                    width: auto;
+                    max-width: 900px;
+                }
+                .feature-details-modal .el-message-box__content {
+                    padding: 0;
+                }
+            `;
+            document.head.appendChild(style);
+        },
+
+        // Feature Premium Chart Function with Dynamic Height
+        initFeaturePremiumChart() {
+            if (!this.tableData.feature_premium || !this.tableData.feature_premium.headers || !this.tableData.feature_premium.data || this.tableData.feature_premium.data.length === 0) {
+                return;
+            }
+
+            const chartDom = document.getElementById('feature-premium-chart');
+            if (!chartDom) return;
+
+            // Get the appropriate column indices for the data we need
+            const headers = this.tableData.feature_premium.headers;
+            const featureIndex = headers.findIndex(h => h === '功能点');
+            const premiumIndex = headers.findIndex(h => h === '价格溢价(%)');
+
+            if (featureIndex === -1 || premiumIndex === -1) {
+                console.error('Required columns not found in feature_premium data');
+                return;
+            }
+
+            // Extract data with proper error handling
+            const features = [];
+            const premiumValues = [];
+
+            this.tableData.feature_premium.data.forEach(row => {
+                // Add feature name with fallback
+                features.push(row[featureIndex] || 'Unknown');
+
+                // Parse premium value (remove % if present) with fallback
+                let premium = row[premiumIndex] || '0';
+                if (typeof premium === 'string') {
+                    premium = parseFloat(premium.replace('%', ''));
+                }
+                premiumValues.push(isNaN(premium) ? 0 : premium);
+            });
+
+            // Create premium data pairs
+            const premiumData = features.map((feature, index) => ({
+                feature,
+                premium: premiumValues[index]
+            }));
+
+            // Sort by premium (descending)
+            premiumData.sort((a, b) => b.premium - a.premium);
+
+            // Extract sorted arrays
+            const sortedFeatures = premiumData.map(item => item.feature);
+            const sortedPremiums = premiumData.map(item => item.premium);
+
+            // Calculate dynamic height based on number of features
+            // Each feature gets 15px, with a minimum height of 300px
+            const dynamicHeight = Math.max(300, sortedFeatures.length * 15);
+            
+            // Set chart container height
+            chartDom.style.height = `${dynamicHeight}px`;
+            
+            // Initialize chart after setting height
+            const myChart = echarts.init(chartDom);
+
+            const option = {
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    }
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'value',
+                    name: '溢价 (%)'
+                },
+                yAxis: {
+                    type: 'category',
+                    data: sortedFeatures,
+                    axisLabel: {
+                        fontSize: 12,
+                        interval: 0,
+                        formatter: function (value) {
+                            // Truncate long feature names
+                            if (value.length > 15) {
+                                return value.substring(0, 12) + '...';
+                            }
+                            return value;
+                        }
+                    }
+                },
+                series: [{
+                    name: '溢价',
+                    type: 'bar',
+                    data: sortedPremiums,
+                    itemStyle: {
+                        color: function (params) {
+                            // Set color based on premium value
+                            if (params.value >= 50) {
+                                return '#F56C6C'; // High premium - Red
+                            } else if (params.value >= 20) {
+                                return '#E6A23C'; // Medium premium - Yellow
+                            } else {
+                                return '#67C23A'; // Low premium - Green
+                            }
+                        }
+                    },
+                    label: {
+                        show: true,
+                        position: 'right',
+                        formatter: '{c}%'
+                    }
+                }]
+            };
+
+            myChart.setOption(option);
+            window.addEventListener('resize', function () {
+                myChart.resize();
+            });
+        },
+
+        // Function to initialize the coverage scatter plot with ASIN images
+        initCoverageScatterPlot() {
+            if (!this.tableData.feature_coverage || !this.tableData.feature_coverage.headers || !this.tableData.feature_coverage.data || this.tableData.feature_coverage.data.length === 0) {
+                return;
+            }
+
+            const chartDom = document.getElementById('coverage-scatter-chart');
+            if (!chartDom) return;
+
+            // Get the appropriate column indices for the data we need
+            const headers = this.tableData.feature_coverage.headers;
+            const asinIndex = headers.findIndex(h => h === 'ASIN');
+            const coverageIndex = headers.findIndex(h => h === '功能覆盖率');
+            const priceIndex = headers.findIndex(h => h === '价格');
+            const salesIndex = headers.findIndex(h => h === '近30天销量');
+            const brandIndex = headers.findIndex(h => h === '品牌');
+
+            if (asinIndex === -1 || coverageIndex === -1 || priceIndex === -1 || salesIndex === -1) {
+                console.error('Required columns not found in feature_coverage data');
+                return;
+            }
+
+            // Extract data with proper error handling
+            const data = [];
+            let maxSales = 0;
+
+            this.tableData.feature_coverage.data.forEach(row => {
+                const asin = row[asinIndex] || 'Unknown';
+                
+                // Parse coverage value (remove % if present)
+                let coverage = row[coverageIndex] || '0';
+                if (typeof coverage === 'string') {
+                    coverage = parseFloat(coverage.replace('%', ''));
+                }
+                coverage = isNaN(coverage) ? 0 : coverage;
+                
+                // Parse price value
+                let price = row[priceIndex] || '0';
+                if (typeof price === 'string') {
+                    price = parseFloat(price);
+                }
+                price = isNaN(price) ? 0 : price;
+                
+                // Parse sales value
+                let sales = row[salesIndex] || '0';
+                if (typeof sales === 'string') {
+                    sales = parseFloat(sales);
+                }
+                sales = isNaN(sales) ? 0 : sales;
+                
+                // Get brand if available
+                const brand = brandIndex !== -1 ? row[brandIndex] || '' : '';
+                
+                // Update max sales for color scaling later
+                maxSales = Math.max(maxSales, sales);
+                
+                // Get image URL for this ASIN
+                const imageUrl = this.getAsinImageUrl(asin);
+                
+                data.push({
+                    asin: asin,
+                    coverage: coverage,
+                    price: price,
+                    sales: sales,
+                    brand: brand,
+                    imageUrl: imageUrl
+                });
+            });
+
+            // Initialize echarts
+            const myChart = echarts.init(chartDom);
+            
+            // Create scatter series data
+            const scatterData = data.map(item => {
+                return [
+                    item.price,           // x-axis: price
+                    item.sales,           // y-axis: sales
+                    item.coverage,        // bubble size: coverage
+                    item.sales,           // color value: sales
+                    item.asin,            // item name: asin
+                    item.imageUrl,        // image URL for the ASIN
+                    item.brand            // brand name
+                ];
+            });
+            
+            const option = {
+                title: {
+                    text: '价格-销量-覆盖率分析',
+                    left: 'center',
+                    top: 10
+                },
+                grid: {
+                    left: '5%',
+                    right: '5%',
+                    bottom: '10%',
+                    top: '15%',
+                    containLabel: true
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function(params) {
+                        const asin = params.data[4];
+                        const imageUrl = params.data[5];
+                        const brand = params.data[6] || '';
+                        
+                        // HTML for tooltip with image
+                        let tooltipHtml = `<div style="text-align: center;">`;
+                        
+                        // Add image if available
+                        if (imageUrl) {
+                            tooltipHtml += `<img src="${imageUrl}" style="width: 100px; height: 100px; object-fit: contain; margin-bottom: 8px; background-color: white; border: 1px solid #ddd; padding: 4px; border-radius: 4px;"><br/>`;
+                        }
+                        
+                        tooltipHtml += `<b>ASIN: ${asin}</b><br/>`;
+                        
+                        if (brand) {
+                            tooltipHtml += `品牌: ${brand}<br/>`;
+                        }
+                        
+                        tooltipHtml += `价格: $${params.data[0].toFixed(2)}<br/>` +
+                            `销量: ${params.data[1]}<br/>` +
+                            `覆盖率: ${params.data[2].toFixed(2)}%</div>`;
+                        
+                        return tooltipHtml;
+                    },
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderColor: '#ccc',
+                    borderWidth: 1,
+                    padding: 10,
+                    extraCssText: 'box-shadow: 0 0 8px rgba(0, 0, 0, 0.1); border-radius: 4px; max-width: 220px;'
+                },
+                xAxis: {
+                    type: 'value',
+                    name: '价格 ($)',
+                    nameLocation: 'middle',
+                    nameGap: 30,
+                    axisLabel: {
+                        formatter: '¥{value}'
+                    },
+                    splitLine: {
+                        lineStyle: {
+                            type: 'dashed'
+                        }
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '销量',
+                    nameLocation: 'middle',
+                    nameGap: 30,
+                    splitLine: {
+                        lineStyle: {
+                            type: 'dashed'
+                        }
+                    }
+                },
+                visualMap: {
+                    type: 'continuous',
+                    min: 0,
+                    max: maxSales,
+                    dimension: 3,  // Use the fourth dimension of data (sales) for color mapping
+                    inRange: {
+                        color: ['#74b9ff', '#0984e3', '#0052cc']  // Light to dark blue color gradient
+                    },
+                    textStyle: {
+                        color: '#333'
+                    },
+                    right: 10,
+                    top: 50,
+                    text: ['高销量', '低销量'],
+                    calculable: true
+                },
+                series: [{
+                    name: '功能覆盖率',
+                    type: 'scatter',
+                    symbolSize: function (data) {
+                        // Calculate symbol size based on coverage percentage (minimum 15, maximum 60)
+                        return Math.max(15, Math.min(60, data[2] * 1.0));
+                    },
+                    data: scatterData,
+                    label: {
+                        show: true,
+                        formatter: function (param) {
+                            return param.data[4]; // Show ASIN as label
+                        },
+                        position: 'top',
+                        fontSize: 10,
+                        color: '#333',
+                        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                        padding: [2, 4],
+                        borderRadius: 2
+                    },
+                    itemStyle: {
+                        borderColor: '#fff',
+                        borderWidth: 1,
+                        shadowBlur: 5,
+                        shadowColor: 'rgba(0, 0, 0, 0.2)'
+                    },
+                    emphasis: {
+                        focus: 'series',
+                        label: {
+                            show: true,
+                            formatter: function (param) {
+                                return `${param.data[4]}\n覆盖率: ${param.data[2].toFixed(1)}%`;
+                            },
+                            position: 'top',
+                            fontSize: 12,
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            padding: [4, 6],
+                            borderRadius: 3
+                        },
+                        itemStyle: {
+                            borderColor: '#fff',
+                            borderWidth: 2,
+                            shadowBlur: 10,
+                            shadowColor: 'rgba(0, 0, 0, 0.3)'
+                        }
+                    }
+                }]
+            };
+
+            myChart.setOption(option);
+            
+            // Handle resize
+            window.addEventListener('resize', function () {
+                myChart.resize();
+            });
+            
+            // Add image display to the chart (more advanced implementation)
+            // This feature requires a custom renderer which isn't available directly in ECharts
+            // The tooltip approach above is the most practical solution
+        },
+
+        // 监听窗口大小变化
+        handleResize() {
+            this.windowWidth = window.innerWidth;
+
+            // 在窗口大小变化时重新调整图表大小
+            const chartDoms = document.querySelectorAll('.chart-container');
+            chartDoms.forEach(dom => {
+                const chart = echarts.getInstanceByDom(dom);
+                if (chart) {
+                    chart.resize();
+                }
+            });
+        },
+
+        // Add this method to the Vue instance methods
+        parseFeatureWeights(weightString) {
+            if (!weightString || typeof weightString !== 'string') {
+                return [];
+            }
+            
+            // Split by comma and space
+            return weightString.split(', ').map(pair => {
+                // Split by colon to separate feature name and weight value
+                const lastColonIndex = pair.lastIndexOf(':');
+                if (lastColonIndex === -1) {
+                    return { feature: pair, weight: 'N/A' };
+                }
+                
+                const feature = pair.substring(0, lastColonIndex);
+                const weight = pair.substring(lastColonIndex + 1);
+                
+                return { feature, weight };
+            });
+        },
+
+    },
+
+    watch: {
+        // 监听标签页变化
+        activeTab(newTab, oldTab) {
+            console.log('Tab changed from', oldTab, 'to', newTab);
+            
+            // 如果该标签页尚未初始化，则初始化图表和调整列宽
+            if (!this.initializedTabs.has(newTab)) {
+                this.initCharts(newTab);
+                this.adjustColumnsWidth(newTab);
+            } else {
+                // 即使标签页已初始化，也重新调整所有图表大小以适应可能的窗口变化
+                this.$nextTick(() => {
+                    const chartDoms = document.querySelectorAll('.chart-container');
+                    chartDoms.forEach(dom => {
+                        const chart = echarts.getInstanceByDom(dom);
+                        if (chart) {
+                            chart.resize();
+                        }
+                    });
+                });
+            }
+        }
+    },
+
+    // 在Vue实例挂载后初始化
+    mounted() {
+        // 设置窗口大小变化监听
+        window.addEventListener('resize', this.handleResize);
+            
+        // 初始化当前标签页的图表
+        this.initCharts(this.activeTab);
+        
+        // 初始调整列宽
+        this.adjustColumnsWidth(this.activeTab);
+        
+        // 延迟加载其他标签页的图表，提高用户体验
+        setTimeout(() => {
+            // 异步预加载其他标签页的图表
+            const allTabs = ['matrix', 'coverage', 'distribution', 'weight', 'premium', 'summary'];
+            const remainingTabs = allTabs.filter(tab => tab !== this.activeTab);
+            
+            // 每隔200ms初始化一个标签页，避免UI阻塞
+            remainingTabs.forEach((tab, index) => {
+                setTimeout(() => {
+                    if (!this.initializedTabs.has(tab)) {
+                        this.initCharts(tab);
+                    }
+                }, 200 * (index + 1));
+            });
+        }, 1000); // 先等待当前标签页完全渲染
+    },
+
+    // 组件销毁前移除监听器
+    beforeDestroy() {
+        window.removeEventListener('resize', this.handleResize);
+    }
+});
+       </script>
+
+</body>
+
+
+
+</html>

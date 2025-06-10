@@ -42,6 +42,12 @@ export const GameAssets: SceneAssets = {
             path: '/images/ui/base/cursor-pointer.svg',
             type: AssetType.IMAGE
         },
+        // 设置图标
+        {
+            key: 'settings-icon',
+            path: '/images/ui/icons/settings-icon.svg',
+            type: AssetType.IMAGE
+        },
 
         // 使用道具音效 - 通用道具使用反馈
         {

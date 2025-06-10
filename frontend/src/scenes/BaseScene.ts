@@ -1,13 +1,17 @@
 import { Scene } from 'phaser';
 import { PhaserFontConfig, createText, TextStyles } from '../config/PhaserFontConfig';
+import { VolumeSettingsPanel } from '../components/VolumeSettingsPanel';
+import { AudioManager } from '../utils/AudioManager';
 
 
 
 export class BaseScene extends Scene {
-
+    protected volumeSettingsPanel?: VolumeSettingsPanel;
+    protected audioManager: AudioManager;
 
     constructor(key: string) {
         super(key);
+        this.audioManager = AudioManager.getInstance();
     }
 
     init(data?: any): void {
@@ -26,6 +30,11 @@ export class BaseScene extends Scene {
         this.load.on('complete', () => {
             console.log('Loading complete');
         });
+
+        // 预加载公共资源（如果还没有加载）
+        if (!this.cache.audio.exists('click-sound')) {
+            this.load.audio('click-sound', '/audio/ClickSoundEffect.mp3');
+        }
     }
 
     create(data?: any): void {
@@ -38,11 +47,103 @@ export class BaseScene extends Scene {
         // 监听场景切换事件
         this.events.on('shutdown', this._cleanup, this);
         this.events.on('destroy', this._cleanup, this);
+
+        // 创建音量设置面板
+        this.volumeSettingsPanel = new VolumeSettingsPanel(this);
+
+        // 创建右上角设置图标
+        this.createVolumeSettingsIcon();
     }
 
     private _cleanup(): void {
         // 停止所有正在播放的音乐
         this.sound.stopAll();
+
+        // 清理音量设置面板
+        if (this.volumeSettingsPanel) {
+            this.volumeSettingsPanel.destroy();
+        }
+    }
+
+    /**
+     * 创建右上角的音量设置图标
+     */
+    protected createVolumeSettingsIcon(): void {
+        // 创建设置图标背景
+        const iconBg = this.add.graphics();
+        iconBg.fillStyle(0x000000, 0.3);
+        iconBg.fillCircle(0, 0, 25);
+        iconBg.lineStyle(2, 0xffffff, 0.8);
+        iconBg.strokeCircle(0, 0, 25);
+
+        // 创建设置图标（使用设置齿轮emoji或图片）
+        const settingsIcon = this.add.text(0, 0, '⚙️', {
+            fontSize: '28px',
+            color: '#ffffff'
+        }).setOrigin(0.5);
+
+        // 创建容器
+        const iconContainer = this.add.container(
+            this.cameras.main.width - 50,
+            50,
+            [iconBg, settingsIcon]
+        );
+
+        iconContainer.setDepth(999);
+        iconContainer.setInteractive(this.add.zone(0, 0, 50, 50), Phaser.Geom.Circle.Contains);
+        iconContainer.setData('isHovered', false);
+
+        // 添加交互效果
+        iconContainer.setData('originalScale', 1);
+        iconContainer.on('pointerover', () => {
+            if (!iconContainer.getData('isHovered')) {
+                iconContainer.setData('isHovered', true);
+                this.tweens.add({
+                    targets: iconContainer,
+                    scaleX: 1.1,
+                    scaleY: 1.1,
+                    duration: 200,
+                    ease: 'Power2'
+                });
+            }
+        });
+
+        iconContainer.on('pointerout', () => {
+            if (iconContainer.getData('isHovered')) {
+                iconContainer.setData('isHovered', false);
+                this.tweens.add({
+                    targets: iconContainer,
+                    scaleX: 1,
+                    scaleY: 1,
+                    duration: 200,
+                    ease: 'Power2'
+                });
+            }
+        });
+
+        iconContainer.on('pointerdown', () => {
+            // 播放点击音效
+            this.audioManager.playSound(this, 'click-sound');
+            
+            // 点击缩放效果
+            this.tweens.add({
+                targets: iconContainer,
+                scaleX: 0.9,
+                scaleY: 0.9,
+                duration: 100,
+                ease: 'Power2',
+                yoyo: true,
+                onComplete: () => {
+                    // 显示/隐藏音量设置面板
+                    if (this.volumeSettingsPanel) {
+                        this.volumeSettingsPanel.toggle();
+                    }
+                }
+            });
+        });
+
+        // 设置鼠标悬停样式
+        iconContainer.setInteractive({ useHandCursor: true });
     }
 
     update(time: number, delta: number): void {

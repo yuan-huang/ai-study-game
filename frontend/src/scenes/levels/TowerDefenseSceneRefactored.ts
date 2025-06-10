@@ -226,9 +226,8 @@ export class TowerDefenseSceneRefactored extends BaseScene {
         }
 
         // 播放关卡背景音乐
-        this.sound.play('level-background-music', {
-            loop: true,
-            volume: 0.5
+        this.audioManager.playMusic(this, 'level-background-music', {
+            loop: true
         });
     }
 

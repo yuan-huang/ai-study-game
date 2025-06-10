@@ -35,12 +35,7 @@ export class LoginScene extends BaseScene {
 
     private initGradeOptions(): void {
         this.gradeOptions = [
-            { text: '小学一年级', value: '1' },
-            { text: '小学二年级', value: '2' },
-            { text: '小学三年级', value: '3' },
             { text: '小学四年级', value: '4' },
-            { text: '小学五年级', value: '5' },
-            { text: '小学六年级', value: '6' }
         ];
     }
 
@@ -78,9 +73,8 @@ export class LoginScene extends BaseScene {
 
         // 停止所有正在播放的音乐，然后播放登录背景音乐
         this.sound.stopAll();
-        this.sound.play('landing-interface-music', {
-            loop: true,
-            volume: 0.5
+        this.audioManager.playMusic(this, 'landing-interface-music', {
+            loop: true
         });
     }
 

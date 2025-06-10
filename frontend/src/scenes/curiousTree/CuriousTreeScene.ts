@@ -57,9 +57,8 @@ export class CuriousTreeScene extends BaseScene {
         this.createFunctionButtons();
 
         // 播放好奇树背景音乐
-        this.sound.play('curious-tree-bgm', {
-            loop: true,
-            volume: 0.5
+        this.audioManager.playMusic(this, 'curious-tree-bgm', {
+            loop: true
         });
     }
     

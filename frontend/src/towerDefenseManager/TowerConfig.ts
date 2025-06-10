@@ -10,7 +10,7 @@ export const INITIAL_GAME_STATE: TowerDefenseGameState = {
     combo: 0,
     maxCombo: 0,
     currentWave: 1,
-    totalWaves: 1, //总波次 - 设置为1可以直接通关
+    totalWaves: 3, //总波次 - 设置为1可以直接通关
     isPlaying: false,
     isPaused: false,
     gameSpeed: 1,
@@ -139,10 +139,9 @@ export const ENEMY_TYPES: { [key: string]: EnemyType } = {
  */
 export const WAVE_CONFIG: { [key: number]: Array<{icon: string, name: string, type: string, count: number}> } = {
     1: [
-        { icon: '🐙', name: '小怪兵', type: 'monster-normal', count: 1 },
-        // { icon: '🐙', name: '小怪兵', type: 'monster-normal', count: 5 },
-        // { icon: '🐙', name: '懒惰怪', type: 'monster-lazy', count: 3 },
-        // { icon: '🐙', name: '邋遢怪', type: 'monster-messy', count: 2 },
+        { icon: '🐙', name: '小怪兵', type: 'monster-normal', count: 5 },
+        { icon: '🐙', name: '懒惰怪', type: 'monster-lazy', count: 3 },
+        { icon: '🐙', name: '邋遢怪', type: 'monster-messy', count: 2 },
     ],
     2: [
         { icon: '🐙', name: '小怪兵', type: 'monster-normal', count: 3 },

@@ -201,9 +201,8 @@ export class MainScene extends BaseScene {
 
         // 播放主城背景音乐
         this.sound.stopAll();
-        this.sound.play('main-city-bgm', {
-            loop: true,
-            volume: 0.5
+        this.audioManager.playMusic(this, 'main-city-bgm', {
+            loop: true
         });
     }
 
