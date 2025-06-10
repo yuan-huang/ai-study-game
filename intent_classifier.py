@@ -18,7 +18,7 @@ def classify_intent(user_input):
     """
     try:
         # 配置API
-        genai.configure(api_key="AIzaSyAVf5sVj0n6ZGFqxHzVlRPD7WJ4y_0LKqM")
+        genai.configure(api_key="")
         client = genai.GenerativeModel("gemini-2.0-flash-lite")
         
         # 构建提示词
