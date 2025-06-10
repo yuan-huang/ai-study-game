@@ -1,0 +1,73 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+
+禁止帮我运行项目，比如运行npm run dev
+不要给我写测试功能，除非我自己要求
+
+api接口，里面的api要引入  import { post, ApiResponse } from '../utils/request';
+
+
+
+frontend/
+├── src/                          # 源代码目录
+│   ├── components/              # 可复用组件
+│   │   ├── AiChatDialog.ts      # AI聊天对话框
+│   │   ├── CuriousTreeDialog.ts # 好奇树对话框
+│   │   ├── FontTest.ts          # 字体测试组件
+│   │   └── VolumeSettingsPanel.ts # 音量设置面板
+│   ├── scenes/                   # 游戏场景
+│   │   ├── garden/              # 花园场景
+│   │   ├── levels/              # 关卡场景
+│   │   ├── curiousTree/         # 好奇树场景
+│   │   ├── BaseScene.ts         # 基础场景类
+│   │   ├── LevelSelectScene.ts  # 关卡选择场景
+│   │   ├── LoadingScene.ts      # 加载场景
+│   │   ├── LoginScene.ts        # 登录场景
+│   │   └── MainScene.ts         # 主场景
+│   ├── types/                    # 类型定义
+│   │   ├── Game.ts              # 游戏类型
+│   │   ├── index.ts             # 类型索引
+│   │   ├── rex-ui.d.ts          # Rex UI类型定义
+│   │   ├── towerDefenseScene.ts # 塔防场景类型
+│   │   └── user.ts              # 用户类型
+│   ├── api/                      # API接口
+│   ├── assets/                   # 静态资源
+│   ├── config/                   # 配置文件
+│   ├── effects/                  # 特效
+│   ├── entities/                 # 实体对象
+│   ├── stores/                   # 状态管理
+│   ├── styles/                   # 样式文件
+│   ├── towerDefenseManager/      # 塔防管理器
+│   ├── utils/                    # 工具函数
+│   ├── env.d.ts                  # 环境类型定义
+│   ├── index.css                 # 主样式文件
+│   ├── KnowledgeGarden.ts        # 知识花园主类
+│   └── main.ts                   # 应用入口
+├── docs/                         # 文档目录
+│   ├── api/                      # API文档
+│   ├── design/                   # 设计文档
+│   ├── guides/                   # 指南文档
+│   ├── audio-settings.md         # 音频设置文档
+│   ├── PHASER_FONT_GUIDE.md      # Phaser字体指南
+│   ├── README.md                 # 项目说明
+│   ├── 技术架构.md               # 技术架构文档
+│   ├── 游戏概要设计.md           # 游戏概要设计
+│   └── 游戏设计                  # 游戏设计文档
+├── public/                       # 公共资源
+├── dist/                         # 构建输出
+├── node_modules/                 # 依赖包
+├── index.html                    # 主页面
+├── package.json                  # 项目配置
+├── package-lock.json             # 依赖锁定
+├── postcss.config.js             # PostCSS配置
+├── tailwind.config.js            # Tailwind配置
+├── tsconfig.json                 # TypeScript配置
+├── tsconfig.node.json            # Node TypeScript配置
+├── vite.config.ts                # Vite构建配置
+├── cursor-test.html              # Cursor测试页面
+└── test-input.html               # 输入测试页面
+
+

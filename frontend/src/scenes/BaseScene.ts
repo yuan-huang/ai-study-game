@@ -41,6 +41,9 @@ export class BaseScene extends Scene {
         // 场景创建逻辑
         console.log(`Creating scene: ${this.scene.key}`);
         
+        // 初始化全局音频设置
+        this.initializeAudioSettings();
+        
         // 确保字体已加载
         this.ensureFontsLoaded();
 
@@ -53,6 +56,20 @@ export class BaseScene extends Scene {
 
         // 创建右上角设置图标
         this.createVolumeSettingsIcon();
+    }
+
+    /**
+     * 初始化全局音频设置
+     */
+    private initializeAudioSettings(): void {
+        const settings = this.audioManager.getVolumeSettings();
+        console.log(`🔊 场景 ${this.scene.key} 加载音频设置:`, {
+            master: Math.round(settings.masterVolume * 100) + '%',
+            music: Math.round(settings.musicVolume * 100) + '%',
+            sound: Math.round(settings.soundVolume * 100) + '%',
+            muted: settings.isMuted,
+            audioContextActive: this.audioManager.isAudioContextActive(this)
+        });
     }
 
     private _cleanup(): void {
@@ -82,20 +99,23 @@ export class BaseScene extends Scene {
             color: '#ffffff'
         }).setOrigin(0.5);
 
+        // 创建交互区域
+        const interactiveArea = this.add.zone(0, 0, 60, 60);
+        interactiveArea.setInteractive({ useHandCursor: true });
+
         // 创建容器
         const iconContainer = this.add.container(
             this.cameras.main.width - 50,
             50,
-            [iconBg, settingsIcon]
+            [iconBg, settingsIcon, interactiveArea]
         );
 
         iconContainer.setDepth(999);
-        iconContainer.setInteractive(this.add.zone(0, 0, 50, 50), Phaser.Geom.Circle.Contains);
         iconContainer.setData('isHovered', false);
 
         // 添加交互效果
         iconContainer.setData('originalScale', 1);
-        iconContainer.on('pointerover', () => {
+        interactiveArea.on('pointerover', () => {
             if (!iconContainer.getData('isHovered')) {
                 iconContainer.setData('isHovered', true);
                 this.tweens.add({
@@ -108,7 +128,7 @@ export class BaseScene extends Scene {
             }
         });
 
-        iconContainer.on('pointerout', () => {
+        interactiveArea.on('pointerout', () => {
             if (iconContainer.getData('isHovered')) {
                 iconContainer.setData('isHovered', false);
                 this.tweens.add({
@@ -121,8 +141,13 @@ export class BaseScene extends Scene {
             }
         });
 
-        iconContainer.on('pointerdown', () => {
-            // 播放点击音效
+        interactiveArea.on('pointerdown', async () => {
+            console.log('🎵 音量设置图标被点击');
+            
+            // 尝试恢复AudioContext
+            await this.audioManager.resumeAudioContext(this);
+            
+            // 尝试播放点击音效（如果存在）
             this.audioManager.playSound(this, 'click-sound');
             
             // 点击缩放效果
@@ -136,14 +161,14 @@ export class BaseScene extends Scene {
                 onComplete: () => {
                     // 显示/隐藏音量设置面板
                     if (this.volumeSettingsPanel) {
+                        console.log('🎛️ 切换音量设置面板');
                         this.volumeSettingsPanel.toggle();
+                    } else {
+                        console.warn('⚠️ 音量设置面板未初始化');
                     }
                 }
             });
         });
-
-        // 设置鼠标悬停样式
-        iconContainer.setInteractive({ useHandCursor: true });
     }
 
     update(time: number, delta: number): void {

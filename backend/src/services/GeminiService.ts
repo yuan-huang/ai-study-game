@@ -1,5 +1,5 @@
 import { proxyFetch } from '../utils/proxyFetch';
-import { ChatRole } from '../models/ChatRole';
+import { ChatRole } from '../ai/roles/BaseChatRole';
 import dotenv from 'dotenv';
 
 dotenv.config();

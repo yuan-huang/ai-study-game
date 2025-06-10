@@ -1,18 +1,16 @@
 import { AudioManager } from '../utils/AudioManager';
 
 /**
- * 音量设置面板
+ * 音量设置面板 - 简化版，只包含音效音量控制
  */
 export class VolumeSettingsPanel {
     private scene: Phaser.Scene;
     private audioManager: AudioManager;
     private container!: Phaser.GameObjects.Container;
-    private background!: Phaser.GameObjects.Graphics;
+    private panelContainer!: Phaser.GameObjects.Container;
     private isVisible: boolean = false;
 
     // UI元素
-    private masterVolumeSlider!: VolumeSlider;
-    private musicVolumeSlider!: VolumeSlider;
     private soundVolumeSlider!: VolumeSlider;
     private muteButton!: Phaser.GameObjects.Text;
 
@@ -23,78 +21,78 @@ export class VolumeSettingsPanel {
     }
 
     private create(): void {
-        // 创建容器
+        // 创建主容器
         this.container = this.scene.add.container(0, 0);
         this.container.setDepth(1000);
         this.container.setVisible(false);
 
-        // 创建半透明背景
-        const panelBg = this.scene.add.graphics();
-        panelBg.fillStyle(0x000000, 0.7);
-        panelBg.fillRect(0, 0, this.scene.cameras.main.width, this.scene.cameras.main.height);
-        panelBg.setInteractive(this.scene.add.zone(0, 0, this.scene.cameras.main.width, this.scene.cameras.main.height));
-        panelBg.on('pointerdown', () => this.hide());
-        this.container.add(panelBg);
+        // 创建半透明背景（点击关闭）
+        const backgroundOverlay = this.scene.add.graphics();
+        backgroundOverlay.fillStyle(0x000000, 0.5);
+        backgroundOverlay.fillRect(0, 0, this.scene.cameras.main.width, this.scene.cameras.main.height);
+        
+        // 使用zone来处理背景交互
+        const backgroundZone = this.scene.add.zone(
+            this.scene.cameras.main.width / 2, 
+            this.scene.cameras.main.height / 2, 
+            this.scene.cameras.main.width, 
+            this.scene.cameras.main.height
+        );
+        backgroundZone.setInteractive();
+        backgroundZone.on('pointerdown', () => this.hide());
+        
+        this.container.add(backgroundOverlay);
+        this.container.add(backgroundZone);
 
-        // 创建设置面板背景
-        this.background = this.scene.add.graphics();
-        this.background.fillStyle(0xffffff, 0.95);
-        this.background.lineStyle(3, 0x4a90e2);
-        this.background.fillRoundedRect(0, 0, 400, 350, 15);
-        this.background.strokeRoundedRect(0, 0, 400, 350, 15);
-
-        // 居中定位
+        // 创建面板容器（防止事件穿透）
+        this.panelContainer = this.scene.add.container(0, 0);
+        
+        // 计算面板位置
         const centerX = this.scene.cameras.main.width / 2;
         const centerY = this.scene.cameras.main.height / 2;
-        this.background.setPosition(centerX - 200, centerY - 175);
-        this.container.add(this.background);
+        const panelWidth = 500; // 调宽20%
+        const panelHeight = 250; // 调大高度适应新布局
 
-        // 创建标题
-        const title = this.scene.add.text(centerX, centerY - 130, '🔊 音量设置', {
-            fontSize: '28px',
-            color: '#333333',
-            fontFamily: 'Arial, sans-serif',
-            fontStyle: 'bold'
-        }).setOrigin(0.5);
-        this.container.add(title);
+        // 创建面板背景
+        const panelBg = this.scene.add.graphics();
+        panelBg.fillStyle(0xffffff, 0.95);
+        panelBg.lineStyle(3, 0x4a90e2);
+        panelBg.fillRoundedRect(0, 0, panelWidth, panelHeight, 15);
+        panelBg.strokeRoundedRect(0, 0, panelWidth, panelHeight, 15);
+        
+        // 使用zone来处理面板交互，阻止事件穿透
+        const panelZone = this.scene.add.zone(panelWidth / 2, panelHeight / 2, panelWidth, panelHeight);
+        panelZone.setInteractive();
+        panelZone.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+            // 阻止事件传播到背景层
+            pointer.event.stopPropagation();
+        });
+        
+        this.panelContainer.add(panelBg);
+        this.panelContainer.add(panelZone);
+
+        // 创建标题 - 使用阿里巴巴字体
+        const title = (this.scene as any).createText(
+            panelWidth / 2, 30, 
+            '🔊 音效设置', 
+            'TITLE_TEXT',
+            {
+                fontSize: '32px',
+                color: '#333333',
+                fontStyle: 'bold'
+            }
+        ).setOrigin(0.5);
+        this.panelContainer.add(title);
 
         // 获取当前音量设置
         const settings = this.audioManager.getVolumeSettings();
 
-        // 创建音量滑动条
-        this.masterVolumeSlider = new VolumeSlider(
-            this.scene,
-            centerX - 150,
-            centerY - 80,
-            300,
-            '主音量',
-            settings.masterVolume,
-            (value) => {
-                this.audioManager.setMasterVolume(value);
-                this.audioManager.updateAllAudioVolume(this.scene);
-            }
-        );
-        this.container.add(this.masterVolumeSlider.getContainer());
-
-        this.musicVolumeSlider = new VolumeSlider(
-            this.scene,
-            centerX - 150,
-            centerY - 20,
-            300,
-            '音乐音量',
-            settings.musicVolume,
-            (value) => {
-                this.audioManager.setMusicVolume(value);
-                this.audioManager.updateAllAudioVolume(this.scene);
-            }
-        );
-        this.container.add(this.musicVolumeSlider.getContainer());
-
+        // 创建音效音量滑动条 - 调宽20%
         this.soundVolumeSlider = new VolumeSlider(
             this.scene,
-            centerX - 150,
-            centerY + 40,
-            300,
+            40,
+            90, // 往下调整适应更大的字体
+            360, // 从300调宽到360 (20%增长)
             '音效音量',
             settings.soundVolume,
             (value) => {
@@ -102,24 +100,40 @@ export class VolumeSettingsPanel {
                 this.audioManager.updateAllAudioVolume(this.scene);
             }
         );
-        this.container.add(this.soundVolumeSlider.getContainer());
+        this.panelContainer.add(this.soundVolumeSlider.getContainer());
 
-        // 创建静音按钮
-        this.muteButton = this.scene.add.text(
-            centerX,
-            centerY + 100,
+        // 创建静音按钮（放在中间，往下调整）
+        this.muteButton = (this.scene as any).createText(
+            panelWidth / 2,
+            180, // 从140再往下调到150
             settings.isMuted ? '🔇 取消静音' : '🔇 静音',
+            'BUTTON_TEXT',
             {
-                fontSize: '24px',
+                fontSize: '32px',
                 color: '#ffffff',
                 backgroundColor: settings.isMuted ? '#f44336' : '#4caf50',
-                padding: { x: 20, y: 10 },
-                fontFamily: 'Arial, sans-serif'
+                padding: { x: 25, y: 12 }
             }
         ).setOrigin(0.5);
 
         this.muteButton.setInteractive({ useHandCursor: true })
-            .on('pointerdown', () => {
+            .on('pointerover', () => {
+                // 鼠标悬停效果
+                this.muteButton.setScale(1.05);
+            })
+            .on('pointerout', () => {
+                // 鼠标离开效果
+                this.muteButton.setScale(1.0);
+            })
+            .on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+                pointer.event.stopPropagation();
+                
+                // 点击缩放效果
+                this.muteButton.setScale(0.95);
+                this.scene.time.delayedCall(100, () => {
+                    this.muteButton.setScale(1.0);
+                });
+                
                 const isMuted = this.audioManager.toggleMute();
                 this.muteButton.setText(isMuted ? '🔇 取消静音' : '🔇 静音');
                 this.muteButton.setStyle({
@@ -128,27 +142,50 @@ export class VolumeSettingsPanel {
                 this.audioManager.updateAllAudioVolume(this.scene);
             });
 
-        this.container.add(this.muteButton);
+        this.panelContainer.add(this.muteButton);
 
-        // 创建关闭按钮
-        const closeButton = this.scene.add.text(
-            centerX + 170,
-            centerY - 150,
+        // 创建关闭按钮 - 使用阿里巴巴字体
+        const closeButton = (this.scene as any).createText(
+            panelWidth - 30,
+            30,
             '✕',
+            'BUTTON_TEXT',
             {
-                fontSize: '24px',
-                color: '#666666',
-                fontFamily: 'Arial, sans-serif'
+                fontSize: '32px',
+                color: '#666666'
             }
         ).setOrigin(0.5);
 
         closeButton.setInteractive({ useHandCursor: true })
-            .on('pointerdown', () => this.hide());
+            .on('pointerover', () => {
+                // 鼠标悬停效果
+                closeButton.setScale(1.2);
+                closeButton.setStyle({ color: '#999999' });
+            })
+            .on('pointerout', () => {
+                // 鼠标离开效果
+                closeButton.setScale(1.0);
+                closeButton.setStyle({ color: '#666666' });
+            })
+            .on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+                pointer.event.stopPropagation();
+                
+                // 点击缩放效果
+                closeButton.setScale(0.8);
+                this.scene.time.delayedCall(100, () => {
+                    this.hide();
+                });
+            });
 
-        this.container.add(closeButton);
+        this.panelContainer.add(closeButton);
+
+        // 设置面板容器位置并添加到主容器
+        this.panelContainer.setPosition(centerX - panelWidth / 2, centerY - panelHeight / 2);
+        this.container.add(this.panelContainer);
     }
 
     public show(): void {
+        console.log('🎛️ 显示音量设置面板');
         this.isVisible = true;
         this.container.setVisible(true);
         
@@ -163,6 +200,7 @@ export class VolumeSettingsPanel {
     }
 
     public hide(): void {
+        console.log('🎛️ 隐藏音量设置面板');
         this.isVisible = false;
         
         // 添加淡出动画
@@ -178,6 +216,7 @@ export class VolumeSettingsPanel {
     }
 
     public toggle(): void {
+        console.log('🎛️ 切换音量设置面板状态，当前可见:', this.isVisible);
         if (this.isVisible) {
             this.hide();
         } else {
@@ -186,8 +225,6 @@ export class VolumeSettingsPanel {
     }
 
     public destroy(): void {
-        if (this.masterVolumeSlider) this.masterVolumeSlider.destroy();
-        if (this.musicVolumeSlider) this.musicVolumeSlider.destroy();
         if (this.soundVolumeSlider) this.soundVolumeSlider.destroy();
         if (this.container) this.container.destroy();
     }
@@ -205,6 +242,7 @@ class VolumeSlider {
     private valueText!: Phaser.GameObjects.Text;
     
     private isDragging: boolean = false;
+    private isHovered: boolean = false;
     private value: number;
     private width: number;
     private onValueChange: (value: number) => void;
@@ -229,14 +267,6 @@ class VolumeSlider {
     }
 
     private create(labelText: string): void {
-        // 创建标签
-        this.label = this.scene.add.text(0, -10, labelText, {
-            fontSize: '18px',
-            color: '#333333',
-            fontFamily: 'Arial, sans-serif'
-        });
-        this.container.add(this.label);
-
         // 创建滑动条背景
         this.slider = this.scene.add.graphics();
         this.slider.fillStyle(0xcccccc);
@@ -250,17 +280,13 @@ class VolumeSlider {
 
         // 创建滑块
         this.thumb = this.scene.add.graphics();
-        this.thumb.fillStyle(0x4a90e2);
-        this.thumb.lineStyle(2, 0xffffff);
-        this.thumb.fillCircle(this.width * this.value, 23, 12);
-        this.thumb.strokeCircle(this.width * this.value, 23, 12);
         this.container.add(this.thumb);
+        this.updateThumb(false); // 初始化滑块
 
-        // 创建数值显示
-        this.valueText = this.scene.add.text(this.width + 20, 15, `${Math.round(this.value * 100)}%`, {
-            fontSize: '16px',
-            color: '#666666',
-            fontFamily: 'Arial, sans-serif'
+        // 创建数值显示 - 使用阿里巴巴字体
+        this.valueText = (this.scene as any).createText(this.width + 30, 0, `${Math.round(this.value * 100)}%`, 'BODY_TEXT', {
+            fontSize: '32px',
+            color: '#666666'
         });
         this.container.add(this.valueText);
     }
@@ -271,19 +297,50 @@ class VolumeSlider {
         interactiveZone.setInteractive({ useHandCursor: true });
         this.container.add(interactiveZone);
 
+        // 获取滑动条在世界坐标中的位置
+        const getSliderWorldPosition = () => {
+            const containerWorldMatrix = this.container.getWorldTransformMatrix();
+            return {
+                x: containerWorldMatrix.tx,
+                y: containerWorldMatrix.ty
+            };
+        };
+
         interactiveZone.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+            console.log('🎚️ 开始拖拽滑动条');
+            pointer.event.stopPropagation(); // 阻止事件传播
             this.isDragging = true;
-            this.updateValue(pointer.x - this.container.x - this.container.parentContainer!.x);
+            const worldPos = getSliderWorldPosition();
+            this.updateValue(pointer.x - worldPos.x);
         });
 
         this.scene.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
             if (this.isDragging) {
-                this.updateValue(pointer.x - this.container.x - this.container.parentContainer!.x);
+                const worldPos = getSliderWorldPosition();
+                this.updateValue(pointer.x - worldPos.x);
             }
         });
 
         this.scene.input.on('pointerup', () => {
-            this.isDragging = false;
+            if (this.isDragging) {
+                this.isDragging = false;
+                // 检查鼠标是否还在滑块区域内
+                const pointer = this.scene.input.activePointer;
+                const bounds = interactiveZone.getBounds();
+                const isStillOver = bounds.contains(pointer.x, pointer.y);
+                this.updateThumb(isStillOver);
+            }
+        });
+
+        // 添加悬停效果
+        interactiveZone.on('pointerover', () => {
+            this.updateThumb(true);
+        });
+
+        interactiveZone.on('pointerout', () => {
+            if (!this.isDragging) {
+                this.updateThumb(false);
+            }
         });
     }
 
@@ -292,11 +349,16 @@ class VolumeSlider {
         x = Math.max(0, Math.min(this.width, x));
         this.value = x / this.width;
 
+        console.log(`🎚️ 音量值更新: ${Math.round(this.value * 100)}%`);
+
         // 更新视觉效果
         this.updateVisuals();
 
         // 触发回调
         this.onValueChange(this.value);
+        
+        // 输出当前活跃音频数量
+        console.log(`🎚️ 当前跟踪音频数量: ${AudioManager.getInstance().getActiveSoundsCount()}`);
     }
 
     private updateVisuals(): void {
@@ -307,15 +369,24 @@ class VolumeSlider {
         this.slider.fillStyle(0x4a90e2);
         this.slider.fillRoundedRect(0, 20, this.width * this.value, 6, 3);
 
-        // 更新滑块位置
-        this.thumb.clear();
-        this.thumb.fillStyle(0x4a90e2);
-        this.thumb.lineStyle(2, 0xffffff);
-        this.thumb.fillCircle(this.width * this.value, 23, 12);
-        this.thumb.strokeCircle(this.width * this.value, 23, 12);
+        // 更新滑块
+        this.updateThumb(this.isHovered);
 
         // 更新数值显示
         this.valueText.setText(`${Math.round(this.value * 100)}%`);
+    }
+
+    private updateThumb(hovered: boolean): void {
+        this.isHovered = hovered;
+        
+        // 清除并重绘滑块
+        this.thumb.clear();
+        this.thumb.fillStyle(hovered ? 0x357abd : 0x4a90e2);
+        this.thumb.lineStyle(2, 0xffffff);
+        
+        const thumbRadius = hovered ? 14 : 12;
+        this.thumb.fillCircle(this.width * this.value, 23, thumbRadius);
+        this.thumb.strokeCircle(this.width * this.value, 23, thumbRadius);
     }
 
     public getContainer(): Phaser.GameObjects.Container {

@@ -22,6 +22,7 @@ export class LoadingScene extends BaseScene {
     }
 
     create(): void {
+        super.create();
         // 加载完成后的逻辑
         console.log('加载场景创建完成');
     }

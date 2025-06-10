@@ -1,0 +1,71 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+
+路由要调整两个地方：
+app 要添加路由
+routes 目录下要添加请求路径
+controllers 要继承BaseController进行统一处理，并实现业务调用
+
+
+
+
+backend 后端工程
+backend/
+├── src/                          # 源代码目录
+│   ├── controllers/              # API接口控制器
+│   │   ├── BaseController.ts     # 基础控制器
+│   │   ├── GardenController.ts   # 花园相关控制器
+│   │   ├── LevelController.ts    # 关卡控制器
+│   │   ├── QuestionController.ts # 问题控制器
+│   │   └── TowerDefenseController.ts # 塔防游戏控制器
+│   ├── models/                   # 数据库模型
+│   │   ├── ChatRole.ts          # 聊天角色模型
+│   │   ├── ChatRoles.ts         # 聊天角色集合
+│   │   ├── Flower.ts            # 花朵模型
+│   │   ├── Growth.ts            # 成长记录模型
+│   │   ├── Nectar.ts            # 花蜜模型
+│   │   ├── Question.ts          # 问题模型
+│   │   ├── Seed.ts              # 种子模型
+│   │   ├── TowerDefenseRecord.ts # 塔防记录模型
+│   │   └── User.ts              # 用户模型
+│   ├── routes/                   # 路由配置
+│   │   ├── ai.ts                # AI相关路由
+│   │   ├── auth.ts              # 认证路由
+│   │   ├── game.ts              # 游戏路由
+│   │   ├── garden.ts            # 花园路由
+│   │   ├── growth.ts            # 成长路由
+│   │   ├── level.ts             # 关卡路由
+│   │   ├── question.ts          # 问题路由
+│   │   ├── seed.ts              # 种子路由
+│   │   ├── task.ts              # 任务路由
+│   │   ├── towerDefense.ts      # 塔防路由
+│   │   └── user.ts              # 用户路由
+│   ├── services/                 # 业务逻辑服务
+│   │   ├── FlowerBloodManager.ts # 花朵血量管理
+│   │   ├── FlowerMemoryService.ts # 花朵记忆服务
+│   │   ├── GardenService.ts     # 花园服务
+│   │   └── GeminiService.ts     # Gemini AI服务
+│   ├── config/                   # 配置文件
+│   ├── middleware/               # 中间件
+│   ├── utils/                    # 工具函数
+│   ├── tests/                    # 测试文件
+│   ├── app.ts                    # 应用入口文件
+│   └── test-level-api.js         # 关卡API测试
+├── docs/                         # 文档目录
+│   ├── data/                     # 数据文档
+│   └── tower-defense-api.md      # 塔防API文档
+├── dist/                         # 编译输出目录
+├── init/                         # 初始化脚本
+├── logs/                         # 日志文件
+├── tests/                        # 测试目录
+├── node_modules/                 # 依赖包
+├── package.json                  # 项目配置
+├── package-lock.json             # 依赖锁定
+├── tsconfig.json                 # TypeScript配置
+├── bash                          # 启动脚本
+└── test-mongodb-query.js         # MongoDB查询测试
+
+

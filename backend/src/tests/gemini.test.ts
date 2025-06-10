@@ -1,5 +1,5 @@
 import { GeminiService } from '../services/GeminiService';
-import { fairyTutor, curiosityTree } from '../models/ChatRoles';
+import { fairyTutor, curiosityTree } from '../ai/roles/ChatRoles';
 
 async function testChat() {
     try {

@@ -4,20 +4,30 @@ import { Model, Document, FilterQuery } from 'mongoose';
 export class BaseController<T extends Document> {
   constructor(private model: Model<T>) {}
 
+  // 统一的成功响应方法
+  protected sendSuccess(res: Response, data: any = {}, status: number = 200): void {
+    res.status(status).json({
+      success: true,
+      data
+    });
+  }
+
+  // 统一的错误响应方法
+  protected sendError(res: Response, message: string, status: number = 400): void {
+    res.status(status).json({
+      success: false,
+      message
+    });
+  }
+
   // 创建记录
   async create(req: Request, res: Response) {
     try {
       const doc = new this.model(req.body);
       const result = await doc.save();
-      res.status(201).json({
-        success: true,
-        data: result
-      });
+      this.sendSuccess(res, result, 201);
     } catch (error) {
-      res.status(400).json({
-        success: false,
-        message: error instanceof Error ? error.message : '创建失败'
-      });
+      this.sendError(res, error instanceof Error ? error.message : '创建失败');
     }
   }
 
@@ -26,15 +36,9 @@ export class BaseController<T extends Document> {
     try {
       const filter: FilterQuery<T> = this.parseQuery(req.query);
       const docs = await this.model.find(filter);
-      res.status(200).json({
-        success: true,
-        data: docs
-      });
+      this.sendSuccess(res, docs);
     } catch (error) {
-      res.status(400).json({
-        success: false,
-        message: error instanceof Error ? error.message : '查询失败'
-      });
+      this.sendError(res, error instanceof Error ? error.message : '查询失败');
     }
   }
 
@@ -43,20 +47,11 @@ export class BaseController<T extends Document> {
     try {
       const doc = await this.model.findById(req.params.id);
       if (!doc) {
-        return res.status(404).json({
-          success: false,
-          message: '未找到记录'
-        });
+        return this.sendError(res, '未找到记录', 404);
       }
-      res.status(200).json({
-        success: true,
-        data: doc
-      });
+      this.sendSuccess(res, doc);
     } catch (error) {
-      res.status(400).json({
-        success: false,
-        message: error instanceof Error ? error.message : '查询失败'
-      });
+      this.sendError(res, error instanceof Error ? error.message : '查询失败');
     }
   }
 
@@ -69,20 +64,11 @@ export class BaseController<T extends Document> {
         { new: true, runValidators: true }
       );
       if (!doc) {
-        return res.status(404).json({
-          success: false,
-          message: '未找到记录'
-        });
+        return this.sendError(res, '未找到记录', 404);
       }
-      res.status(200).json({
-        success: true,
-        data: doc
-      });
+      this.sendSuccess(res, doc);
     } catch (error) {
-      res.status(400).json({
-        success: false,
-        message: error instanceof Error ? error.message : '更新失败'
-      });
+      this.sendError(res, error instanceof Error ? error.message : '更新失败');
     }
   }
 
@@ -91,20 +77,11 @@ export class BaseController<T extends Document> {
     try {
       const doc = await this.model.findByIdAndDelete(req.params.id);
       if (!doc) {
-        return res.status(404).json({
-          success: false,
-          message: '未找到记录'
-        });
+        return this.sendError(res, '未找到记录', 404);
       }
-      res.status(200).json({
-        success: true,
-        data: {}
-      });
+      this.sendSuccess(res, {});
     } catch (error) {
-      res.status(400).json({
-        success: false,
-        message: error instanceof Error ? error.message : '删除失败'
-      });
+      this.sendError(res, error instanceof Error ? error.message : '删除失败');
     }
   }
 

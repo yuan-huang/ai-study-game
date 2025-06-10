@@ -37,6 +37,7 @@ export class MainScene extends BaseScene {
     }
     
     create() {
+        super.create();
         // 初始化效果管理器
         this.effectManager = new EffectManager(this);
 

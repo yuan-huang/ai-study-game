@@ -2,6 +2,7 @@ import { KnowledgeGarden } from './KnowledgeGarden';
 import { fontManager } from './utils/fontManager';
 import { FontTest } from './components/FontTest';
 import { PhaserFontConfig } from './config/PhaserFontConfig';
+import { AudioManager } from './utils/AudioManager';
 import './index.css';
 
 // 防止默认的拖拽、选择等行为
@@ -72,6 +73,8 @@ window.addEventListener('load', async () => {
         try {
             // 启动游戏
             const game = new KnowledgeGarden('game-container');
+            // 将游戏实例保存到全局变量，方便AudioManager访问
+            (window as any).game = game;
             console.log('✅ 游戏创建成功');
             
             // 额外的延迟确保Phaser完全初始化
@@ -89,7 +92,36 @@ window.addEventListener('load', async () => {
                     canvas.style.touchAction = 'none';
                     canvas.tabIndex = 1; // 确保Canvas可以接收焦点
                     
-
+                    // 添加全局用户交互监听以恢复AudioContext
+                    const setupAudioContextResume = () => {
+                        const handleUserInteraction = async () => {
+                            try {
+                                const audioManager = AudioManager.getInstance();
+                                const gameInstance = (window as any).game;
+                                if (gameInstance && gameInstance.scene.scenes.length > 0) {
+                                    const currentScene = gameInstance.scene.scenes[0];
+                                    const resumed = await audioManager.resumeAudioContext(currentScene);
+                                    if (resumed) {
+                                        console.log('🎵 首次用户交互后AudioContext已恢复');
+                                        // 移除监听器，因为只需要恢复一次
+                                        document.removeEventListener('click', handleUserInteraction);
+                                        document.removeEventListener('keydown', handleUserInteraction);
+                                        document.removeEventListener('touchstart', handleUserInteraction);
+                                    }
+                                }
+                            } catch (error) {
+                                console.warn('⚠️ 恢复AudioContext时出错:', error);
+                            }
+                        };
+                        
+                        document.addEventListener('click', handleUserInteraction, { once: false });
+                        document.addEventListener('keydown', handleUserInteraction, { once: false });
+                        document.addEventListener('touchstart', handleUserInteraction, { once: false });
+                        console.log('🎧 已设置全局AudioContext恢复监听器');
+                    };
+                    
+                    setupAudioContextResume();
+                    
                     // 强制聚焦到Canvas
                     canvas.focus();
                 } else {
