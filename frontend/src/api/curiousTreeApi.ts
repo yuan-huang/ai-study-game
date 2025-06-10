@@ -26,6 +26,12 @@ interface HistoryResponse {
     };
 }
 
+export interface GrowthData {
+    growthValue: number;
+    level: number;
+}
+
+
 export const curiousTreeApi = {
     // 发送消息
     chat: async (message: string): Promise<ApiResponse<ChatResponse>> => {
@@ -35,5 +41,15 @@ export const curiousTreeApi = {
     // 获取对话历史
     getHistory: async (params: any): Promise<ApiResponse<HistoryResponse>> => {
         return get('/curioustree/history', params);
+    },
+
+    // 获取成长值
+    getGrowth: async (): Promise<ApiResponse<GrowthData>> => {
+        return get('/curioustree/growth');
+    },
+
+    // 清空历史记录
+    clearHistory: async (): Promise<ApiResponse<void>> => {
+        return post('/curioustree//history/clear');
     }
 }; 
