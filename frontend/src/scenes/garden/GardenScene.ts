@@ -202,6 +202,12 @@ export class GardenScene extends BaseScene {
                 return;
             }
 
+            // 检查花的血量是否为0，如果是则不显示
+            if (subjectData.花的血量HP.HP百分比 === 0) {
+                console.log(`学科 ${subject} 的血量为0，不显示花朵`);
+                return;
+            }
+
             // 获取花朵图像的原始大小
             const flowerKey = `flower-${subject}`;
             const flowerTexture = this.textures.get(flowerKey);

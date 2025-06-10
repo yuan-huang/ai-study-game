@@ -10,24 +10,32 @@ export class PhaserFontConfig {
     private defaultFontFamily: string = 'Alibaba-PuHuiTi';
     private fallbackFontFamily: string = 'Microsoft YaHei, Arial, sans-serif';
 
+    // 字体文件路径配置
+    private static readonly FONT_PATHS = {
+        REGULAR: '/font/AlibabaSans-Regular.woff2',
+        BOLD: '/font/AlibabaSans-Bold.woff2'
+    };
+
+    // 字体文件备用路径配置（用于不支持 WOFF2 的浏览器）
+    private static readonly FONT_FALLBACK_PATHS = {
+        REGULAR: '/font/AlibabaSans-Regular.woff',
+        BOLD: '/font/AlibabaSans-Bold.woff'
+    };
+
     // 阿里巴巴字体名称映射
     public static readonly FONT_FAMILIES = {
-        PUHUITI: 'Alibaba-PuHuiTi',
-        SUHEI: 'Alibaba-Sans', 
-        DONGFANG: 'Alibaba-Dongfang'
+        SANS: 'Alibaba-Sans'
     } as const;
 
     // 完整的字体栈（包含fallback）
     public static readonly FONT_STACKS = {
-        PUHUITI: 'Alibaba-PuHuiTi, PingFang SC, Hiragino Sans GB, Microsoft YaHei, Arial, sans-serif',
-        SUHEI: 'Alibaba-Sans, PingFang SC, Hiragino Sans GB, Microsoft YaHei, Arial, sans-serif',
-        DONGFANG: 'Alibaba-Dongfang, STSong, SimSun, serif',
+        SANS: 'Alibaba-Sans, PingFang SC, Hiragino Sans GB, Microsoft YaHei, Arial, sans-serif',
         SYSTEM: 'PingFang SC, Hiragino Sans GB, Microsoft YaHei, Arial, sans-serif'
     } as const;
 
     // 全局默认文本样式
     public static readonly DEFAULT_TEXT_STYLES: Phaser.Types.GameObjects.Text.TextStyle = {
-        fontFamily: PhaserFontConfig.FONT_STACKS.PUHUITI,
+        fontFamily: PhaserFontConfig.FONT_STACKS.SANS,
         fontSize: 24,
         color: '#333333',
         align: 'left',
@@ -38,7 +46,7 @@ export class PhaserFontConfig {
     public static readonly PRESET_STYLES = {
         // 主标题样式
         TITLE_LARGE: {
-            fontFamily: PhaserFontConfig.FONT_STACKS.SUHEI,
+            fontFamily: PhaserFontConfig.FONT_STACKS.SANS,
             fontSize: 48,
             color: '#1a1a1a',
             fontStyle: 'bold',
@@ -57,7 +65,7 @@ export class PhaserFontConfig {
 
         // 副标题样式
         TITLE_MEDIUM: {
-            fontFamily: PhaserFontConfig.FONT_STACKS.SUHEI,
+            fontFamily: PhaserFontConfig.FONT_STACKS.SANS,
             fontSize: 32,
             color: '#2d3748',
             fontStyle: 'bold',
@@ -72,7 +80,7 @@ export class PhaserFontConfig {
 
         // 小标题样式
         TITLE_SMALL: {
-            fontFamily: PhaserFontConfig.FONT_STACKS.PUHUITI,
+            fontFamily: PhaserFontConfig.FONT_STACKS.SANS,
             fontSize: 24,
             color: '#4a5568',
             fontStyle: '600',
@@ -81,7 +89,7 @@ export class PhaserFontConfig {
 
         // 正文样式
         BODY_TEXT: {
-            fontFamily: PhaserFontConfig.FONT_STACKS.PUHUITI,
+            fontFamily: PhaserFontConfig.FONT_STACKS.SANS,
             fontSize: 20,
             color: '#4a5568',
             align: 'left',
@@ -91,7 +99,7 @@ export class PhaserFontConfig {
 
         // 按钮文字样式
         BUTTON_TEXT: {
-            fontFamily: PhaserFontConfig.FONT_STACKS.PUHUITI,
+            fontFamily: PhaserFontConfig.FONT_STACKS.SANS,
             fontSize: 18,
             color: '#ffffff',
             fontStyle: '500',
@@ -100,7 +108,7 @@ export class PhaserFontConfig {
 
         // 数字显示样式
         NUMBER_TEXT: {
-            fontFamily: PhaserFontConfig.FONT_STACKS.SUHEI,
+            fontFamily: PhaserFontConfig.FONT_STACKS.SANS,
             fontSize: 28,
             color: '#e53e3e',
             fontStyle: 'bold',
@@ -109,29 +117,15 @@ export class PhaserFontConfig {
 
         // 标签文字样式
         LABEL_TEXT: {
-            fontFamily: PhaserFontConfig.FONT_STACKS.PUHUITI,
+            fontFamily: PhaserFontConfig.FONT_STACKS.SANS,
             fontSize: 16,
             color: '#718096',
             align: 'left'
         } as Phaser.Types.GameObjects.Text.TextStyle,
 
-        // 装饰性文字样式
-        DECORATIVE_TEXT: {
-            fontFamily: PhaserFontConfig.FONT_STACKS.DONGFANG,
-            fontSize: 36,
-            color: '#744210',
-            align: 'center',
-            shadow: {
-                offsetX: 2,
-                offsetY: 2,
-                color: '#00000050',
-                blur: 4
-            }
-        } as Phaser.Types.GameObjects.Text.TextStyle,
-
         // 游戏UI文字样式
         UI_TEXT: {
-            fontFamily: PhaserFontConfig.FONT_STACKS.PUHUITI,
+            fontFamily: PhaserFontConfig.FONT_STACKS.SANS,
             fontSize: 16,
             color: '#ffffff',
             fontStyle: '400',
@@ -142,7 +136,7 @@ export class PhaserFontConfig {
 
         // 错误/警告文字样式
         ERROR_TEXT: {
-            fontFamily: PhaserFontConfig.FONT_STACKS.PUHUITI,
+            fontFamily: PhaserFontConfig.FONT_STACKS.SANS,
             fontSize: 18,
             color: '#e53e3e',
             fontStyle: '500',
@@ -151,7 +145,7 @@ export class PhaserFontConfig {
 
         // 成功/提示文字样式
         SUCCESS_TEXT: {
-            fontFamily: PhaserFontConfig.FONT_STACKS.PUHUITI,
+            fontFamily: PhaserFontConfig.FONT_STACKS.SANS,
             fontSize: 18,
             color: '#38a169',
             fontStyle: '500',
@@ -183,6 +177,9 @@ export class PhaserFontConfig {
         try {
             console.log('🔤 开始初始化Phaser游戏字体...');
             
+            // 加载字体文件
+            await instance.loadFontFiles();
+            
             // 等待字体加载完成
             await instance.waitForFontsLoad();
             
@@ -199,24 +196,32 @@ export class PhaserFontConfig {
     }
 
     /**
+     * 加载字体文件
+     */
+    private async loadFontFiles(): Promise<void> {
+        const fontFacePromises = [
+            new FontFace('Alibaba-Sans', `url(${PhaserFontConfig.FONT_PATHS.REGULAR}) format('woff2'), url(${PhaserFontConfig.FONT_FALLBACK_PATHS.REGULAR}) format('woff')`, { weight: '400' }),
+            new FontFace('Alibaba-Sans', `url(${PhaserFontConfig.FONT_PATHS.BOLD}) format('woff2'), url(${PhaserFontConfig.FONT_FALLBACK_PATHS.BOLD}) format('woff')`, { weight: '700' })
+        ];
+
+        const loadedFonts = await Promise.all(fontFacePromises.map(font => font.load()));
+        loadedFonts.forEach(font => document.fonts.add(font));
+    }
+
+    /**
      * 等待字体加载完成
      */
     private async waitForFontsLoad(): Promise<void> {
         const fontPromises = [
-            document.fonts.load('400 16px Alibaba-PuHuiTi'),
-            document.fonts.load('500 16px Alibaba-PuHuiTi'),
-            document.fonts.load('600 16px Alibaba-PuHuiTi'),
-            document.fonts.load('700 16px Alibaba-PuHuiTi'),
             document.fonts.load('400 16px Alibaba-Sans'),
-            document.fonts.load('700 16px Alibaba-Sans'),
-            document.fonts.load('400 16px Alibaba-Dongfang')
+            document.fonts.load('700 16px Alibaba-Sans')
         ];
 
         await Promise.allSettled(fontPromises);
         
         // 验证字体是否成功加载
         const testElement = document.createElement('span');
-        testElement.style.fontFamily = PhaserFontConfig.FONT_FAMILIES.PUHUITI;
+        testElement.style.fontFamily = PhaserFontConfig.FONT_FAMILIES.SANS;
         testElement.style.fontSize = '16px';
         testElement.textContent = '测试';
         testElement.style.position = 'absolute';
@@ -237,16 +242,12 @@ export class PhaserFontConfig {
         const style = document.createElement('style');
         style.textContent = `
             :root {
-                --phaser-font-primary: ${PhaserFontConfig.FONT_STACKS.PUHUITI};
-                --phaser-font-title: ${PhaserFontConfig.FONT_STACKS.SUHEI};
-                --phaser-font-decorative: ${PhaserFontConfig.FONT_STACKS.DONGFANG};
+                --phaser-font-primary: ${PhaserFontConfig.FONT_STACKS.SANS};
             }
             
             /* Phaser Canvas字体预加载 */
             .phaser-font-preload {
-                font-family: ${PhaserFontConfig.FONT_STACKS.PUHUITI};
-                font-family: ${PhaserFontConfig.FONT_STACKS.SUHEI};
-                font-family: ${PhaserFontConfig.FONT_STACKS.DONGFANG};
+                font-family: ${PhaserFontConfig.FONT_STACKS.SANS};
                 position: absolute;
                 left: -9999px;
                 visibility: hidden;
@@ -264,8 +265,6 @@ export class PhaserFontConfig {
         style.textContent = `
             :root {
                 --phaser-font-primary: ${PhaserFontConfig.FONT_STACKS.SYSTEM};
-                --phaser-font-title: ${PhaserFontConfig.FONT_STACKS.SYSTEM};
-                --phaser-font-decorative: ${PhaserFontConfig.FONT_STACKS.SYSTEM};
             }
         `;
         document.head.appendChild(style);
@@ -436,7 +435,7 @@ export class PhaserFontConfig {
                 if (!currentStyle.fontFamily?.includes('Alibaba')) {
                     child.setStyle({
                         ...currentStyle,
-                        fontFamily: PhaserFontConfig.FONT_STACKS.PUHUITI
+                        fontFamily: PhaserFontConfig.FONT_STACKS.SANS
                     });
                 }
             }
