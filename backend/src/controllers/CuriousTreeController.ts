@@ -1,7 +1,7 @@
 import { BaseController } from './BaseController';
 import { Request, Response } from 'express';
 import { CuriousTreeModel, ICuriousTree } from '../models/CuriousTree';
-import { CuriousTreeGrowthModel, ICuriousTreeGrowth } from '../models/CuriousTreeGrowth';
+import { CuriousTreeGrowthModel } from '../models/CuriousTreeGrowth';
 import { GeminiService } from '../utils/GeminiService';
 import { getChatRole } from '../ai/roles/ChatRoles';
 import { getUserIdFromRequest } from '../utils/authUtils';

@@ -6,6 +6,9 @@ import { AudioManager } from '../utils/AudioManager';
 
 
 export class BaseScene extends Scene {
+    shutdown() {
+        throw new Error('Method not implemented.');
+    }
     protected volumeSettingsPanel?: VolumeSettingsPanel;
     protected audioManager: AudioManager;
 
