@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>输入框测试</title>
+</head>
+
+<body>
+    <h1>好奇树输入框测试</h1>
+    <p>以下是输入框应该的样式：</p>
+
+    <textarea placeholder="🌱 告诉好奇树你想了解什么吧！可以问任何让你好奇的问题..." style="
+            position: fixed;
+            left: 50%;
+            bottom: 120px;
+            transform: translateX(-50%);
+            width: 650px;
+            height: 80px;
+            font-size: 18px;
+            padding: 15px 25px;
+            border: 4px solid #4caf50;
+            border-radius: 20px;
+            outline: none;
+            font-family: Arial, sans-serif;
+            background: #ffffff;
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
+            resize: none;
+            line-height: 1.4;
+            z-index: 10001;
+        ">
+    </textarea>
+
+    <div style="padding: 20px; max-width: 800px; margin: 0 auto;">
+        <h2>预期效果</h2>
+        <ul>
+            <li>输入框应该在页面底部居中显示</li>
+            <li>距离底部120px</li>
+            <li>宽度650px，高度80px</li>
+            <li>绿色边框，圆角</li>
+            <li>有阴影效果</li>
+            <li>字体大小18px</li>
+        </ul>
+
+        <h2>如果看不到输入框</h2>
+        <p>请检查浏览器开发者工具中的元素是否存在</p>
+
+        <button onclick="toggleInput()">切换输入框显示/隐藏</button>
+    </div>
+
+    <script>
+        function toggleInput() {
+            const textarea = document.querySelector('textarea');
+            if (textarea.style.display === 'none') {
+                textarea.style.display = 'block';
+                console.log('显示输入框');
+            } else {
+                textarea.style.display = 'none';
+                console.log('隐藏输入框');
+            }
+        }
+
+        // 页面加载完成后显示输入框信息
+        window.addEventListener('load', () => {
+            const textarea = document.querySelector('textarea');
+            console.log('输入框元素:', textarea);
+            console.log('输入框样式:', textarea.style.cssText);
+            console.log('输入框位置:', {
+                left: textarea.offsetLeft,
+                top: textarea.offsetTop,
+                width: textarea.offsetWidth,
+                height: textarea.offsetHeight
+            });
+        });
+    </script>
+</body>
+
+</html>
