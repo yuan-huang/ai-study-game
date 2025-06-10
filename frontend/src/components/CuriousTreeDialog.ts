@@ -1,5 +1,5 @@
 import { Scene } from 'phaser';
-import { curiousTreeApi } from '../api/curiousTree';
+import { curiousTreeApi } from '../api/curiousTreeApi';
 
 interface DialogConfig {
     scene: Scene;
@@ -10,93 +10,105 @@ interface DialogConfig {
     onClose: () => void;
 }
 
+interface ChatMessage {
+    role: 'user' | 'assistant';
+    content: string;
+}
+
+interface HistoryMessage {
+    role: 'assistant';
+    question: string;
+    aiResponse: string;
+    timestamp: string;
+    _id: string;
+}
+
+interface HistoryResponse {
+    success: boolean;
+    data: {
+        messages: HistoryMessage[];
+    };
+}
+
 export class CuriousTreeDialog {
     private scene: Scene;
-    private container: Phaser.GameObjects.Container;
+    private dialogElement: HTMLDivElement;
     private inputBox: HTMLInputElement;
     private messagesContainer: HTMLDivElement;
     private isVisible: boolean = false;
 
     constructor(config: DialogConfig) {
         this.scene = config.scene;
-        this.container = this.scene.add.container(config.x, config.y);
+        
+        // 创建主对话框容器
+        this.dialogElement = document.createElement('div');
+        this.dialogElement.className = 'curious-tree-dialog';
+        this.dialogElement.style.width = config.width + 'px';
+        this.dialogElement.style.height = config.height + 'px';
+        document.body.appendChild(this.dialogElement);
 
-        // 创建对话框背景
-        const background = this.scene.add.rectangle(0, 0, config.width, config.height, 0xffffff, 0.95)
-            .setStrokeStyle(2, 0x4caf50);
-        this.container.add(background);
+        // 创建标题栏
+        const titleBar = document.createElement('div');
+        titleBar.className = 'curious-tree-title-bar';
+        this.dialogElement.appendChild(titleBar);
 
-        // 创建标题
-        const title = this.scene.add.text(0, -config.height/2 + 30, '🌳 好奇树对话', {
-            fontSize: '24px',
-            color: '#2d5016',
-            fontStyle: 'bold'
-        }).setOrigin(0.5);
-        this.container.add(title);
+        // 添加标题
+        const title = document.createElement('div');
+        title.className = 'curious-tree-title';
+        title.textContent = '🌳 好奇树对话';
+        titleBar.appendChild(title);
 
-        // 创建关闭按钮
-        const closeButton = this.scene.add.rectangle(config.width/2 - 30, -config.height/2 + 30, 40, 40, 0xff0000, 0.8)
-            .setInteractive({ useHandCursor: true });
-        const closeText = this.scene.add.text(config.width/2 - 30, -config.height/2 + 30, 'X', {
-            fontSize: '20px',
-            color: '#ffffff'
-        }).setOrigin(0.5);
-        this.container.add([closeButton, closeText]);
-
-        // 创建HTML元素
-        this.createHTMLElements(config);
-
-        // 设置事件监听
-        closeButton.on('pointerdown', () => {
+        // 添加关闭按钮
+        const closeButton = document.createElement('button');
+        closeButton.className = 'curious-tree-close-button';
+        closeButton.textContent = '×';
+        closeButton.onclick = () => {
             this.hide();
             config.onClose();
-        });
+        };
+        titleBar.appendChild(closeButton);
 
-        // 初始隐藏
-        this.container.setVisible(false);
-    }
-
-    private createHTMLElements(config: DialogConfig): void {
         // 创建消息容器
         this.messagesContainer = document.createElement('div');
-        this.messagesContainer.style.position = 'absolute';
-        this.messagesContainer.style.left = '50%';
-        this.messagesContainer.style.top = '50%';
-        this.messagesContainer.style.transform = 'translate(-50%, -50%)';
-        this.messagesContainer.style.width = (config.width - 40) + 'px';
-        this.messagesContainer.style.height = (config.height - 120) + 'px';
-        this.messagesContainer.style.overflowY = 'auto';
-        this.messagesContainer.style.padding = '10px';
-        this.messagesContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
-        this.messagesContainer.style.borderRadius = '8px';
-        document.body.appendChild(this.messagesContainer);
+        this.messagesContainer.className = 'curious-tree-messages-container';
+        this.dialogElement.appendChild(this.messagesContainer);
+
+        // 创建输入区域
+        const inputContainer = document.createElement('div');
+        inputContainer.className = 'curious-tree-input-container';
+        this.dialogElement.appendChild(inputContainer);
 
         // 创建输入框
         this.inputBox = document.createElement('input');
+        this.inputBox.className = 'curious-tree-input';
         this.inputBox.type = 'text';
         this.inputBox.placeholder = '输入你的问题...';
-        this.inputBox.style.position = 'absolute';
-        this.inputBox.style.left = '50%';
-        this.inputBox.style.bottom = '20px';
-        this.inputBox.style.transform = 'translateX(-50%)';
-        this.inputBox.style.width = (config.width - 100) + 'px';
-        this.inputBox.style.padding = '10px';
-        this.inputBox.style.borderRadius = '20px';
-        this.inputBox.style.border = '2px solid #4caf50';
-        this.inputBox.style.outline = 'none';
-        document.body.appendChild(this.inputBox);
+        inputContainer.appendChild(this.inputBox);
+
+        // 创建发送按钮
+        const sendButton = document.createElement('button');
+        sendButton.className = 'curious-tree-send-button';
+        sendButton.textContent = '发送';
+        sendButton.onclick = () => this.handleSend();
+        inputContainer.appendChild(sendButton);
 
         // 添加回车发送功能
-        this.inputBox.addEventListener('keypress', async (e) => {
-            if (e.key === 'Enter' && this.inputBox.value.trim()) {
-                await this.sendMessage(this.inputBox.value.trim());
-                this.inputBox.value = '';
+        this.inputBox.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.handleSend();
             }
         });
 
-        // 初始隐藏HTML元素
-        this.messagesContainer.style.display = 'none';
-        this.inputBox.style.display = 'none';
+        // 初始隐藏
+        this.hide();
+    }
+
+    private async handleSend(): Promise<void> {
+        const message = this.inputBox.value.trim();
+        if (!message) return;
+
+        this.inputBox.value = '';
+        await this.sendMessage(message);
     }
 
     private async sendMessage(message: string): Promise<void> {
@@ -105,7 +117,7 @@ export class CuriousTreeDialog {
 
         try {
             // 发送消息到服务器
-            const response = await curiousTreeApi.sendMessage(message);
+            const response = await curiousTreeApi.chat(message);
             if (response.success && response.data) {
                 // 添加AI回复
                 this.addMessage('assistant', response.data.message);
@@ -118,49 +130,36 @@ export class CuriousTreeDialog {
 
     private addMessage(role: 'user' | 'assistant', content: string): void {
         const messageDiv = document.createElement('div');
-        messageDiv.style.marginBottom = '10px';
-        messageDiv.style.padding = '10px';
-        messageDiv.style.borderRadius = '8px';
-        messageDiv.style.maxWidth = '80%';
-        messageDiv.style.wordWrap = 'break-word';
-
-        if (role === 'user') {
-            messageDiv.style.backgroundColor = '#e3f2fd';
-            messageDiv.style.marginLeft = 'auto';
-        } else {
-            messageDiv.style.backgroundColor = '#f1f8e9';
-            messageDiv.style.marginRight = 'auto';
-        }
-
+        messageDiv.className = `curious-tree-message curious-tree-message-${role}`;
         messageDiv.textContent = content;
         this.messagesContainer.appendChild(messageDiv);
         this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
     }
 
     public show(): void {
-        this.container.setVisible(true);
-        this.messagesContainer.style.display = 'block';
-        this.inputBox.style.display = 'block';
+        this.dialogElement.style.display = 'flex';
         this.isVisible = true;
+        this.inputBox.focus();
         this.loadHistory();
     }
 
     public hide(): void {
-        this.container.setVisible(false);
-        this.messagesContainer.style.display = 'none';
-        this.inputBox.style.display = 'none';
+        this.dialogElement.style.display = 'none';
         this.isVisible = false;
     }
 
     private async loadHistory(): Promise<void> {
         try {
-            const response = await curiousTreeApi.getHistory();
-            if (response.success && response.data) {
+            const response = await curiousTreeApi.getHistory({});
+            if (response.success && response.data?.data?.messages) {
                 // 清空现有消息
                 this.messagesContainer.innerHTML = '';
                 // 加载历史消息
-                response.data.forEach(msg => {
-                    this.addMessage(msg.role, msg.content);
+                response.data.data.messages.forEach(msg => {
+                    // 显示用户问题
+                    this.addMessage('user', msg.question);
+                    // 显示AI回复
+                    this.addMessage('assistant', msg.aiResponse);
                 });
             }
         } catch (error) {
@@ -169,8 +168,6 @@ export class CuriousTreeDialog {
     }
 
     public destroy(): void {
-        this.container.destroy();
-        this.messagesContainer.remove();
-        this.inputBox.remove();
+        this.dialogElement.remove();
     }
 } 

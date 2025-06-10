@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import { CuriousTreeModel, ICuriousTree } from '../models/CuriousTree';
 import { GeminiService } from '../utils/GeminiService';
 import { getChatRole } from '../ai/roles/ChatRoles';
+import { getUserIdFromRequest } from '../utils/authUtils';
 
 export class CuriousTreeController extends BaseController<ICuriousTree> {
     private geminiService: GeminiService;
@@ -14,22 +15,26 @@ export class CuriousTreeController extends BaseController<ICuriousTree> {
 
     async chat(req: Request, res: Response): Promise<void> {
         try {
-            const { userId, message } = req.body;
+            const userId = getUserIdFromRequest(req);
+            if (!userId) {
+                this.sendError(res, '未授权访问', 401);
+                return;
+            }
 
-            if (!userId || !message) {
-                this.sendError(res, '缺少必要参数');
+            const { message } = req.body;
+            if (!message) {
+                this.sendError(res, '缺少消息内容');
                 return;
             }
 
             // 获取或创建对话记录
             let conversationModel = await CuriousTreeModel.findOne({ userId });
             if (!conversationModel) {
-                conversationModel = new CuriousTreeModel({ userId, messages: [] });
+                conversationModel = new CuriousTreeModel({ userId, chatHistory: [] });
             }
 
             //curiosityTree
             const chatRole = getChatRole('curiosityTree');
-
 
             // 定义工具，可以让AI查询当前用户历史对话记录
             const tools = [
@@ -51,8 +56,7 @@ export class CuriousTreeController extends BaseController<ICuriousTree> {
             const userPrompt = `当前跟你对话的用户的ID是：${userId}，以下是用户的问题：${message}`
             const ai_model = "gemini-2.0-flash"
             // 获取AI响应
-            const aiResponse = await this.geminiService.generateContent(chatRole.initialPrompt,userPrompt,ai_model,tools);
-
+            const aiResponse = await this.geminiService.generateContent(chatRole.initialPrompt, userPrompt, ai_model, tools);
 
             // 添加AI响应
             conversationModel.chatHistory.push({
@@ -77,7 +81,11 @@ export class CuriousTreeController extends BaseController<ICuriousTree> {
 
     async getConversationHistory(req: Request, res: Response): Promise<void> {
         try {
-            const { userId } = req.params;
+            const userId = getUserIdFromRequest(req);
+            if (!userId) {
+                this.sendError(res, '未授权访问', 401);
+                return;
+            }
             
             // 使用聚合管道在数据库层面完成筛选和排序
             const result = await CuriousTreeModel.aggregate([
@@ -94,11 +102,17 @@ export class CuriousTreeController extends BaseController<ICuriousTree> {
             ]);
 
             if (!result || result.length === 0) {
-                this.sendSuccess(res, { messages: [] });
+                this.sendSuccess(res, { data: { messages: [] } });
                 return;
             }
 
-            this.sendSuccess(res, { messages: result[0].messages });
+            // 转换时间戳格式
+            const messages = result[0].messages.map((msg: { timestamp: Date }) => ({
+                ...msg,
+                timestamp: msg.timestamp.toISOString()
+            }));
+
+            this.sendSuccess(res, { data: { messages } });
         } catch (error) {
             console.error('获取对话历史错误:', error);
             this.sendError(res, '获取对话历史时发生错误', 500);

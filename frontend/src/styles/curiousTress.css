@@ -1,0 +1,94 @@
+.curious-tree-dialog {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(255, 255, 255, 0.95);
+    border: 2px solid #4caf50;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+}
+
+.curious-tree-title-bar {
+    padding: 15px;
+    border-bottom: 1px solid #4caf50;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.curious-tree-title {
+    font-size: 20px;
+    font-weight: bold;
+    color: #2d5016;
+}
+
+.curious-tree-close-button {
+    border: none;
+    background: none;
+    font-size: 24px;
+    color: #666;
+    cursor: pointer;
+    padding: 0 10px;
+}
+
+.curious-tree-messages-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.curious-tree-input-container {
+    padding: 15px;
+    border-top: 1px solid #4caf50;
+    display: flex;
+    gap: 10px;
+}
+
+.curious-tree-input {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid #4caf50;
+    border-radius: 20px;
+    outline: none;
+    font-size: 16px;
+}
+
+.curious-tree-send-button {
+    padding: 10px 20px;
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.curious-tree-message {
+    max-width: 80%;
+    padding: 10px 15px;
+    border-radius: 15px;
+    word-wrap: break-word;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.curious-tree-message-user {
+    background-color: #e3f2fd;
+    color: #1565c0;
+    align-self: flex-end;
+    margin-left: auto;
+}
+
+.curious-tree-message-assistant {
+    background-color: #f1f8e9;
+    color: #2d5016;
+    align-self: flex-start;
+    margin-right: auto;
+}

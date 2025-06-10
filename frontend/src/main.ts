@@ -4,6 +4,7 @@ import { FontTest } from './components/FontTest';
 import { PhaserFontConfig } from './config/PhaserFontConfig';
 import { AudioManager } from './utils/AudioManager';
 import './index.css';
+import './styles/curiousTress.css';
 
 // 防止默认的拖拽、选择等行为
 document.addEventListener('DOMContentLoaded', () => {

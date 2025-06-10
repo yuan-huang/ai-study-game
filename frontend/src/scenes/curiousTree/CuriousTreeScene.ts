@@ -86,6 +86,11 @@ export class CuriousTreeScene extends BaseScene {
         // 设置交互
         backButton.setInteractive({ useHandCursor: true });
         backButton.on('pointerdown', () => {
+            // 如果对话框存在，先关闭它
+            if (this.curiousTreeDialog) {
+                this.curiousTreeDialog.destroy();
+                this.curiousTreeDialog = undefined;
+            }
             this.scene.start('MainScene');
         });
 
