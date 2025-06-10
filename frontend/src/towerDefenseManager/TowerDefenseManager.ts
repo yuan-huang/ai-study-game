@@ -82,9 +82,6 @@ export class TowerDefenseManager {
         this.pathManager.createAndDrawPath();
     }
 
-    public async generateQuestions(): Promise<void> {
-        await this.questionManager.generateQuestions();
-    }
 
     public getNextQuestion() {
         return this.questionManager.getNextQuestion();
