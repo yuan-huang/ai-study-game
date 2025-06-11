@@ -1,5 +1,5 @@
 # 使用官方 Nginx 镜像作为基础镜像
-FROM nginx:alpine
+FROM registry.cn-shenzhen.aliyuncs.com:latest
 
 # 删除 Nginx 默认配置
 RUN rm /etc/nginx/conf.d/default.conf

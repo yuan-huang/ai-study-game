@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM registry.cn-shenzhen.aliyuncs.com/xpzh/node:23.5.0-alpine3.21
 
 WORKDIR /app
 
