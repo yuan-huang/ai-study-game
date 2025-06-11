@@ -40,6 +40,18 @@ export const SpiritDialog: React.FC<SpiritDialogProps> = ({ isOpen, onClose }) =
             content: item.content,
             timestamp: item.timestamp
           })));
+          //如果历史消息为空，则添加欢迎语
+          if (response.data.history.length === 0) {
+            getSpiritWelcome().then((response: ApiResponse<{ welcomeMessage: string }>) => {
+              if (response.success && response.data) {
+                setMessages([{
+                  type: 'spirit',
+                  content: response.data.welcomeMessage
+                }]);
+              }
+            });
+            
+          }
         }
       });
     }

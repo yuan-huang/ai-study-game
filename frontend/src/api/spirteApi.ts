@@ -1,10 +1,11 @@
-import { get, post, ApiResponse } from '../utils/request';
+import { get, post, ApiResponse, getWithParams } from '../utils/request';
 
 
 // 获取精灵欢迎语
 export const getSpiritWelcome = (): Promise<ApiResponse> => {
   return get('/spirit/welcome');
 };
+
 
 // 与精灵对话
 export const chatWithSpirit = (message: string): Promise<ApiResponse> => {
