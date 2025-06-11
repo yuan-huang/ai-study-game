@@ -79,6 +79,16 @@ export async function request<T>(
 
         // 检查响应状态
         if (!response.ok) {
+            // 处理认证错误
+            if (response.status === 401 || response.status === 403) {
+                console.warn('认证失败，清除本地存储并跳转到登录页面');
+                
+                // 动态导入认证工具函数
+                const { clearAuthData, emitAuthFailedEvent } = await import('./authUtils');
+                clearAuthData();
+                emitAuthFailedEvent(response.status, data.message || '认证失败');
+            }
+            
             throw new Error(data.message || `HTTP ${response.status}: ${response.statusText}`);
         }
 

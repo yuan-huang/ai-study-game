@@ -1,6 +1,7 @@
 import { KnowledgeGarden } from './KnowledgeGarden';
 import { PhaserFontConfig } from './config/PhaserFontConfig';
 import { AudioManager } from './utils/AudioManager';
+import { LoadingManager } from './components/LoadingManager';
 import './index.css';
 import './styles/curiousTress.css';
 import React from 'react';
@@ -19,9 +20,16 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('selectstart', (e) => e.preventDefault());
 });
 
+// 初始化加载管理器
+let loadingManager: LoadingManager;
+
 // 等待DOM完全加载后初始化游戏
 window.addEventListener('load', async () => {
     console.log('🌐 页面完全加载，开始初始化游戏');
+    
+    // 初始化加载管理器
+    loadingManager = LoadingManager.getInstance();
+    console.log('🎬 LoadingManager已初始化');
     
     // 首先加载字体
     console.log('🔤 开始加载阿里开源字体...');
@@ -56,6 +64,16 @@ window.addEventListener('load', async () => {
     } catch (error) {
         console.error('❌ React应用创建失败:', error);
     }
+    
+    // 游戏初始化完成，加载动画将由具体场景控制隐藏
+    console.log('✅ 游戏初始化完成，等待场景控制加载动画');
+    
+    // 添加一个全局测试函数，可以手动隐藏加载动画
+    (window as any).testHideLoading = () => {
+        console.log('🧪 手动测试隐藏加载动画');
+        const { hideLoading } = require('./components/LoadingManager');
+        hideLoading(0);
+    };
 });
 
 // 处理窗口大小变化

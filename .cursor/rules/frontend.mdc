@@ -9,7 +9,7 @@ alwaysApply: false
 
 api接口，里面的api要引入  import { post, ApiResponse } from '../utils/request';
 
-
+pharse.js 与 react 要通过事件机制，实现互动调用与通知。
 
 frontend/
 ├── src/                          # 源代码目录

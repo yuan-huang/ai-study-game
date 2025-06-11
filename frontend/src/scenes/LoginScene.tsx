@@ -3,6 +3,8 @@ import { gameStateStores } from '@/stores/GameStateStores';
 import { getAssetPath } from '@/config/AssetConfig';
 import '@/styles/login.css';
 import { gameEvents } from '@/utils/gameEvents';
+import { hideLoading } from '@/components/LoadingManager';
+import { createAuthFailedListener, clearAuthData } from '@/utils/authUtils';
 
 export class LoginScene extends BaseScene {
     private isCleanedUp: boolean = false;
@@ -21,6 +23,9 @@ export class LoginScene extends BaseScene {
         
         this.checkLoginCache().then((hasCache: boolean) => {
             if (hasCache) {
+                console.log('🎬 LoginScene: 有缓存，直接跳转到MainScene');
+                // 有缓存时也要隐藏加载动画，让MainScene来处理
+                this.hideLoadingAnimation();
                 this.scene.start('MainScene');
                 return;
             }
@@ -28,12 +33,24 @@ export class LoginScene extends BaseScene {
             this.createBackground('login-canvas');
             this.showLoginForm();
             this.setupEventListeners();
+            
+            // 登录场景完全加载后隐藏加载动画
+            this.hideLoadingAnimation();
         });
 
         this.sound.stopAll();
         this.audioManager.playMusic(this, 'landing-interface-music', {
             loop: true
         });
+    }
+
+    /**
+     * 隐藏加载动画
+     */
+    private hideLoadingAnimation(): void {
+        console.log('🎬 LoginScene: 准备隐藏加载动画');
+        // 使用事件系统隐藏加载动画
+        hideLoading(500); // 延迟500ms隐藏
     }
 
     private async checkLoginCache(): Promise<boolean> {
@@ -105,6 +122,13 @@ export class LoginScene extends BaseScene {
             unsubscribeLoginSuccess();
         }
         
+        // 清理认证失败事件监听器
+        const authFailedCleanup = this.data.get('authFailedCleanup');
+        if (authFailedCleanup) {
+            authFailedCleanup();
+            this.data.remove('authFailedCleanup');
+        }
+        
         this.sound.stopAll();
         this.isCleanedUp = true;
     }
@@ -113,5 +137,22 @@ export class LoginScene extends BaseScene {
         super.init();
         this.events.on('shutdown', this.cleanup, this);
         this.events.on('destroy', this.cleanup, this);
+        
+        // 监听全局认证失败事件
+        this.setupAuthFailedListener();
+    }
+
+    /**
+     * 设置认证失败监听器
+     */
+    private setupAuthFailedListener(): void {
+        // 在登录页面收到认证失败事件时，只需要清除数据，不需要跳转
+        const cleanup = createAuthFailedListener(this, (detail: any) => {
+            console.warn('LoginScene收到认证失败事件:', detail);
+            clearAuthData();
+        });
+        
+        // 保存清理函数，用于场景销毁时调用
+        this.data.set('authFailedCleanup', cleanup);
     }
 } 

@@ -16,6 +16,13 @@ export interface GameEventMap {
     'hideLoading': {};
     'showError': { message: string };
     'hideError': {};
+    
+    // 加载管理器事件
+    'loading:show': { message?: string; playSound?: boolean };
+    'loading:hide': { delay?: number };
+    'loading:updateText': { message: string };
+    'loading:updateProgress': { progress: number };
+    'loading:setSound': { enabled: boolean };
 }
 
 // 事件发射器类

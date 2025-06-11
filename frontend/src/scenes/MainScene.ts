@@ -4,6 +4,8 @@ import { BaseScene } from './BaseScene';
 import { authApi } from '@/api/authApi';
 import { getSpiritWelcome } from '@/api/spirteApi';
 import { ApiResponse } from '@/utils/request';
+import { hideLoading } from '@/components/LoadingManager';
+import { createAuthFailedListener, handleAuthFailure } from '@/utils/authUtils';
 
 export class MainScene extends BaseScene {
     private effectManager!: EffectManager;
@@ -36,6 +38,9 @@ export class MainScene extends BaseScene {
         // 监听场景切换事件
         this.events.on('shutdown', this.cleanup, this);
         this.events.on('destroy', this.cleanup, this);
+        
+        // 监听全局认证失败事件
+        this.setupAuthFailedListener();
     }
     
     preload(): void {
@@ -69,6 +74,11 @@ export class MainScene extends BaseScene {
     
     async create() {
         super.create();
+        
+        // 隐藏加载动画（如果还在显示）
+        console.log('🎬 MainScene: 准备隐藏加载动画');
+        hideLoading(300); // 延迟300ms隐藏
+        
         // 初始化效果管理器
         this.effectManager = new EffectManager(this);
         this.spriteEffect = new SpriteEffect(this);
@@ -412,20 +422,21 @@ export class MainScene extends BaseScene {
     }
 
     async renderUserInfo() {
-        //调用api获取用户信息
-        const response = await authApi.getUserProfile();
+        try {
+            //调用api获取用户信息
+            const response = await authApi.getUserProfile();
 
-        if (response.success && response.data) {
-            const user = response.data.user;
-            const flowerCount = response.data.flowerCount;
-            const towerDefenseCount = response.data.towerDefenseCount;
-            const reviewCount = response.data.reviewCount;
-            const curiousTreeGrowthLevel = response.data?.curiousTreeGrowth?.level || 0;
+            if (response.success && response.data) {
+                const user = response.data.user;
+                const flowerCount = response.data.flowerCount;
+                const towerDefenseCount = response.data.towerDefenseCount;
+                const reviewCount = response.data.reviewCount;
+                const curiousTreeGrowthLevel = response.data?.curiousTreeGrowth?.level || 0;
 
-            
-            //创建一个容器
-            const avatarContainer = this.add.container();
-            avatarContainer.setPosition(50, 50);
+                
+                //创建一个容器
+                const avatarContainer = this.add.container();
+                avatarContainer.setPosition(50, 50);
 
             const avatarBg = this.add.image(
                 0,
@@ -503,12 +514,36 @@ export class MainScene extends BaseScene {
             ).setAlpha(0.9).setOrigin(0, 0);
 
 
-            avatarContainer.add(avatarBg);
-            avatarContainer.add(avatarText);
-            avatarContainer.add(flowerText);
-            avatarContainer.add(otherText);
+                avatarContainer.add(avatarBg);
+                avatarContainer.add(avatarText);
+                avatarContainer.add(flowerText);
+                avatarContainer.add(otherText);
+            } else {
+                console.error('获取用户信息失败:', response);
+                this.handleAuthError('获取用户信息失败');
+            }
+        } catch (error) {
+            console.error('渲染用户信息时发生错误:', error);
+            this.handleAuthError('认证失败，请重新登录');
         }
+    }
 
+    /**
+     * 设置认证失败监听器
+     */
+    private setupAuthFailedListener(): void {
+        // 使用统一的认证失败监听器工具
+        const cleanup = createAuthFailedListener(this);
+        
+        // 保存清理函数，用于场景销毁时调用
+        this.data.set('authFailedCleanup', cleanup);
+    }
+
+    /**
+     * 处理认证错误
+     */
+    private handleAuthError(message: string): void {
+        handleAuthFailure(this, message);
     }
 
     /**
@@ -789,6 +824,7 @@ export class MainScene extends BaseScene {
      */
     private handlePowerOff(): void {
         // 清除用户缓存
+        localStorage.removeItem('token');
         localStorage.removeItem('gameUser');
         localStorage.removeItem('gameUserCacheTime');
         localStorage.removeItem('welcomeMessage');
@@ -820,6 +856,13 @@ export class MainScene extends BaseScene {
         if (this.systemMenuContainer) {
             this.systemMenuContainer.destroy();
             this.systemMenuContainer = undefined;
+        }
+        
+        // 清理认证失败事件监听器
+        const authFailedCleanup = this.data.get('authFailedCleanup');
+        if (authFailedCleanup) {
+            authFailedCleanup();
+            this.data.remove('authFailedCleanup');
         }
     }
     
