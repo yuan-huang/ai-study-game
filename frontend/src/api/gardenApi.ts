@@ -427,51 +427,6 @@ export class GardenApiService {
     });
   }
 
-  /**
-   * 智能花园管理 - 获取完整花园状态并提供管理建议
-   * @param userId 用户ID
-   */
-  async getSmartGardenState(userId: string): Promise<ApiResponse<{
-    layout: GardenLayout;
-    memoryState: GardenMemoryData;
-    recommendations: string[];
-  }>> {
-    try {
-      // 并行获取花园布局和记忆状态
-      const [layoutResponse, memoryResponse] = await Promise.all([
-        this.getGardenWarehouse(userId),
-        this.getGardenMemoryState(userId)
-      ]);
-
-      if (!layoutResponse.success || !memoryResponse.success) {
-        return {
-          success: false,
-          message: '获取花园状态失败'
-        };
-      }
-
-      // 生成智能建议
-      const recommendations = this.generateSmartRecommendations(
-        layoutResponse.data!,
-        memoryResponse.data!
-      );
-
-      return {
-        success: true,
-        data: {
-          layout: layoutResponse.data!,
-          memoryState: memoryResponse.data!,
-          recommendations
-        },
-        message: '成功获取智能花园状态'
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : '获取花园状态异常'
-      };
-    }
-  }
 
   /**
    * 生成智能花园管理建议
@@ -516,25 +471,7 @@ export class GardenApiService {
     return recommendations;
   }
 
-  /**
-   * 验证花园操作权限
-   * @param userId 用户ID
-   * @param flowerId 花朵ID
-   */
-  async validateGardenOperation(userId: string, flowerId: string): Promise<boolean> {
-    try {
-      const response = await this.getGardenWarehouse(userId);
-      if (!response.success || !response.data) {
-        return false;
-      }
 
-      // 检查花朵是否属于该用户
-      const allFlowers = [...response.data.plantedFlowers, ...response.data.warehouseFlowers];
-      return allFlowers.some(flower => flower.id === flowerId);
-    } catch {
-      return false;
-    }
-  }
 
   /**
    * 获取花朵精灵名称

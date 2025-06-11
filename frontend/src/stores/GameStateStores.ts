@@ -32,7 +32,6 @@ export class GameStateStores {
     private _token: string | null = null;
     private _error: string | null = null;
     private _grade: string | null = null;
-    private _userId: string;
 
     private constructor() {
         // 检查本地存储中的token
@@ -95,7 +94,6 @@ export class GameStateStores {
                 this._isAuthenticated = true;
                 this._user = response.data.user;
                 this._token = response.data.token;
-                this._userId = response.data.user.id;
                 this._error = null;
                 this._grade = String(grade);
 
