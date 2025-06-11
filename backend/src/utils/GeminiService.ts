@@ -3,7 +3,13 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+interface ChatHistory {
+    role: 'user' | 'model';
+    parts: { text: string }[];
+}
+
 export class GeminiService {
+
     private static instance: GeminiService;
     private ai: GoogleGenAI;
     private baseUrl: string | undefined;
@@ -48,6 +54,21 @@ export class GeminiService {
     }
 
 
+
+    async chatWithHistory(systemPrompt: string, prompt: string, history: ChatHistory[] = [], model: string = "gemini-2.0-flash") {
+        const chat = this.ai.chats.create({
+            model,
+            config: {
+                systemInstruction: systemPrompt,
+            },
+            history: history,
+        });
+
+        const response = await chat.sendMessage({
+            message: prompt,
+          });
+        return response.text;
+    }
 
     
 

@@ -17,4 +17,14 @@ router.get('/intimacy', authenticateToken, spiritController.getIntimacy.bind(spi
 // 获取用户信息
 router.get('/user-info', authenticateToken, spiritController.getUserInfo.bind(spiritController));
 
+// 连续对话模式
+router.post('/chat', authenticateToken, spiritController.chatWithSpirit.bind(spiritController));
+
+// 获取对话历史
+router.get('/chat-history', authenticateToken, spiritController.getChatHistory.bind(spiritController));
+
+// 清除对话历史
+router.post('/clear-chat-history', authenticateToken, spiritController.clearChatHistory.bind(spiritController));
+
+
 export default router; 

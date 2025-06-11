@@ -1,4 +1,4 @@
-import { IFlower, Flower } from '../models/Flower';
+import { IFlower, FlowerModel } from '../models/Flower';
 import { FlowerMemoryService } from './FlowerMemoryService';
 import { logger } from '../utils/logger';
 import mongoose from 'mongoose';
@@ -138,7 +138,7 @@ export class FlowerBloodManager {
     recommendations: string[];
   }> {
     try {
-      const flowers = await Flower.find({ 
+      const flowers = await FlowerModel.find({ 
         userId: new mongoose.Types.ObjectId(userId) 
       });
 
@@ -257,7 +257,7 @@ export class FlowerBloodManager {
     const startTime = Date.now();
     
     try {
-      const flowers = await Flower.find({ 
+      const flowers = await FlowerModel.find({ 
         userId: new mongoose.Types.ObjectId(userId) 
       });
 

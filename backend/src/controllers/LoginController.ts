@@ -3,6 +3,9 @@ import { User } from '../models/User';
 import { logger } from '../utils/logger';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../config/constants';
+import { FlowerModel } from '../models/Flower';
+import { TowerDefenseRecordModel } from '../models/TowerDefenseRecord';
+import { CuriousTreeGrowthModel } from '../models/CuriousTreeGrowth';
 
 export class LoginController {
 
@@ -26,6 +29,16 @@ export class LoginController {
           gender: profile?.gender || '男孩'
         });
         await user.save();
+
+        // 创建好奇树成长值
+        const curiousTreeGrowth = new CuriousTreeGrowthModel({
+          userId: user._id,
+          growthValue: 0,
+          level: 1
+        });
+        await curiousTreeGrowth.save();
+
+        // 创建精灵
         logger.info(`新用户注册: ${username}`);
       } else {
         // 更新用户信息
@@ -123,9 +136,21 @@ export class LoginController {
         });
       }
 
+      // 统计用户获取花朵数量
+      const flowerCount = await FlowerModel.countDocuments({ userId });
+
+      // 统计用户闯关次数
+      const towerDefenseCount = await TowerDefenseRecordModel.countDocuments({ userId });
+
+      //复习次数
+      const reviewCount = towerDefenseCount-flowerCount;
+
+      //好奇树等级
+      const curiousTreeGrowth = await CuriousTreeGrowthModel.findOne({ userId });
+
       res.json({
         success: true,
-        data: { user }
+        data: { user, flowerCount, towerDefenseCount, reviewCount, curiousTreeGrowth }
       });
 
     } catch (error) {

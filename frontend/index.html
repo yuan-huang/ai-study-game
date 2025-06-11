@@ -19,6 +19,27 @@
         #game-container {
             width: 100%;
             height: 100vh;
+            position: relative;
+        }
+        #game-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        #game-app {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+        #game-app > * {
+            pointer-events: auto;
         }
     </style>
   </head>
@@ -28,7 +49,10 @@
     <div style="position: absolute; left: -9999px; visibility: hidden; font-family: 'Alibaba-Sans';">字体预加载</div>
     <div style="position: absolute; left: -9999px; visibility: hidden; font-family: 'Alibaba-Dongfang';">字体预加载</div>
     
-    <div id="game-container"></div>
-    <script type="module" src="/src/main.ts"></script>
+    <div id="game-container">
+        <div id="game-canvas"></div>
+        <div id="game-app"></div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html> 

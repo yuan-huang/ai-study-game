@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { Flower, IFlower } from '../models/Flower';
+import { FlowerModel, IFlower } from '../models/Flower';
 import { FlowerMemoryService } from './FlowerMemoryService';
 import { logger } from '../utils/logger';
 import mongoose from 'mongoose';
@@ -18,7 +18,7 @@ export class GardenService {
             logger.info(`开始更新用户 ${userId} 所有花朵的血量...`);
 
             // 获取用户所有花朵
-            const flowers = await Flower.find({ 
+            const flowers = await FlowerModel.find({ 
                 userId: new mongoose.Types.ObjectId(userId) 
             });
 
@@ -206,7 +206,7 @@ export class GardenService {
                 query._id = new mongoose.Types.ObjectId(flowerId);
             }
 
-            const flowers = await Flower.find(query);
+            const flowers = await FlowerModel.find(query);
 
             if (flowers.length === 0) {
                 logger.info('未找到相关花朵');
@@ -250,7 +250,7 @@ export class GardenService {
      */
     static async outputSubjectBloodSummary(userId: string): Promise<void> {
         try {
-            const flowers = await Flower.find({ 
+            const flowers = await FlowerModel.find({ 
                 userId: new mongoose.Types.ObjectId(userId) 
             });
 
@@ -349,7 +349,7 @@ export class GardenService {
      */
     static async outputFlowerForgettingAnalysis(userId: string): Promise<void> {
         try {
-            const flowers = await Flower.find({ 
+            const flowers = await FlowerModel.find({ 
                 userId: new mongoose.Types.ObjectId(userId) 
             });
 

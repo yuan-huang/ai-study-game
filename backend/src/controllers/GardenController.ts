@@ -2,13 +2,13 @@ import { Request, Response } from 'express';
 import { BaseController } from './BaseController';
 import { Document } from 'mongoose';
 import { logger } from '../utils/logger';
-import { Flower } from '../models/Flower';
+import { FlowerModel } from '../models/Flower';
 import { Nectar } from '../models/Nectar';
 import { User } from '../models/User';
 import { FlowerMemoryService } from '../services/FlowerMemoryService';
 import { GardenService } from '../services/GardenService';
 import { FlowerBloodManager } from '../services/FlowerBloodManager';
-import { TowerDefenseRecord } from '../models/TowerDefenseRecord';
+import { TowerDefenseRecordModel } from '../models/TowerDefenseRecord';
 import { createQuestionModel } from '../models/Question';
 import mongoose from 'mongoose';
 
@@ -39,7 +39,7 @@ export class GardenController extends BaseController<IGardenDoc> {
       }
 
       // 检查花朵是否存在且未种植
-      const flower = await Flower.findOne({
+      const flower = await FlowerModel.findOne({
         _id: new mongoose.Types.ObjectId(flowerId),
         userId: new mongoose.Types.ObjectId(userId),
         isPlanted: false
@@ -53,7 +53,7 @@ export class GardenController extends BaseController<IGardenDoc> {
       }
 
       // 检查位置是否被占用
-      const existingFlower = await Flower.findOne({
+      const existingFlower = await FlowerModel.findOne({
         userId: new mongoose.Types.ObjectId(userId),
         isPlanted: true,
         gardenPositionX: position.x,
@@ -116,7 +116,7 @@ export class GardenController extends BaseController<IGardenDoc> {
       }
 
       // 查找已种植的花朵
-      const flower = await Flower.findOne({
+      const flower = await FlowerModel.findOne({
         _id: new mongoose.Types.ObjectId(flowerId),
         userId: new mongoose.Types.ObjectId(userId),
         isPlanted: true
@@ -178,7 +178,7 @@ export class GardenController extends BaseController<IGardenDoc> {
       }
 
       // 查找已种植的花朵
-      const flower = await Flower.findOne({
+      const flower = await FlowerModel.findOne({
         _id: new mongoose.Types.ObjectId(flowerId),
         userId: new mongoose.Types.ObjectId(userId),
         isPlanted: true
@@ -192,7 +192,7 @@ export class GardenController extends BaseController<IGardenDoc> {
       }
 
       // 检查新位置是否被占用
-      const existingFlower = await Flower.findOne({
+      const existingFlower = await FlowerModel.findOne({
         _id: { $ne: new mongoose.Types.ObjectId(flowerId) },
         userId: new mongoose.Types.ObjectId(userId),
         isPlanted: true,
@@ -258,7 +258,7 @@ export class GardenController extends BaseController<IGardenDoc> {
 
       try {
         // 查找花朵
-        const flower = await Flower.findOne({
+        const flower = await FlowerModel.findOne({
           _id: new mongoose.Types.ObjectId(flowerId),
           userId: new mongoose.Types.ObjectId(userId)
         }).session(session);
@@ -359,7 +359,7 @@ export class GardenController extends BaseController<IGardenDoc> {
         });
       }
 
-      const plantedFlowers = await Flower.find({
+      const plantedFlowers = await FlowerModel.find({
         userId: new mongoose.Types.ObjectId(userId),
         isPlanted: true
       });
@@ -405,7 +405,7 @@ export class GardenController extends BaseController<IGardenDoc> {
         });
       }
 
-      const warehouseFlowers = await Flower.find({
+      const warehouseFlowers = await FlowerModel.find({
         userId: new mongoose.Types.ObjectId(userId),
         isPlanted: false
       });
@@ -445,7 +445,7 @@ export class GardenController extends BaseController<IGardenDoc> {
       const userId = req.user.userId;
 
       // 获取所有花朵（从塔防奖励中获得）
-      const flowers = await Flower.find({ userId: new mongoose.Types.ObjectId(userId) });
+      const flowers = await FlowerModel.find({ userId: new mongoose.Types.ObjectId(userId) });
       
       // 获取所有甘露（从塔防奖励中获得）
       const nectars = await Nectar.find({ userId: new mongoose.Types.ObjectId(userId) });
@@ -551,7 +551,7 @@ export class GardenController extends BaseController<IGardenDoc> {
           const { userId, flowerId, position } = flowerData;
 
           // 检查花朵是否存在且未种植
-          const flower = await Flower.findOne({
+          const flower = await FlowerModel.findOne({
             _id: new mongoose.Types.ObjectId(flowerId),
             userId: new mongoose.Types.ObjectId(userId),
             isPlanted: false
@@ -562,7 +562,7 @@ export class GardenController extends BaseController<IGardenDoc> {
           }
 
           // 检查位置是否被占用
-          const existingFlower = await Flower.findOne({
+          const existingFlower = await FlowerModel.findOne({
             userId: new mongoose.Types.ObjectId(userId),
             isPlanted: true,
             gardenPositionX: position.x,
@@ -634,7 +634,7 @@ export class GardenController extends BaseController<IGardenDoc> {
       }
 
       // 检查花朵是否存在且未种植
-      const flower = await Flower.findOne({
+      const flower = await FlowerModel.findOne({
         _id: new mongoose.Types.ObjectId(flowerId),
         userId: new mongoose.Types.ObjectId(userId),
         isPlanted: false
@@ -648,7 +648,7 @@ export class GardenController extends BaseController<IGardenDoc> {
       }
 
       // 获取已占用的位置
-      const occupiedPositions = await Flower.find({
+      const occupiedPositions = await FlowerModel.find({
         userId: new mongoose.Types.ObjectId(userId),
         isPlanted: true
       }).select('gardenPositionX gardenPositionY');
@@ -725,7 +725,7 @@ export class GardenController extends BaseController<IGardenDoc> {
       }
 
       // 获取花园中所有已种植的花朵
-      const gardenFlowers = await Flower.find({
+      const gardenFlowers = await FlowerModel.find({
         userId: new mongoose.Types.ObjectId(userId),
         isPlanted: true
       });
@@ -820,7 +820,7 @@ export class GardenController extends BaseController<IGardenDoc> {
       }
 
       // 查找花朵
-      const flower = await Flower.findOne({
+      const flower = await FlowerModel.findOne({
         _id: new mongoose.Types.ObjectId(flowerId),
         userId: new mongoose.Types.ObjectId(userId)
       });
@@ -1017,7 +1017,7 @@ export class GardenController extends BaseController<IGardenDoc> {
           const totalLevel = categoryStats.reduce((sum, cat) => sum + cat.totalQuestions, 0);
 
           // 3. 查询当前用户在该学科下已获得的花朵，按分类统计
-          const userFlowers = await Flower.find({
+          const userFlowers = await FlowerModel.find({
             userId: new mongoose.Types.ObjectId(userId),
             subject: subject
           });
@@ -1044,7 +1044,7 @@ export class GardenController extends BaseController<IGardenDoc> {
           const volumeRatio = totalCategoriesCount > 0 ? completedCategoriesCount / totalCategoriesCount : 0;
 
           // 4. 查询用户的闯关记录，用于计算记忆遗忘曲线
-          const userRecords = await TowerDefenseRecord.find({
+          const userRecords = await TowerDefenseRecordModel.find({
             userId: new mongoose.Types.ObjectId(userId),
             subject: subject,
             grade: userGrade
@@ -1322,7 +1322,7 @@ export class GardenController extends BaseController<IGardenDoc> {
       await GardenService.outputFlowerBloodLossSchedule(userId);
 
       // 3. 获取更新后的花朵数据用于返回
-      const updatedFlowers = await Flower.find({
+      const updatedFlowers = await FlowerModel.find({
         userId: new mongoose.Types.ObjectId(userId)
       });
 
@@ -1416,7 +1416,7 @@ export class GardenController extends BaseController<IGardenDoc> {
         }
 
         // 2. 查找对应学科-年级-分类的所有花朵
-        const flowers = await Flower.find({
+        const flowers = await FlowerModel.find({
           userId: new mongoose.Types.ObjectId(userId),
           subject: subject,
           grade: userGrade,
@@ -1519,7 +1519,7 @@ export class GardenController extends BaseController<IGardenDoc> {
       logger.info(`手动更新用户 ${userId} 的花朵血量`);
 
       // 获取更新前的花朵状态
-      const beforeFlowers = await Flower.find({
+      const beforeFlowers = await FlowerModel.find({
         userId: new mongoose.Types.ObjectId(userId)
       });
 
@@ -1544,7 +1544,7 @@ export class GardenController extends BaseController<IGardenDoc> {
       }
 
       // 获取更新后的花朵状态
-      const afterFlowers = await Flower.find({
+      const afterFlowers = await FlowerModel.find({
         userId: new mongoose.Types.ObjectId(userId)
       });
 
@@ -1615,7 +1615,7 @@ export class GardenController extends BaseController<IGardenDoc> {
         });
       }
 
-      const flowers = await Flower.find({
+      const flowers = await FlowerModel.find({
         userId: new mongoose.Types.ObjectId(userId)
       });
 
@@ -1705,7 +1705,7 @@ export class GardenController extends BaseController<IGardenDoc> {
         });
       }
 
-      const flowers = await Flower.find({
+      const flowers = await FlowerModel.find({
         userId: new mongoose.Types.ObjectId(userId)
       });
 
@@ -1868,7 +1868,7 @@ export class GardenController extends BaseController<IGardenDoc> {
         query.subject = subject;
       }
 
-      const flowers = await Flower.find(query);
+      const flowers = await FlowerModel.find(query);
 
       if (flowers.length === 0) {
         return res.status(200).json({

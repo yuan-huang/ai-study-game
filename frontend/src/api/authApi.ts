@@ -1,6 +1,16 @@
-import { User, Seed } from '../types';
+import { User, Seed, ApiResponse } from '../types';
 import { post, get } from '../utils/request';
 
+type UserProfileResponse = {
+    user: User;
+    flowerCount: number;
+    towerDefenseCount: number;
+    reviewCount: number;
+    curiousTreeGrowth: {
+        level: number;
+        growthValue: number;
+    };
+};
 // 认证相关API
 export const authApi = {
     // 登录 - 适应返回格式: { success: true, data: { user: User, token: string } }
@@ -16,6 +26,12 @@ export const authApi = {
     logout: async () => {
         const response = await post('/auth/logout');
         localStorage.removeItem('token');
+        return response;
+    },
+
+    // 获取用户信息
+    getUserProfile: async (): Promise<ApiResponse<UserProfileResponse>> => {
+        const response = await get<UserProfileResponse>('/auth/profile');
         return response;
     }
 };

@@ -54,6 +54,12 @@ export const GameAssets: SceneAssets = {
             key: 'mission-accomplished-sound',
             path: '/audio/MissionAccomplishedSound.mp3',
             type: AssetType.AUDIO
+        },
+        //frontend\public\images\ui\avatar\avatar-bg.png
+        {
+            key: 'avatar-bg',
+            path: '/images/ui/avatar/avatar-bg.png',
+            type: AssetType.IMAGE
         }
     ],
 

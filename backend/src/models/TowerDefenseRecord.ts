@@ -29,4 +29,4 @@ const TowerDefenseRecordSchema = new Schema<ITowerDefenseRecord>({
 TowerDefenseRecordSchema.index({ userId: 1 });
 TowerDefenseRecordSchema.index({ userId: 1, level: 1 });
 
-export const TowerDefenseRecord = mongoose.model<ITowerDefenseRecord>('TowerDefenseRecord', TowerDefenseRecordSchema); 
+export const TowerDefenseRecordModel = mongoose.model<ITowerDefenseRecord>('TowerDefenseRecord', TowerDefenseRecordSchema); 

@@ -27,13 +27,7 @@ export class EffectManager {
 
     }
 
-    /**
-     * 为精灵添加交互效果
-     */
-    addSpriteInteraction(sprite: Phaser.GameObjects.Image) {
-        this.spriteEffect.addSpriteInteraction(sprite);
 
-    }
 
     /**
      * 为好奇树添加交互效果

@@ -2,9 +2,50 @@ import { Scene } from 'phaser';
 
 export class SpriteEffect {
     private scene: Scene;
+    private overlay: Phaser.GameObjects.Rectangle | null = null;
     
     constructor(scene: Scene) {
         this.scene = scene;
+        this.setupOverlay();
+        this.setupEventListeners();
+    }
+
+    private setupOverlay() {
+        // 创建遮罩层
+        this.overlay = this.scene.add.rectangle(
+            0,
+            0,
+            this.scene.cameras.main.width,
+            this.scene.cameras.main.height
+        );
+        this.overlay.setAlpha(0.1);
+        this.overlay.setOrigin(0, 0);
+        this.overlay.setDepth(9999); // 确保遮罩层在最上层
+        this.overlay.setInteractive();
+        this.overlay.setVisible(false);
+    }
+
+    private setupEventListeners() {
+        // 监听对话框关闭事件
+        window.addEventListener('spiritDialogClose', () => {
+            this.hideOverlay();
+        });
+    }
+
+    private showOverlay() {
+        if (this.overlay) {
+            this.overlay.setVisible(true);
+            // 添加点击事件阻止
+            this.overlay.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+                pointer.event.stopPropagation();
+            });
+        }
+    }
+
+    private hideOverlay() {
+        if (this.overlay) {
+            this.overlay.setVisible(false);
+        }
     }
 
     /**
@@ -25,6 +66,18 @@ export class SpriteEffect {
 
         sprite.on('pointerdown', () => {
             this.showClickEffect(sprite, originalScale);
+        });
+
+        // 添加点击效果
+        sprite.on('pointerdown', () => {
+            console.log('精灵被点击');
+            // 显示遮罩层
+            this.showOverlay();
+            // 触发自定义事件，通知React组件显示对话框
+            const event = new CustomEvent('spiritClick');
+            console.log('准备触发spiritClick事件');
+            window.dispatchEvent(event);
+            console.log('spiritClick事件已触发');
         });
     }
 

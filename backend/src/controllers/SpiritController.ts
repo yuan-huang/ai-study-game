@@ -4,14 +4,16 @@ import { Document } from 'mongoose';
 import { Spirit, ISpirit } from '../models/Spirit';
 import { UserTask } from '../models/UserTask';
 import { Task } from '../models/Task';
-import { Flower } from '../models/Flower';
+import { FlowerModel } from '../models/Flower';
 import { IUser, User } from '../models/User';
 import { GardenService } from '../services/GardenService';
 import { getUserIdFromRequest } from '../utils/authUtils';
 import { logger } from '../utils/logger';
-import { TowerDefenseRecord } from '../models/TowerDefenseRecord';
+import { TowerDefenseRecordModel } from '../models/TowerDefenseRecord';
 import { GeminiService } from '../utils/GeminiService';
 import { getChatRole } from '../ai/roles/ChatRoles';
+import { Chat } from '@google/genai';
+import { SpiritChatHistoryModel } from '../models/SpiritChatHistory';
 
 interface ISpiritDoc extends Document {
   _id?: string;
@@ -28,7 +30,7 @@ export class SpiritController extends BaseController<ISpiritDoc> {
   // 检查并更新花朵血量
   async checkAndUpdateFlowerHP(req: Request, res: Response) {
     try {
-      const userId = getUserIdFromRequest(req);
+      const userId = req.user.userId;
       if (!userId) {
         return this.sendError(res, '未找到用户ID');
       }
@@ -37,7 +39,7 @@ export class SpiritController extends BaseController<ISpiritDoc> {
       await GardenService.updateAllFlowersHP(userId);
 
       // 获取所有花朵
-      const flowers = await Flower.find({ userId });
+      const flowers = await FlowerModel.find({ userId });
       const lowHPFlowers = flowers.filter(flower => flower.hp < 50);
 
       // 如果有花朵血量低于50%，创建任务
@@ -52,7 +54,6 @@ export class SpiritController extends BaseController<ISpiritDoc> {
         flowers: flowers.map(f => ({
           id: f._id,
           hp: f.hp,
-          name: f.name
         })),
         tasks
       });
@@ -65,10 +66,7 @@ export class SpiritController extends BaseController<ISpiritDoc> {
   // 获取欢迎语句
   async getWelcomeMessage(req: Request, res: Response) {
     try {
-      const userId = getUserIdFromRequest(req);
-      if (!userId) {
-        return this.sendError(res, '未找到用户ID');
-      }
+      const userId = req.user.userId;
 
       // 获取或创建精灵
       let spirit = await Spirit.findOne({ userId });
@@ -147,8 +145,8 @@ export class SpiritController extends BaseController<ISpiritDoc> {
       }
 
       const spirit = await Spirit.findOne({ userId });
-      const flowers = await Flower.find({ userId });
-      const towerDefenseRecords = await TowerDefenseRecord.find({ userId });
+      const flowers = await FlowerModel.find({ userId });
+      const towerDefenseRecords = await TowerDefenseRecordModel.find({ userId });
 
       // 计算上次登录到现在天数
       const lastLoginTime = spirit?.lastLoginTime || new Date();
@@ -234,4 +232,101 @@ export class SpiritController extends BaseController<ISpiritDoc> {
       return `欢迎回来，${username}！让我们一起继续学习吧！`;
     }
   }
+
+  //连续对话模式
+  async chatWithSpirit(req: Request, res: Response) {
+    try {
+      const { message } = req.body;
+      const userId = req.user.userId;
+
+      if (!message) {
+        return res.status(400).json({ error: '缺少必要参数' });
+      }
+
+      // 获取历史对话记录
+      const chatHistory = await SpiritChatHistoryModel.findOne({ userId });
+      const history = chatHistory?.history || [];
+
+      // 构建历史对话记录
+      const formattedHistory = history.map(msg => ({
+        role: msg.role,
+        parts: [{ text: msg.content }]
+      }));
+
+      // 创建新的对话实例
+      const fairyAssistant = getChatRole('fairyAssistant');
+      const responseMessage = await this.geminiService.chatWithHistory(
+        fairyAssistant.initialPrompt,
+        message,
+        formattedHistory
+      );
+
+
+      // 保存新的对话记录到数据库
+      await SpiritChatHistoryModel.findOneAndUpdate(
+        { userId },
+        {
+          $push: {
+            history: [
+              { 
+                role: 'user', 
+                content: message,
+                timestamp: new Date()
+              },
+              { 
+                role: 'model', 
+                content: responseMessage,
+                timestamp: new Date()
+              }
+            ]
+          }
+        },
+        { upsert: true, new: true }
+      );
+
+      return this.sendSuccess(res, {
+        "message": responseMessage
+      });
+
+    } catch (error) {
+      console.error('对话错误:', error);
+      return res.status(500).json({ error: '对话处理失败' });
+    }
+  }
+
+  // 获取用户的对话历史
+  async getChatHistory(req: Request, res: Response) {
+    try {
+      const userId = req.user.userId;
+      
+      const chatHistory = await SpiritChatHistoryModel.findOne({ userId })
+        .sort({ 'history.timestamp': -1 })
+        .limit(50);
+
+      return this.sendSuccess(res, {
+        history: chatHistory?.history || []
+      });
+
+    } catch (error) {
+      console.error('获取对话历史错误:', error);
+      return res.status(500).json({ error: '获取对话历史失败' });
+    }
+  }
+
+  // 清除对话历史
+  async clearChatHistory(req: Request, res: Response) {
+    try {
+      const userId = req.user.userId;
+      await SpiritChatHistoryModel.findOneAndUpdate({ userId }, { history: [] });
+      return this.sendSuccess(res, { message: '对话历史已清除' });
+    } catch (error) {
+      console.error('清除对话历史错误:', error);
+      return this.sendError(res, '清除对话历史失败');
+    }
+  }
+
+
+
+
+
 } 

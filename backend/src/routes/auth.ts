@@ -24,4 +24,5 @@ router.post('/logout', loginController.logout.bind(loginController));
 // 获取用户信息
 router.get('/profile', authenticateToken, loginController.getUserProfile.bind(loginController));
 
+
 export default router; 

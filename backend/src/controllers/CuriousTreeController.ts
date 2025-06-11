@@ -1,16 +1,15 @@
 import { BaseController } from './BaseController';
 import { Request, Response } from 'express';
-import { CuriousTreeModel, ICuriousTree } from '../models/CuriousTree';
+import { CuriousTreeChatModel, ICuriousTreeChat } from '../models/CuriousTreeChat';
 import { CuriousTreeGrowthModel } from '../models/CuriousTreeGrowth';
 import { GeminiService } from '../utils/GeminiService';
 import { getChatRole } from '../ai/roles/ChatRoles';
-import { getUserIdFromRequest } from '../utils/authUtils';
 
-export class CuriousTreeController extends BaseController<ICuriousTree> {
+export class CuriousTreeController extends BaseController<ICuriousTreeChat> {
     private geminiService: GeminiService;
 
     constructor() {
-        super(CuriousTreeModel);
+        super(CuriousTreeChatModel);
         this.geminiService = GeminiService.getInstance();
     }
 
@@ -25,9 +24,9 @@ export class CuriousTreeController extends BaseController<ICuriousTree> {
             }
 
             // 获取或创建对话记录
-            let conversationModel = await CuriousTreeModel.findOne({ userId });
+            let conversationModel = await CuriousTreeChatModel.findOne({ userId });
             if (!conversationModel) {
-                conversationModel = new CuriousTreeModel({ userId, chatHistory: [] });
+                conversationModel = new CuriousTreeChatModel({ userId, chatHistory: [] });
             }
 
             // 获取或创建成长值记录
@@ -65,7 +64,7 @@ export class CuriousTreeController extends BaseController<ICuriousTree> {
 
             const ai_model = "gemini-2.0-flash"
             // 获取AI响应
-            const aiResponse = await this.geminiService.generateContent(chatRole.initialPrompt, userPrompt, ai_model, tools);
+            const aiResponse = await this.geminiService.generateContent(chatRole.initialPrompt, userPrompt, ai_model);
 
             // 解析AI响应，提取评分和回答内容
             const scoreMatch = aiResponse.match(/评分：(\d+)分/);
@@ -112,7 +111,7 @@ export class CuriousTreeController extends BaseController<ICuriousTree> {
             const userId = req.user.userId;
             
             // 使用聚合管道在数据库层面完成筛选和排序
-            const result = await CuriousTreeModel.aggregate([
+            const result = await CuriousTreeChatModel.aggregate([
                 { $match: { userId } },
                 { $unwind: "$chatHistory" },
                 { $sort: { "chatHistory.timestamp": -1 } },
@@ -172,7 +171,7 @@ export class CuriousTreeController extends BaseController<ICuriousTree> {
             const userId = req.user.userId;
 
             // 清空用户的对话历史
-            await CuriousTreeModel.updateOne(
+            await CuriousTreeChatModel.updateOne(
                 { userId },
                 { $set: { chatHistory: [] } }
             );

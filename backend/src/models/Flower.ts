@@ -38,4 +38,4 @@ const flowerSchema = new mongoose.Schema({
 flowerSchema.index({ userId: 1 });
 flowerSchema.index({ userId: 1, subject: 1, grade: 1, category: 1 });
 
-export const Flower = mongoose.model<IFlower>('Flower', flowerSchema); 
+export const FlowerModel = mongoose.model<IFlower>('Flower', flowerSchema); 

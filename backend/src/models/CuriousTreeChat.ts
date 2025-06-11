@@ -1,6 +1,6 @@
 import { Schema, model, Document } from 'mongoose';
 
-export interface ICuriousTree extends Document {
+export interface ICuriousTreeChat extends Document {
     userId: string;
     chatHistory: Array<{
         role: 'user' | 'assistant';
@@ -12,10 +12,10 @@ export interface ICuriousTree extends Document {
     updatedAt: Date;
 }
 
-const CuriousTreeSchema = new Schema<ICuriousTree>({
+const CuriousTreeChatSchema = new Schema<ICuriousTreeChat>({
     userId: { type: String, required: true },
     chatHistory: [{
-        role: { type: String, enum: ['user', 'assistant'], required: true },
+        role: { type: String, enum: ['user', 'assistant'], required: true, default: 'user' },
         question: { type: String, required: true },
         aiResponse: { type: String, required: true },
         timestamp: { type: Date, default: Date.now }
@@ -24,4 +24,4 @@ const CuriousTreeSchema = new Schema<ICuriousTree>({
     updatedAt: { type: Date, default: Date.now }
 });
 
-export const CuriousTreeModel = model<ICuriousTree>('CuriousTree', CuriousTreeSchema); 
+export const CuriousTreeChatModel = model<ICuriousTreeChat>('CuriousTreeChat', CuriousTreeChatSchema); 

@@ -2,8 +2,8 @@ import { Request, Response } from 'express';
 import { BaseController } from './BaseController';
 import { Document } from 'mongoose';
 import { logger } from '../utils/logger';
-import { ITowerDefenseRecord, TowerDefenseRecord } from '../models/TowerDefenseRecord';
-import { Flower } from '../models/Flower';
+import { ITowerDefenseRecord, TowerDefenseRecordModel } from '../models/TowerDefenseRecord';
+import { FlowerModel } from '../models/Flower';
 import { Nectar } from '../models/Nectar';
 import { User } from '../models/User';
 import mongoose from 'mongoose';
@@ -322,7 +322,7 @@ export class TowerDefenseController extends BaseController<ITowerDefenseDoc> {
 
 
       // 保存游戏记录
-      const gameRecord = new TowerDefenseRecord({
+      const gameRecord = new TowerDefenseRecordModel({
         userId: new mongoose.Types.ObjectId(userId),
         subject,
         grade: parseInt(grade),
@@ -337,7 +337,7 @@ export class TowerDefenseController extends BaseController<ITowerDefenseDoc> {
       await gameRecord.save();
 
       // 查询该用户在此组合下是否已有花朵
-      const existingFlower = await Flower.findOne({
+      const existingFlower = await FlowerModel.findOne({
         userId: new mongoose.Types.ObjectId(userId),
         subject,
         grade: parseInt(grade),
@@ -348,7 +348,7 @@ export class TowerDefenseController extends BaseController<ITowerDefenseDoc> {
 
       if (!existingFlower) {
         // 没有花朵，奖励花朵
-        const flower = new Flower({
+        const flower = new FlowerModel({
           userId: new mongoose.Types.ObjectId(userId),
           subject,
           grade: parseInt(grade),
@@ -449,7 +449,7 @@ export class TowerDefenseController extends BaseController<ITowerDefenseDoc> {
       const userId = req.user.userId;
 
       // 获取用户的花朵
-      const flowers = await Flower.find({ userId: new mongoose.Types.ObjectId(userId) });
+      const flowers = await FlowerModel.find({ userId: new mongoose.Types.ObjectId(userId) });
       
       // 获取用户的甘露
       const nectars = await Nectar.find({ userId: new mongoose.Types.ObjectId(userId) });
@@ -515,7 +515,7 @@ export class TowerDefenseController extends BaseController<ITowerDefenseDoc> {
       const userId = req.user.userId;
 
       // 获取用户的游戏记录统计
-      const records = await TowerDefenseRecord.find({ userId: new mongoose.Types.ObjectId(userId) });
+      const records = await TowerDefenseRecordModel.find({ userId: new mongoose.Types.ObjectId(userId) });
       
       // 统计各学科的通过次数
       const statsBySubject = records.reduce((acc: any, record:ITowerDefenseRecord) => {
