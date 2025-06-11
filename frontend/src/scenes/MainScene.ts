@@ -13,6 +13,7 @@ export class MainScene extends BaseScene {
     private spriteEffect!: SpriteEffect;
     private maskContainer!: Phaser.GameObjects.Container;
     private welcomeMessage?: string;
+    private systemMenuContainer?: Phaser.GameObjects.Container;
 
     constructor() {
         super('MainScene');
@@ -62,6 +63,8 @@ export class MainScene extends BaseScene {
             frameWidth: 128,  // 每个帧的宽度
             frameHeight: 128  // 每个帧的高度
         });
+
+
     }
     
     async create() {
@@ -269,7 +272,6 @@ export class MainScene extends BaseScene {
         //渲染用户信息
         this.renderUserInfo();
 
-
         // 播放主城背景音乐
         this.sound.stopAll();
         this.audioManager.playMusic(this, 'main-city-bgm', {
@@ -429,7 +431,31 @@ export class MainScene extends BaseScene {
                 0,
                 0,
                 'avatar-bg'
-            ).setScale(1).setOrigin(0, 0);
+            ).setScale(1).setOrigin(0, 0)
+            .setInteractive({ cursor: 'pointer' })
+            .on('pointerdown', () => {
+                this.toggleSystemMenu();
+            })
+            .on('pointerover', () => {
+                // 添加悬停效果
+                this.tweens.add({
+                    targets: avatarBg,
+                    scaleX: 1.05,
+                    scaleY: 1.05,
+                    duration: 200,
+                    ease: 'Power2'
+                });
+            })
+            .on('pointerout', () => {
+                // 恢复原状
+                this.tweens.add({
+                    targets: avatarBg,
+                    scaleX: 1,
+                    scaleY: 1,
+                    duration: 200,
+                    ease: 'Power2'
+                });
+            });
 
             //获取用户头像的宽度
             const avatarWidth = avatarBg.width;
@@ -485,10 +511,298 @@ export class MainScene extends BaseScene {
 
     }
 
+    /**
+     * 切换系统菜单显示/隐藏
+     */
+    private toggleSystemMenu(): void {
+        if (this.systemMenuContainer) {
+            // 如果菜单已存在，则隐藏
+            this.hideSystemMenu();
+        } else {
+            // 显示菜单
+            this.showSystemMenu();
+        }
+    }
+
+    /**
+     * 显示系统菜单
+     */
+    private showSystemMenu(): void {
+        // 创建系统菜单容器
+        this.systemMenuContainer = this.add.container(0, 0).setDepth(1000);
+
+        // 创建遮罩层
+        const overlay = this.add.rectangle(
+            this.cameras.main.width / 2,
+            this.cameras.main.height / 2,
+            this.cameras.main.width,
+            this.cameras.main.height,
+            0x000000, 0.3
+        ).setOrigin(0.5)
+        .setInteractive()
+        .on('pointerdown', () => {
+            this.hideSystemMenu();
+        });
+
+        // 菜单背景 - 使用圆角矩形
+        const menuBg = this.add.graphics();
+        menuBg.fillStyle(0xffffff, 0.95);
+        menuBg.lineStyle(3, 0x333333, 1);
+        menuBg.fillRoundedRect(300 - 140, 200 - 120, 280, 240, 20); // 圆角半径20
+        menuBg.strokeRoundedRect(300 - 140, 200 - 120, 280, 240, 20);
+
+        // 菜单标题
+        const title = this.createText(
+            300, 120,
+            '系统菜单',
+            'TITLE_MEDIUM',
+            {
+                fontSize: 28,
+                color: '#333333',
+                align: 'center'
+            }
+        ).setOrigin(0.5);
+
+        // 音量设置按钮
+        const volumeButton = this.createText(
+            300, 180,
+            '🔊 音量设置',
+            'BUTTON_TEXT',
+            {
+                fontSize: 28,
+                color: '#333333',
+                backgroundColor: '#f0f0f0',
+                padding: { x: 20, y: 12 }
+            }
+        ).setOrigin(0.5)
+        .setInteractive({ cursor: 'pointer' })
+        .on('pointerover', () => {
+            volumeButton.setStyle({ backgroundColor: '#e0e0e0' });
+        })
+        .on('pointerout', () => {
+            volumeButton.setStyle({ backgroundColor: '#f0f0f0' });
+        })
+        .on('pointerdown', async () => {
+            // 尝试恢复AudioContext
+            await this.audioManager.resumeAudioContext(this);
+            
+            // 播放点击音效
+            this.audioManager.playSound(this, 'click-sound');
+            
+            // 显示音量设置面板
+            if (this.volumeSettingsPanel) {
+                this.volumeSettingsPanel.toggle();
+            }
+            
+            // 隐藏系统菜单
+            this.hideSystemMenu();
+        });
+
+        // 退出游戏按钮
+        const exitButton = this.createText(
+            300, 250,
+            '🚪 退出游戏',
+            'BUTTON_TEXT',
+            {
+                fontSize: 28,
+                color: '#ffffff',
+                backgroundColor: '#ff4444',
+                padding: { x: 20, y: 12 }
+            }
+        ).setOrigin(0.5)
+        .setInteractive({ cursor: 'pointer' })
+        .on('pointerover', () => {
+            exitButton.setStyle({ backgroundColor: '#ff6666' });
+        })
+        .on('pointerout', () => {
+            exitButton.setStyle({ backgroundColor: '#ff4444' });
+        })
+        .on('pointerdown', () => {
+            // 隐藏系统菜单并显示退出确认对话框
+            this.hideSystemMenu();
+            this.showPowerOffConfirmDialog();
+        });
+
+        // 添加所有元素到容器
+        this.systemMenuContainer.add([overlay, menuBg, title, volumeButton, exitButton]);
+
+        // 设置初始状态并添加动画
+        this.systemMenuContainer.setAlpha(0).setScale(0.8);
+        this.tweens.add({
+            targets: this.systemMenuContainer,
+            alpha: 1,
+            scaleX: 1,
+            scaleY: 1,
+            duration: 300,
+            ease: 'Back.out'
+        });
+    }
+
+    /**
+     * 隐藏系统菜单
+     */
+    private hideSystemMenu(): void {
+        if (this.systemMenuContainer) {
+            this.tweens.add({
+                targets: this.systemMenuContainer,
+                alpha: 0,
+                scaleX: 0.8,
+                scaleY: 0.8,
+                duration: 300,
+                ease: 'Power2',
+                onComplete: () => {
+                    this.systemMenuContainer?.destroy();
+                    this.systemMenuContainer = undefined;
+                }
+            });
+        }
+    }
 
 
-    
 
+    /**
+     * 显示关机确认对话框
+     */
+    private showPowerOffConfirmDialog(): void {
+        // 创建确认对话框容器
+        const dialogContainer = this.add.container(
+            this.cameras.main.width / 2,
+            this.cameras.main.height / 2
+        ).setDepth(1001);
+
+        // 添加遮罩层
+        const overlay = this.add.rectangle(
+            0, 0,
+            this.cameras.main.width,
+            this.cameras.main.height,
+            0x000000, 0.5
+        ).setOrigin(0.5)
+        .setInteractive()
+        .on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+            pointer.event.stopPropagation();
+        });
+
+        // 创建对话框背景 - 使用圆角矩形，增大尺寸
+        const dialogBg = this.add.graphics();
+        dialogBg.fillStyle(0xffffff, 0.95);
+        dialogBg.lineStyle(3, 0x333333, 1);
+        dialogBg.fillRoundedRect(-250, -150, 500, 300, 25); // 增大到500x300，圆角半径25
+        dialogBg.strokeRoundedRect(-250, -150, 500, 300, 25);
+
+        // 创建标题
+        const title = this.createText(
+            0, -80,
+            '确认退出',
+            'TITLE_MEDIUM',
+            {
+                fontSize: 28,
+                color: '#333333',
+                align: 'center'
+            }
+        ).setOrigin(0.5);
+
+        // 创建提示文本
+        const message = this.createText(
+            0, -20,
+            '确定要退出到登录界面吗？',
+            'LABEL_TEXT',
+            {
+                fontSize: 28,
+                color: '#666666',
+                align: 'center'
+            }
+        ).setOrigin(0.5);
+
+        // 创建按钮
+        const confirmButton = this.createText(
+            -100, 80,
+            '确定',
+            'BUTTON_TEXT',
+            {
+                fontSize: 28,
+                color: '#ffffff',
+                backgroundColor: '#ff4444',
+                padding: { x: 30, y: 15 }
+            }
+        ).setOrigin(0.5)
+        .setInteractive({ cursor: 'pointer' })
+        .on('pointerover', () => {
+            confirmButton.setStyle({ backgroundColor: '#ff6666' });
+        })
+        .on('pointerout', () => {
+            confirmButton.setStyle({ backgroundColor: '#ff4444' });
+        })
+        .on('pointerdown', () => {
+            this.handlePowerOff();
+        });
+
+        const cancelButton = this.createText(
+            100, 80,
+            '取消',
+            'BUTTON_TEXT',
+            {
+                fontSize: 28,
+                color: '#333333',
+                backgroundColor: '#cccccc',
+                padding: { x: 30, y: 15 }
+            }
+        ).setOrigin(0.5)
+        .setInteractive({ cursor: 'pointer' })
+        .on('pointerover', () => {
+            cancelButton.setStyle({ backgroundColor: '#dddddd' });
+        })
+        .on('pointerout', () => {
+            cancelButton.setStyle({ backgroundColor: '#cccccc' });
+        })
+        .on('pointerdown', () => {
+            // 关闭对话框
+            this.tweens.add({
+                targets: dialogContainer,
+                alpha: 0,
+                scaleX: 0.8,
+                scaleY: 0.8,
+                duration: 300,
+                ease: 'Power2',
+                onComplete: () => {
+                    dialogContainer.destroy();
+                }
+            });
+        });
+
+        // 添加所有元素到容器
+        dialogContainer.add([overlay, dialogBg, title, message, confirmButton, cancelButton]);
+
+        // 设置初始状态并添加动画
+        dialogContainer.setAlpha(0).setScale(0.8);
+        this.tweens.add({
+            targets: dialogContainer,
+            alpha: 1,
+            scaleX: 1,
+            scaleY: 1,
+            duration: 300,
+            ease: 'Back.out'
+        });
+    }
+
+    /**
+     * 处理关机逻辑
+     */
+    private handlePowerOff(): void {
+        // 清除用户缓存
+        localStorage.removeItem('gameUser');
+        localStorage.removeItem('gameUserCacheTime');
+        localStorage.removeItem('welcomeMessage');
+        localStorage.removeItem('welcomeMessageTimestamp');
+
+        // 停止所有音效
+        this.sound.stopAll();
+
+        // 添加淡出效果后切换到登录场景
+        this.cameras.main.fadeOut(500, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete', () => {
+            this.scene.start('LoginScene');
+        });
+    }
 
     /**
      * 清理场景资源
@@ -500,6 +814,12 @@ export class MainScene extends BaseScene {
         // 清理效果管理器
         if (this.effectManager) {
             this.effectManager.destroy();
+        }
+
+        // 清理系统菜单
+        if (this.systemMenuContainer) {
+            this.systemMenuContainer.destroy();
+            this.systemMenuContainer = undefined;
         }
     }
     

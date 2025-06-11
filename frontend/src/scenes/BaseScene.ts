@@ -56,9 +56,6 @@ export class BaseScene extends Scene {
 
         // 创建音量设置面板
         this.volumeSettingsPanel = new VolumeSettingsPanel(this);
-
-        // 创建右上角设置图标
-        this.createVolumeSettingsIcon();
     }
 
     /**
@@ -85,94 +82,7 @@ export class BaseScene extends Scene {
         }
     }
 
-    /**
-     * 创建右上角的音量设置图标
-     */
-    protected createVolumeSettingsIcon(): void {
-        // 创建设置图标背景
-        const iconBg = this.add.graphics();
-        iconBg.fillStyle(0x000000, 0.3);
-        iconBg.fillCircle(0, 0, 25);
-        iconBg.lineStyle(2, 0xffffff, 0.8);
-        iconBg.strokeCircle(0, 0, 25);
 
-        // 创建设置图标（使用设置齿轮emoji或图片）
-        const settingsIcon = this.add.text(0, 0, '🔊', {
-            fontSize: '28px',
-            color: '#ffffff'
-        }).setOrigin(0.5);
-
-        // 创建交互区域
-        const interactiveArea = this.add.zone(0, 0, 60, 60);
-        interactiveArea.setInteractive({ useHandCursor: true });
-
-        // 创建容器并放置在右上角
-        const iconContainer = this.add.container(
-            this.cameras.main.width - 40,  // 距离右边40像素
-            40,  // 距离顶部40像素
-            [iconBg, settingsIcon, interactiveArea]
-        );
-
-        iconContainer.setDepth(999);
-        iconContainer.setData('isHovered', false);
-
-        // 添加交互效果
-        iconContainer.setData('originalScale', 1);
-        interactiveArea.on('pointerover', () => {
-            if (!iconContainer.getData('isHovered')) {
-                iconContainer.setData('isHovered', true);
-                this.tweens.add({
-                    targets: iconContainer,
-                    scaleX: 1.1,
-                    scaleY: 1.1,
-                    duration: 200,
-                    ease: 'Power2'
-                });
-            }
-        });
-
-        interactiveArea.on('pointerout', () => {
-            if (iconContainer.getData('isHovered')) {
-                iconContainer.setData('isHovered', false);
-                this.tweens.add({
-                    targets: iconContainer,
-                    scaleX: 1,
-                    scaleY: 1,
-                    duration: 200,
-                    ease: 'Power2'
-                });
-            }
-        });
-
-        interactiveArea.on('pointerdown', async () => {
-            console.log('🎵 音量设置图标被点击');
-            
-            // 尝试恢复AudioContext
-            await this.audioManager.resumeAudioContext(this);
-            
-            // 尝试播放点击音效（如果存在）
-            this.audioManager.playSound(this, 'click-sound');
-            
-            // 点击缩放效果
-            this.tweens.add({
-                targets: iconContainer,
-                scaleX: 0.9,
-                scaleY: 0.9,
-                duration: 100,
-                ease: 'Power2',
-                yoyo: true,
-                onComplete: () => {
-                    // 显示/隐藏音量设置面板
-                    if (this.volumeSettingsPanel) {
-                        console.log('🎛️ 切换音量设置面板');
-                        this.volumeSettingsPanel.toggle();
-                    } else {
-                        console.warn('⚠️ 音量设置面板未初始化');
-                    }
-                }
-            });
-        });
-    }
 
     update(time: number, delta: number): void {
         // 场景更新逻辑
