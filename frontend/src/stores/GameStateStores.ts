@@ -1,4 +1,4 @@
-import { authApi, seedApi } from '../api/api';
+import { authApi, seedApi } from '../api/authApi';
 
 interface UserData {
     id: string;
@@ -20,18 +20,19 @@ interface LoginResponse {
     success: boolean;
     data?: {
         user: UserData;
-        sessionId: string;
+        token: string;
     };
     message?: string;
 }
 
-export class GameState {
-    private static instance: GameState;
+export class GameStateStores {
+    private static instance: GameStateStores;
     private _isAuthenticated: boolean = false;
     private _user: UserData | null = null;
     private _token: string | null = null;
     private _error: string | null = null;
     private _grade: string | null = null;
+    private _userId: string;
 
     private constructor() {
         // 检查本地存储中的token
@@ -93,16 +94,15 @@ export class GameState {
             if (response.success && response.data) {
                 this._isAuthenticated = true;
                 this._user = response.data.user;
-                this._token = response.data.sessionId;
+                this._token = response.data.token;
+                this._userId = response.data.user.id;
                 this._error = null;
                 this._grade = String(grade);
 
                 // 保存token到本地存储
-                localStorage.setItem('token', response.data.sessionId);
-                localStorage.setItem('knowledge-garden-user', JSON.stringify(response.data.user));
+                localStorage.setItem('token', response.data.token);
+                localStorage.setItem('gameUser', JSON.stringify(response.data.user));
 
-                // 登录成功后获取种子数据
-                await this.fetchSeeds();
 
                 return response.data.user;
             } else {
@@ -115,40 +115,30 @@ export class GameState {
     }
 
     // 登出方法
-    logout(): void {
-        this._isAuthenticated = false;
-        this._user = null;
-        this._token = null;
-        this._error = null;
-        this._grade = null;
-
-        // 清除本地存储
-        localStorage.removeItem('token');
-        localStorage.removeItem('knowledge-garden-user');
-        localStorage.removeItem('gameUser');
-        localStorage.removeItem('gameUserCacheTime');
-    }
-
-    private async fetchSeeds(): Promise<void> {
+    async logout(): Promise<void> {
         try {
-            if (!this._user) return;
-            
-            const response = await seedApi.getUserSeeds(this._user.id);
-            if (response.success) {
-                // 处理种子数据
-                console.log('获取种子数据成功:', response.data);
-            }
+            await authApi.logout();
         } catch (error) {
-            console.error('获取种子数据失败:', error);
+            console.error('登出请求失败:', error);
+        } finally {
+            this._isAuthenticated = false;
+            this._user = null;
+            this._token = null;
+            this._error = null;
+            this._grade = null;
+
+            // 清除本地存储
+            localStorage.removeItem('token');
+            localStorage.removeItem('gameUser');
         }
     }
 
-    public static getInstance(): GameState {
-        if (!GameState.instance) {
-            GameState.instance = new GameState();
+    public static getInstance(): GameStateStores {
+        if (!GameStateStores.instance) {
+            GameStateStores.instance = new GameStateStores();
         }
-        return GameState.instance;
+        return GameStateStores.instance;
     }
 }
 
-export const gameState = GameState.getInstance(); 
+export const gameStateStores = GameStateStores.getInstance(); 

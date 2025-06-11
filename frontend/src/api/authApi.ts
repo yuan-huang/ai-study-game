@@ -3,13 +3,21 @@ import { post, get } from '../utils/request';
 
 // 认证相关API
 export const authApi = {
-    // 登录 - 适应返回格式: { success: true, data: { user: User, token?: string } }
-    login: (data: { username: string; grade: number; subjects: string[] }) =>
-        post<{ user: User; sessionId?: string }>('/auth/login', data),
+    // 登录 - 适应返回格式: { success: true, data: { user: User, token: string } }
+    login: async (data: { username: string; grade: number; subjects: string[] }) => {
+        const response = await post<{ user: User; token: string }>('/auth/login', data);
+        if (response.success && response.data?.token) {
+            localStorage.setItem('token', response.data.token);
+        }
+        return response;
+    },
 
     // 登出
-    logout: () =>
-        post('/auth/logout'),
+    logout: async () => {
+        const response = await post('/auth/logout');
+        localStorage.removeItem('token');
+        return response;
+    }
 };
 
 // 种子相关API

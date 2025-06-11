@@ -2,7 +2,7 @@ import { post, get } from '../utils/request';
 
 // 游戏完成数据接口
 export interface GameCompletionData {
-  userId: string;
+  userId?: string;
   subject: string;
   grade: number;
   category: string;
@@ -331,51 +331,6 @@ export const autoPlantFlower = async (userId: string, flowerId: string): Promise
   }
 };
 
-/**
- * 获取花园仓库道具（花朵和甘露）
- */
-export const getGardenWarehouseItems = async (userId: string): Promise<{
-  plantedFlowers: Flower[];
-  warehouseFlowers: Flower[];
-  nectars: {
-    subject: string;
-    grade: number;
-    category: string;
-    totalHealingPower: number;
-    count: number;
-  }[];
-  totalFlowers: number;
-  totalNectars: number;
-  plantedFlowersCount: number;
-  warehouseFlowersCount: number;
-}> => {
-  try {
-    const response = await get<{
-      plantedFlowers: Flower[];
-      warehouseFlowers: Flower[];
-      nectars: {
-        subject: string;
-        grade: number;
-        category: string;
-        totalHealingPower: number;
-        count: number;
-      }[];
-      totalFlowers: number;
-      totalNectars: number;
-      plantedFlowersCount: number;
-      warehouseFlowersCount: number;
-    }>(`/garden/warehouse/items/${userId}`);
-    
-    if (response.success && response.data) {
-      return response.data;
-    } else {
-      throw new Error(response.message || '获取花园仓库道具失败');
-    }
-  } catch (error) {
-    console.error('获取花园仓库道具失败:', error);
-    throw error;
-  }
-};
 
 /**
  * 根据学科和年级获取花朵图片路径

@@ -2,14 +2,12 @@
 import { getAssetPath } from '@/config/AssetConfig';
 import { BaseScene } from '../BaseScene';
 import { gardenApi, SubjectFlowerStatusResponse } from '@/api/gardenApi';
-import { gameState } from '@/stores/gameState';
 import { Dialog } from 'phaser3-rex-plugins/templates/ui/ui-components.js';
 
 
 
 export class GardenScene extends BaseScene {
     private subjectFlowerStatus: SubjectFlowerStatusResponse | null = null;
-    private currentUserId: string;
     private nectarInventory: { nectars: any[], totalNectars: number, totalTypes: number } | null = null;
     private floatingNectars: Phaser.GameObjects.Container[] = [];
     private isDragMode: boolean = false;
@@ -18,8 +16,6 @@ export class GardenScene extends BaseScene {
 
     constructor() {
         super('GardenScene');
-        // 从gameState中获取userId
-        this.currentUserId = gameState.userId;
     }
 
     preload(): void {
@@ -805,8 +801,8 @@ export class GardenScene extends BaseScene {
         try {
             // 并行加载花朵状态和甘露库存
             const [subjectStatusResponse, nectarResponse] = await Promise.all([
-                gardenApi.getSubjectFlowerStatus(this.currentUserId),
-                gardenApi.getNectarInventory(this.currentUserId)
+                gardenApi.getSubjectFlowerStatus(),
+                gardenApi.getNectarInventory()
             ]);
 
             if (subjectStatusResponse.success && subjectStatusResponse.data) {
@@ -872,7 +868,7 @@ export class GardenScene extends BaseScene {
      */
     private async refreshNectarInventory(): Promise<void> {
         try {
-            const response = await gardenApi.getNectarInventory(this.currentUserId);
+            const response = await gardenApi.getNectarInventory();
             if (response.success && response.data) {
                 this.nectarInventory = response.data;
                 // 更新甘露显示
@@ -1188,7 +1184,6 @@ export class GardenScene extends BaseScene {
             
             // 调用新的甘露使用API
             const response = await gardenApi.useNectar(
-                this.currentUserId,
                 nectar.subject,
                 nectar.category
             );
@@ -1753,7 +1748,6 @@ private async useAllNectars(): Promise<void> {
                 for (const nectar of this.nectarInventory!.nectars) {
                     try {
                         const response = await gardenApi.useNectar(
-                            this.currentUserId,
                             nectar.subject,
                             nectar.category
                         );

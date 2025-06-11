@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { TowerDefenseController } from '../controllers/TowerDefenseController';
+import { authenticateToken } from '../middleware/authenticateToken';
 
 const router = Router();
 const towerDefenseController = new TowerDefenseController();
@@ -15,7 +16,7 @@ const towerDefenseController = new TowerDefenseController();
  * @body difficulty - 难度等级 (可选，默认2)
  * @access Public
  */
-router.post('/data', towerDefenseController.getTowerDefenseData.bind(towerDefenseController));
+router.post('/data', authenticateToken,towerDefenseController.getTowerDefenseData.bind(towerDefenseController));
 
 /**
  * @route POST /api/tower-defense/complete
@@ -31,7 +32,7 @@ router.post('/data', towerDefenseController.getTowerDefenseData.bind(towerDefens
  * @body comboCount - 连击数(可选)
  * @access Public
  */
-router.post('/complete', towerDefenseController.saveGameRecordAndGenerateReward.bind(towerDefenseController));
+router.post('/complete', authenticateToken,towerDefenseController.saveGameRecordAndGenerateReward.bind(towerDefenseController));
 
 /**
  * @route GET /api/tower-defense/inventory/:userId
@@ -39,7 +40,7 @@ router.post('/complete', towerDefenseController.saveGameRecordAndGenerateReward.
  * @param userId - 用户ID
  * @access Public
  */
-router.get('/inventory/:userId', towerDefenseController.getUserGardenInventory.bind(towerDefenseController));
+router.get('/inventory/:userId', authenticateToken,towerDefenseController.getUserGardenInventory.bind(towerDefenseController));
 
 /**
  * @route GET /api/tower-defense/stats/:userId
@@ -47,6 +48,6 @@ router.get('/inventory/:userId', towerDefenseController.getUserGardenInventory.b
  * @param userId - 用户ID
  * @access Public
  */
-router.get('/stats/:userId', towerDefenseController.getUserGameStats.bind(towerDefenseController));
+router.get('/stats/:userId', authenticateToken,towerDefenseController.getUserGameStats.bind(towerDefenseController));
 
 export default router; 

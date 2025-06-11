@@ -24,6 +24,7 @@ import towerDefenseRoutes from './routes/towerDefense';
 import gardenRoutes from './routes/garden';
 import growthRoutes from './routes/growth';
 import curiousTreeRoutes from './routes/curiousTree';
+import spiritRoutes from './routes/spirit';
 
 dotenv.config();
 
@@ -75,6 +76,7 @@ app.use('/api/tower-defense', towerDefenseRoutes);
 app.use('/api/garden', gardenRoutes);
 app.use('/api/growth', growthRoutes);
 app.use('/api/curioustree', curiousTreeRoutes);
+app.use('/api/spirit', spiritRoutes);
 
 // Socket.IO 连接处理
 io.on('connection', (socket) => {

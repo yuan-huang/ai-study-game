@@ -30,7 +30,7 @@ export class GeminiService {
     }
 
 
-    public async generateContent(systemPrompt: string, prompt: string,model:string = "gemini-2.0-flash",tools:any[] = []): Promise<string> {
+    public async generateContent(systemPrompt: string, prompt: string,model:string = "gemini-2.0-flash" ): Promise<string> {
         const params = {
             model,
             contents: prompt,
@@ -47,6 +47,9 @@ export class GeminiService {
         }
     }
 
+
+
+    
 
     
 } 

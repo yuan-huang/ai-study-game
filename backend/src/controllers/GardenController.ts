@@ -442,14 +442,7 @@ export class GardenController extends BaseController<IGardenDoc> {
    */
   async getGardenWarehouseItems(req: Request, res: Response): Promise<Response> {
     try {
-      const { userId } = req.params;
-
-      if (!userId) {
-        return res.status(400).json({
-          success: false,
-          message: '缺少用户ID参数'
-        });
-      }
+      const userId = req.user.userId;
 
       // 获取所有花朵（从塔防奖励中获得）
       const flowers = await Flower.find({ userId: new mongoose.Types.ObjectId(userId) });
@@ -967,7 +960,7 @@ export class GardenController extends BaseController<IGardenDoc> {
    */
   async getSubjectFlowerStatus(req: Request, res: Response): Promise<Response> {
     try {
-      const { userId } = req.params;
+      const userId = req.user.userId;
       const { forceUpdate = false } = req.query; // 可选参数：是否强制更新数据库血量
 
       if (!userId) {
@@ -1258,14 +1251,8 @@ export class GardenController extends BaseController<IGardenDoc> {
    */
   async getNectarInventory(req: Request, res: Response): Promise<Response> {
     try {
-      const { userId } = req.params;
+      const userId = req.user.userId;
 
-      if (!userId) {
-        return res.status(400).json({
-          success: false,
-          message: '缺少用户ID参数'
-        });
-      }
 
       // 获取用户所有甘露
       const nectars = await Nectar.find({ userId: new mongoose.Types.ObjectId(userId) });
@@ -1390,14 +1377,16 @@ export class GardenController extends BaseController<IGardenDoc> {
    */
   async useNectar(req: Request, res: Response): Promise<Response> {
     try {
-      const { userId, subject, category } = req.body;
+      const { subject, category } = req.body;
 
-      if (!userId || !subject || !category) {
+      if (!subject || !category) {
         return res.status(400).json({
           success: false,
           message: '缺少必需参数: userId, subject, category'
         });
       }
+
+      const userId = req.user.userId;
 
       // 获取用户信息，获取年级
       const user = await User.findById(userId);

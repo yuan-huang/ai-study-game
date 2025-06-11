@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { GardenController } from '../controllers/GardenController';
+import { authenticateToken } from '../middleware/authenticateToken';
 
 const router = Router();
 const gardenController = new GardenController();
@@ -62,13 +63,7 @@ router.get('/layout/:userId', gardenController.getGardenLayout.bind(gardenContro
  */
 router.get('/warehouse/flowers/:userId', gardenController.getWarehouseFlowers.bind(gardenController));
 
-/**
- * @route GET /api/garden/warehouse/items/:userId
- * @desc 获取花园仓库道具（花朵和甘露）
- * @param userId - 用户ID
- * @access Public
- */
-router.get('/warehouse/items/:userId', gardenController.getGardenWarehouseItems.bind(gardenController));
+
 
 /**
  * @route POST /api/garden/batch-plant
@@ -105,13 +100,17 @@ router.get('/memory/:userId', gardenController.getGardenFlowersWithMemory.bind(g
  */
 router.get('/forget-curve/:userId/:flowerId', gardenController.getFlowerForgetCurve.bind(gardenController));
 
+
+
+
+
 /**
  * @route GET /api/garden/subject-status/:userId
  * @desc 获取各学科花朵状态信息（等级、HP、闯关记录等）
  * @param userId - 用户ID
  * @access Public
  */
-router.get('/subject-status/:userId', gardenController.getSubjectFlowerStatus.bind(gardenController));
+router.get('/subject-status', authenticateToken, gardenController.getSubjectFlowerStatus.bind(gardenController));
 
 /**
  * @route GET /api/garden/nectar/:userId
@@ -119,7 +118,7 @@ router.get('/subject-status/:userId', gardenController.getSubjectFlowerStatus.bi
  * @param userId - 用户ID
  * @access Public
  */
-router.get('/nectar/:userId', gardenController.getNectarInventory.bind(gardenController));
+router.get('/nectar', authenticateToken, gardenController.getNectarInventory.bind(gardenController));
 
 /**
  * @route POST /api/garden/use-nectar
@@ -129,7 +128,7 @@ router.get('/nectar/:userId', gardenController.getNectarInventory.bind(gardenCon
  * @body category - 分类
  * @access Public
  */
-router.post('/use-nectar', gardenController.useNectar.bind(gardenController));
+router.post('/use-nectar', authenticateToken, gardenController.useNectar.bind(gardenController));
 
 /**
  * @route POST /api/garden/update-flowers-blood/:userId

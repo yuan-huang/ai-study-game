@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { BaseController } from './BaseController';
 import { Document } from 'mongoose';
 import { logger } from '../utils/logger';
-import { TowerDefenseRecord } from '../models/TowerDefenseRecord';
+import { ITowerDefenseRecord, TowerDefenseRecord } from '../models/TowerDefenseRecord';
 import { Flower } from '../models/Flower';
 import { Nectar } from '../models/Nectar';
 import { User } from '../models/User';
@@ -297,7 +297,6 @@ export class TowerDefenseController extends BaseController<ITowerDefenseDoc> {
   async saveGameRecordAndGenerateReward(req: Request, res: Response): Promise<Response> {
     try {
       const {
-        userId,
         subject,
         grade,
         category,
@@ -309,7 +308,7 @@ export class TowerDefenseController extends BaseController<ITowerDefenseDoc> {
       } = req.body;
 
       // 参数验证
-      if (!userId || !subject || !grade || !category || !Array.isArray(questionIds) || 
+      if (!subject || !grade || !category || !Array.isArray(questionIds) || 
           !Array.isArray(wrongQuestionIds) || typeof completionTime !== 'number' || 
           typeof score !== 'number') {
         return res.status(400).json({
@@ -319,13 +318,8 @@ export class TowerDefenseController extends BaseController<ITowerDefenseDoc> {
       }
 
       // 验证用户是否存在
-      const user = await User.findById(userId);
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          message: '用户不存在'
-        });
-      }
+      const userId = req.user.userId;
+
 
       // 保存游戏记录
       const gameRecord = new TowerDefenseRecord({
@@ -452,14 +446,7 @@ export class TowerDefenseController extends BaseController<ITowerDefenseDoc> {
    */
   async getUserGardenInventory(req: Request, res: Response): Promise<Response> {
     try {
-      const { userId } = req.params;
-
-      if (!userId) {
-        return res.status(400).json({
-          success: false,
-          message: '缺少用户ID参数'
-        });
-      }
+      const userId = req.user.userId;
 
       // 获取用户的花朵
       const flowers = await Flower.find({ userId: new mongoose.Types.ObjectId(userId) });
@@ -525,20 +512,13 @@ export class TowerDefenseController extends BaseController<ITowerDefenseDoc> {
    */
   async getUserGameStats(req: Request, res: Response): Promise<Response> {
     try {
-      const { userId } = req.params;
-
-      if (!userId) {
-        return res.status(400).json({
-          success: false,
-          message: '缺少用户ID参数'
-        });
-      }
+      const userId = req.user.userId;
 
       // 获取用户的游戏记录统计
       const records = await TowerDefenseRecord.find({ userId: new mongoose.Types.ObjectId(userId) });
       
       // 统计各学科的通过次数
-      const statsBySubject = records.reduce((acc: any, record) => {
+      const statsBySubject = records.reduce((acc: any, record:ITowerDefenseRecord) => {
         const key = `${record.subject}-grade${record.grade}-${record.category}`;
         if (!acc[key]) {
           acc[key] = {

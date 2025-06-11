@@ -316,13 +316,6 @@ export class GardenApiService {
     return get<FlowerData[]>(`/garden/warehouse/flowers/${userId}`);
   }
 
-  /**
-   * 获取花园仓库所有道具（花朵和甘露）
-   * @param userId 用户ID
-   */
-  async getGardenWarehouse(userId: string): Promise<ApiResponse<GardenLayout>> {
-    return get<GardenLayout>(`/garden/warehouse/items/${userId}`);
-  }
 
   /**
    * 批量种植花朵
@@ -386,30 +379,28 @@ export class GardenApiService {
    * 获取各学科花朵状态信息
    * @param userId 用户ID
    */
-  async getSubjectFlowerStatus(userId: string): Promise<ApiResponse<SubjectFlowerStatusResponse>> {
-    return get<SubjectFlowerStatusResponse>(`/garden/subject-status/${userId}`);
+  async getSubjectFlowerStatus(): Promise<ApiResponse<SubjectFlowerStatusResponse>> {
+    return get<SubjectFlowerStatusResponse>(`/garden/subject-status`);
   }
 
   /**
    * 获取用户甘露库存
    * @param userId 用户ID
    */
-  async getNectarInventory(userId: string): Promise<ApiResponse<{
+  async getNectarInventory(): Promise<ApiResponse<{
     nectars: NectarData[];
     totalNectars: number;
     totalTypes: number;
   }>> {
-    return get(`/garden/nectar/${userId}`);
+    return get(`/garden/nectar`);
   }
 
   /**
    * 使用甘露治疗对应学科分类的所有花朵
-   * @param userId 用户ID
    * @param subject 学科
    * @param category 分类
    */
   async useNectar(
-    userId: string,
     subject: string,
     category: string
   ): Promise<ApiResponse<{
@@ -431,7 +422,6 @@ export class GardenApiService {
     note: string;
   }>> {
     return post('/garden/use-nectar', {
-      userId,
       subject,
       category
     });

@@ -1,34 +1,32 @@
-import mongoose from 'mongoose';
+import mongoose, { Document, Schema } from 'mongoose';
 
-export interface ITowerDefenseRecord extends mongoose.Document {
-  userId: mongoose.Types.ObjectId;
+export interface ITowerDefenseRecord extends Document {
+  userId: string;
+  level?: number;
+  score: number;
+  completedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
   subject: string;
   grade: number;
   category: string;
-  questionIds: mongoose.Types.ObjectId[];
-  wrongQuestionIds: mongoose.Types.ObjectId[];
-  completionTime: number; // 通关时间(毫秒)
-  score: number;
+  completionTime: number;
+  questionIds: string[];
+  wrongQuestionIds: string[];
   comboCount: number;
-  createdAt: Date;
-  updatedAt: Date;
 }
 
-const towerDefenseRecordSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  subject: { type: String, required: true },
-  grade: { type: Number, required: true },
-  category: { type: String, required: true },
-  questionIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Question' }],
-  wrongQuestionIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Question' }],
-  completionTime: { type: Number, required: true },
+const TowerDefenseRecordSchema = new Schema<ITowerDefenseRecord>({
+  userId: { type: String, required: true },
+  level: { type: Number, required: false },
   score: { type: Number, required: true },
-  comboCount: { type: Number, default: 0 }
+  completedAt: { type: Date, default: Date.now }
 }, {
   timestamps: true
 });
 
-// 创建复合索引用于快速查询用户在特定组合下的通过次数
-towerDefenseRecordSchema.index({ userId: 1, subject: 1, grade: 1, category: 1 });
+// 添加索引
+TowerDefenseRecordSchema.index({ userId: 1 });
+TowerDefenseRecordSchema.index({ userId: 1, level: 1 });
 
-export const TowerDefenseRecord = mongoose.model<ITowerDefenseRecord>('TowerDefenseRecord', towerDefenseRecordSchema); 
+export const TowerDefenseRecord = mongoose.model<ITowerDefenseRecord>('TowerDefenseRecord', TowerDefenseRecordSchema); 

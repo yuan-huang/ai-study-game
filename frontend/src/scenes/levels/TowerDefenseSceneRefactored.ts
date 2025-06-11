@@ -6,7 +6,6 @@ import { Monster } from '@/entities/TowerDefense/Monster';
 import { Tower } from '@/entities/TowerDefense/Tower';
 import { createText, TextStyles } from '@/config/PhaserFontConfig';
 import { saveGameCompletion, GameCompletionData, Reward } from '@/api/towerDefenseRewardApi';
-import { gameState } from '@/stores/gameState';
 import { 
     INITIAL_GAME_STATE, 
     GAME_AREA_CONFIG, 
@@ -1112,7 +1111,6 @@ export class TowerDefenseSceneRefactored extends BaseScene {
         try {
             // 准备游戏完成数据
             const completionData: GameCompletionData = {
-                userId: gameState.userId, // 从游戏状态获取真实userId
                 subject: this.userConfig.subject,
                 grade: this.userConfig.grade,
                 category: this.userConfig.category,

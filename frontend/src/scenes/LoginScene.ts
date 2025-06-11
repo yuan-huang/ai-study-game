@@ -1,5 +1,5 @@
 import { BaseScene } from './BaseScene';
-import { gameState } from '@/stores/gameState';
+import { gameStateStores } from '@/stores/GameStateStores';
 import { getAssetPath } from '@/config/AssetConfig';
 import '@/styles/login.css';
 
@@ -74,7 +74,7 @@ export class LoginScene extends BaseScene {
             }
 
             // 使用缓存数据恢复游戏状态
-            await gameState.restoreFromCache(userData);
+            await gameStateStores.restoreFromCache(userData);
             return true;
         } catch (error) {
             console.error('检查登录缓存失败:', error);
@@ -160,7 +160,7 @@ export class LoginScene extends BaseScene {
         const gradeValue = this.gradeSelect.value;
 
         try {
-            const userData = await gameState.login(username, parseInt(gradeValue), ['语文', '数学', '英语']);
+            const userData = await gameStateStores.login(username, parseInt(gradeValue), ['语文', '数学', '英语']);
             
             localStorage.setItem('gameUser', JSON.stringify(userData));
             localStorage.setItem('gameUserCacheTime', Date.now().toString());

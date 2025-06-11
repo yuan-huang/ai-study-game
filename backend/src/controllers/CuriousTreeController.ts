@@ -16,11 +16,7 @@ export class CuriousTreeController extends BaseController<ICuriousTree> {
 
     async chat(req: Request, res: Response): Promise<void> {
         try {
-            const userId = getUserIdFromRequest(req);
-            if (!userId) {
-                this.sendError(res, '未授权访问', 401);
-                return;
-            }
+            const userId = req.user.userId;
 
             const { message } = req.body;
             if (!message) {
@@ -113,11 +109,7 @@ export class CuriousTreeController extends BaseController<ICuriousTree> {
 
     async getConversationHistory(req: Request, res: Response): Promise<void> {
         try {
-            const userId = getUserIdFromRequest(req);
-            if (!userId) {
-                this.sendError(res, '未授权访问', 401);
-                return;
-            }
+            const userId = req.user.userId;
             
             // 使用聚合管道在数据库层面完成筛选和排序
             const result = await CuriousTreeModel.aggregate([
@@ -153,11 +145,7 @@ export class CuriousTreeController extends BaseController<ICuriousTree> {
 
     async getGrowth(req: Request, res: Response): Promise<void> {
         try {
-            const userId = getUserIdFromRequest(req);
-            if (!userId) {
-                this.sendError(res, '未授权访问', 401);
-                return;
-            }
+            const userId = req.user.userId;
 
             // 获取成长值记录
             const growthModel = await CuriousTreeGrowthModel.findOne({ userId });
@@ -181,11 +169,7 @@ export class CuriousTreeController extends BaseController<ICuriousTree> {
 
     async clearHistory(req: Request, res: Response): Promise<void> {
         try {
-            const userId = getUserIdFromRequest(req);
-            if (!userId) {
-                this.sendError(res, '未授权访问', 401);
-                return;
-            }
+            const userId = req.user.userId;
 
             // 清空用户的对话历史
             await CuriousTreeModel.updateOne(
