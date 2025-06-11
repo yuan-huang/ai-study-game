@@ -98,7 +98,7 @@ export class LevelSelectScene extends BaseScene {
 
         backButton.setInteractive({ cursor: 'pointer' });
         backButton.on('pointerdown', () => {
-            this.scene.start('MainScene');
+            this.scene.start('MainScene', { fromScene: 'LevelSelectScene' });
         });
     }
 
@@ -213,6 +213,4 @@ export class LevelSelectScene extends BaseScene {
             });
         });
     }
-
-
 } 

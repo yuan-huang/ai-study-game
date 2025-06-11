@@ -216,6 +216,7 @@ export class SpiritController extends BaseController<ISpiritDoc> {
 
         const fairyTutorChatRole = getChatRole('fairyTutor');
     const prompt =  `
+    你的回复内容，控制在100字以内
     用户名：${username}
     精灵亲密度等级：${spirit.intimacyLevel}
     精灵当前等级：${spirit.currentLevel}

@@ -41,49 +41,17 @@ export class GardenScene extends BaseScene {
 
     create(): void {
         super.create();
-        
-        console.log('🌺 GardenScene 创建开始');
-        console.log('🖼️ 相机尺寸:', this.cameras.main.width, 'x', this.cameras.main.height);
-        
-        // 播放花园背景音乐
-        this.audioManager.playMusic(this, 'garden-bgm', {
-            loop: true
-        });
+        // 添加背景
+        this.createBackground('garden-bg');
 
+        // 添加返回按钮
+        this.createBackButton();
 
-        // 设置背景图片
-        const background = this.add.image(0, 0, 'garden-bg').setOrigin(0, 0);
-        background.setDisplaySize(this.cameras.main.width, this.cameras.main.height);
-        background.setDepth(0);
-        
-        // 添加标题 - 使用统一字体配置
-        this.createText(
-            this.cameras.main.width / 2, 
-            50, 
-            '🌺 知识花园', 
-            'TITLE_LARGE',
-            {
-                color: '#2d5016',
-                backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                padding: { x: 20, y: 10 }
-            }
-        ).setOrigin(0.5).setDepth(100);
-
-        console.log('🔧 开始创建花园UI元素');
-        
         // 创建背包按钮
-        console.log('📦 准备创建背包按钮');
         this.createPackButton();
 
-        // 创建返回按钮
-        console.log('🔙 准备创建返回按钮');
-        this.createBackButton();
-        
         // 加载花园数据
-        this.loadGardenData().then(() => {
-            this.placeSubjectFlowers();
-        });
-
+        this.loadGardenData();
     }
 
 
@@ -741,57 +709,57 @@ export class GardenScene extends BaseScene {
     /**
      * 创建返回按钮 - 优化交互效果
      */
-    private createBackButton(): void {
-        const backButton = this.add.rectangle(
-            80, 30, 120, 40, 0x4caf50, 1
-        ).setStrokeStyle(2, 0x388e3c);
+    // private createBackButton(): void {
+    //     const backButton = this.add.rectangle(
+    //         80, 30, 120, 40, 0x4caf50, 1
+    //     ).setStrokeStyle(2, 0x388e3c);
         
-        const backText = this.createText(80, 30, '🏠 返回', 'BUTTON_TEXT', {
-            fontSize: 18,
-            color: '#ffffff'
-        }).setOrigin(0.5);
+    //     const backText = this.createText(80, 30, '🏠 返回', 'BUTTON_TEXT', {
+    //         fontSize: 18,
+    //         color: '#ffffff'
+    //     }).setOrigin(0.5);
         
-        backButton.setInteractive({ useHandCursor: true });
+    //     backButton.setInteractive({ useHandCursor: true });
         
-        // 添加hover效果
-        backButton.on('pointerover', () => {
-            this.tweens.add({
-                targets: [backButton, backText],
-                scaleX: 1.1,
-                scaleY: 1.1,
-                duration: 150,
-                ease: 'Power2'
-            });
-        });
+    //     // 添加hover效果
+    //     backButton.on('pointerover', () => {
+    //         this.tweens.add({
+    //             targets: [backButton, backText],
+    //             scaleX: 1.1,
+    //             scaleY: 1.1,
+    //             duration: 150,
+    //             ease: 'Power2'
+    //         });
+    //     });
 
-        backButton.on('pointerout', () => {
-            this.tweens.add({
-                targets: [backButton, backText],
-                scaleX: 1,
-                scaleY: 1,
-                duration: 150,
-                ease: 'Power2'
-            });
-        });
+    //     backButton.on('pointerout', () => {
+    //         this.tweens.add({
+    //             targets: [backButton, backText],
+    //             scaleX: 1,
+    //             scaleY: 1,
+    //             duration: 150,
+    //             ease: 'Power2'
+    //         });
+    //     });
 
-        // 点击效果
-        backButton.on('pointerdown', () => {
-            this.tweens.add({
-                targets: [backButton, backText],
-                scaleX: 0.95,
-                scaleY: 0.95,
-                duration: 100,
-                ease: 'Power2',
-                yoyo: true,
-                onComplete: () => {
-                    this.scene.start('MainScene');
-                }
-            });
-        });
+    //     // 点击效果
+    //     backButton.on('pointerdown', () => {
+    //         this.tweens.add({
+    //             targets: [backButton, backText],
+    //             scaleX: 0.95,
+    //             scaleY: 0.95,
+    //             duration: 100,
+    //             ease: 'Power2',
+    //             yoyo: true,
+    //             onComplete: () => {
+    //                 this.scene.start('MainScene');
+    //             }
+    //         });
+    //     });
         
-        backButton.setDepth(100);
-        backText.setDepth(101);
-    }
+    //     backButton.setDepth(100);
+    //     backText.setDepth(101);
+    // }
 
     
     /**
@@ -808,6 +776,7 @@ export class GardenScene extends BaseScene {
             if (subjectStatusResponse.success && subjectStatusResponse.data) {
                 this.subjectFlowerStatus = subjectStatusResponse.data;
                 console.log('学科花朵状态数据', this.subjectFlowerStatus);
+                this.placeSubjectFlowers();
             } else {
                 console.error('加载学科花朵状态失败:', subjectStatusResponse.message);
                 this.showMessage('加载学科花朵状态失败');

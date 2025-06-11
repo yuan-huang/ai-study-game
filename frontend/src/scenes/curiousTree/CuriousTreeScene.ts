@@ -22,11 +22,8 @@ export class CuriousTreeScene extends BaseScene {
 
     create(): void {
         super.create();
-
-        // 设置背景图片，填满整个屏幕
-        const background = this.add.image(0, 0, 'curious-tree-bg').setOrigin(0, 0);
-        background.setDisplaySize(this.cameras.main.width, this.cameras.main.height);
-        background.setDepth(0);
+        // 添加背景
+        this.createBackground('curious-tree-bg');
 
         // 添加标题
         this.createText(
@@ -52,81 +49,27 @@ export class CuriousTreeScene extends BaseScene {
             }
         ).setOrigin(0.5).setDepth(100);
 
-        // 添加成长值显示
-        this.loadAndDisplayGrowth();
-
         // 添加返回按钮
         this.createBackButton();
 
-        // 添加功能按钮区域
+        // 创建功能按钮
         this.createFunctionButtons();
+
+        // 加载并显示成长值
+        this.loadAndDisplayGrowth();
+
+        // 添加事件监听
+        window.addEventListener('growthUpdated', this.handleGrowthUpdate as EventListener);
 
         // 播放好奇树背景音乐
         this.audioManager.playMusic(this, 'curious-tree-bgm', {
             loop: true
         });
-
-        // 监听成长值更新事件
-        window.addEventListener('growthUpdated', this.handleGrowthUpdate as EventListener);
     }
 
     private handleGrowthUpdate = (event: Event) => {
-        const customEvent = event as CustomEvent;
-        if (this.growthText) {
-            this.growthText.destroy();
-        }
+        // 处理成长值更新事件
         this.loadAndDisplayGrowth();
-    };
-
-    /**
-     * 创建返回按钮
-     */
-    private createBackButton(): void {
-        const backButton = this.add.rectangle(
-            80, 50, 120, 50, 0x4caf50, 1
-        ).setStrokeStyle(3, 0x388e3c);
-
-        const backText = this.add.text(80, 50, '🏠 返回', {
-            fontSize: '20px',
-            color: '#ffffff',
-            fontStyle: 'bold'
-        }).setOrigin(0.5);
-
-        // 设置交互
-        backButton.setInteractive({ useHandCursor: true });
-        backButton.on('pointerdown', () => {
-            // 如果对话框存在，先关闭它
-            if (this.curiousTreeDialog) {
-                this.curiousTreeDialog.destroy();
-                this.curiousTreeDialog = undefined;
-            }
-            this.scene.start('MainScene');
-        });
-
-        // 悬停效果
-        backButton.on('pointerover', () => {
-            this.tweens.add({
-                targets: [backButton, backText],
-                scaleX: 1.1,
-                scaleY: 1.1,
-                duration: 200,
-                ease: 'Power2'
-            });
-        });
-
-        backButton.on('pointerout', () => {
-            this.tweens.add({
-                targets: [backButton, backText],
-                scaleX: 1,
-                scaleY: 1,
-                duration: 200,
-                ease: 'Power2'
-            });
-        });
-
-        // 设置深度
-        backButton.setDepth(100);
-        backText.setDepth(101);
     }
 
     /**

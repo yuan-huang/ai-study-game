@@ -2,7 +2,7 @@ import { get, post, ApiResponse, getWithParams } from '../utils/request';
 
 
 // 获取精灵欢迎语
-export const getSpiritWelcome = (): Promise<ApiResponse> => {
+export const getSpiritWelcome = (): Promise<ApiResponse<{ welcomeMessage: string }>> => {
   return get('/spirit/welcome');
 };
 

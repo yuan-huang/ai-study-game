@@ -2,6 +2,7 @@ import { BaseScene } from './BaseScene';
 import { gameStateStores } from '@/stores/GameStateStores';
 import { getAssetPath } from '@/config/AssetConfig';
 import '@/styles/login.css';
+import { getSpiritWelcome } from '@/api/spirteApi';
 
 interface GradeOption {
     text: string;
@@ -165,8 +166,14 @@ export class LoginScene extends BaseScene {
             localStorage.setItem('gameUser', JSON.stringify(userData));
             localStorage.setItem('gameUserCacheTime', Date.now().toString());
             
+            //先获取欢迎语句
+            const welcomeMessage = await getSpiritWelcome();
+
             // 先启动新场景
-            this.scene.start('MainScene');
+            this.scene.start('MainScene', {
+                welcomeMessage: welcomeMessage.data?.welcomeMessage,
+                fromScene: 'LoginScene'
+            });
             
             // 等待一帧后再清理表单
             requestAnimationFrame(() => {

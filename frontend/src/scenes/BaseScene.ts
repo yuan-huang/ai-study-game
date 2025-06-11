@@ -260,57 +260,102 @@ export class BaseScene extends Scene {
         bg.setDisplaySize(this.cameras.main.width, this.cameras.main.height);
     }
 
+    /**
+     * 创建统一的返回按钮
+     * @param targetScene 目标场景名称
+     * @param data 传递给目标场景的数据
+     */
+    protected createBackButton(targetScene: string = 'MainScene', data: any = {}): void {
+        const backButton = this.add.text(50, 50, '返回', {
+            fontSize: '32px',
+            color: '#ffffff',
+            backgroundColor: '#000000',
+            padding: { x: 15, y: 10 }
+        });
 
+        backButton.setInteractive({ cursor: 'pointer' });
+        
+        // 添加悬停效果
+        backButton.on('pointerover', () => {
+            backButton.setStyle({ backgroundColor: '#333333' });
+            this.tweens.add({
+                targets: backButton,
+                scaleX: 1.05,
+                scaleY: 1.05,
+                duration: 150,
+                ease: 'Power2'
+            });
+        });
 
-    
+        backButton.on('pointerout', () => {
+            backButton.setStyle({ backgroundColor: '#000000' });
+            this.tweens.add({
+                targets: backButton,
+                scaleX: 1,
+                scaleY: 1,
+                duration: 150,
+                ease: 'Power2'
+            });
+        });
 
-    
-        /**
-         * 使用 rex-ui 创建滚动面板
-         */
-        protected createRexScrollablePanel(
-            x: number,
-            y: number,
-            width: number,
-            height: number
-        ): any {
-            const scrollablePanel = this.rexUI.add.scrollablePanel({
-                x: x,
-                y: y,
-                width: width,
-                height: height,
-                
-                scrollMode: 'vertical',
-                
-                background: this.rexUI.add.roundRectangle(0, 0, 0, 0, 10, 0xffffff, 0.9),
-                
-                panel: {
-                    child: this.rexUI.add.sizer({
-                        orientation: 'vertical',
-                        space: { item: 5 }
-                    }),
-                    mask: {
-                        padding: 1
-                    }
-                },
-                
-                slider: {
-                    track: this.rexUI.add.roundRectangle(0, 0, 20, 0, 10, 0xcccccc),
-                    thumb: this.rexUI.add.roundRectangle(0, 0, 20, 50, 10, 0x888888),
-                },
-                
-                space: {
-                    left: 10,
-                    right: 10,
-                    top: 10,
-                    bottom: 10,
-                    panel: 10,
+        backButton.on('pointerdown', () => {
+            this.tweens.add({
+                targets: backButton,
+                scaleX: 0.95,
+                scaleY: 0.95,
+                duration: 100,
+                ease: 'Power2',
+                yoyo: true,
+                onComplete: () => {
+                    this.scene.start(targetScene, { ...data, fromScene: this.scene.key });
                 }
             });
-    
-            return scrollablePanel;
-        }
-    
+        });
+    }
 
-    
+    /**
+     * 使用 rex-ui 创建滚动面板
+     */
+    protected createRexScrollablePanel(
+        x: number,
+        y: number,
+        width: number,
+        height: number
+    ): any {
+        const scrollablePanel = this.rexUI.add.scrollablePanel({
+            x: x,
+            y: y,
+            width: width,
+            height: height,
+            
+            scrollMode: 'vertical',
+            
+            background: this.rexUI.add.roundRectangle(0, 0, 0, 0, 10, 0xffffff, 0.9),
+            
+            panel: {
+                child: this.rexUI.add.sizer({
+                    orientation: 'vertical',
+                    space: { item: 5 }
+                }),
+                mask: {
+                    padding: 1
+                }
+            },
+            
+            slider: {
+                track: this.rexUI.add.roundRectangle(0, 0, 20, 0, 10, 0xcccccc),
+                thumb: this.rexUI.add.roundRectangle(0, 0, 20, 50, 10, 0x888888),
+            },
+            
+            space: {
+                left: 10,
+                right: 10,
+                top: 10,
+                bottom: 10,
+                panel: 10,
+            }
+        });
+
+        return scrollablePanel;
+    }
 } 
