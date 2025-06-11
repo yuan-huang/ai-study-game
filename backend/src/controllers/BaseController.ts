@@ -90,7 +90,8 @@ export class BaseController<T extends Document> {
     const filter: FilterQuery<T> = {};
     for (const [key, value] of Object.entries(query)) {
       if (value !== undefined && value !== '') {
-        filter[key as keyof T] = value;
+        // 使用类型断言确保类型安全
+        filter[key as keyof T] = value as FilterQuery<T>[keyof T];
       }
     }
     return filter;
