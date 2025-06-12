@@ -65,15 +65,24 @@ export class CuriousTreeController extends BaseController<ICuriousTreeChat> {
 
 
             // 获取AI响应
-            const aiResponse = await this.ollamaService.generateContent(chatRole.initialPrompt, userPrompt);
+            const aiResponse = await this.aiService.chat([
+                {
+                    role: 'model',
+                    parts: [{ text: chatRole.initialPrompt }]
+                },
+                {
+                    role: 'user',
+                    parts: [{ text: userPrompt }]
+                }
+            ]);
 
             // 解析AI响应，提取评分和回答内容
-            const scoreMatch = aiResponse.match(/评分：(\d+)分/);
+            const scoreMatch = aiResponse.content.match(/评分：(\d+)分/);
             const score = scoreMatch ? parseInt(scoreMatch[1]) : 0;
             
             // 提取回答内容
-            const answerMatch = aiResponse.match(/回答：([\s\S]*)/);
-            const answer = answerMatch ? answerMatch[1].trim() : aiResponse;
+            const answerMatch = aiResponse.content.match(/回答：([\s\S]*)/);
+            const answer = answerMatch ? answerMatch[1].trim() : aiResponse.content;
 
             // 更新成长值
             growthModel.growthValue = Math.min(100, growthModel.growthValue + score);
