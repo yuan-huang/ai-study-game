@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getSpiritWelcome, chatWithSpirit, getSpiritChatHistory, clearSpiritChatHistory } from '../api/spirteApi';
+import { getSpiritWelcome, chatWithSpiritStream, getSpiritChatHistory, clearSpiritChatHistory } from '../api/spirteApi';
 import styles from './SpiritDialog.module.css';
 import { ApiResponse } from '../utils/request';
 
@@ -27,7 +27,9 @@ interface SpiritDialogProps {
 export const SpiritDialog: React.FC<SpiritDialogProps> = ({ isOpen, onClose }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const currentMessageRef = useRef<string>('');
 
   useEffect(() => {
     if (isOpen) {
@@ -63,7 +65,7 @@ export const SpiritDialog: React.FC<SpiritDialogProps> = ({ isOpen, onClose }) =
   }, [messages]);
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() || isLoading) return;
 
     // 添加用户消息
     const userMessage: Message = {
@@ -72,18 +74,52 @@ export const SpiritDialog: React.FC<SpiritDialogProps> = ({ isOpen, onClose }) =
     };
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
+    setIsLoading(true);
 
-    // 发送到后端并获取回复
+    // 添加一个空的精灵消息，用于流式更新
+    const spiritMessage: Message = {
+      type: 'spirit',
+      content: ''
+    };
+    setMessages(prev => [...prev, spiritMessage]);
+
     try {
-      const response = await chatWithSpirit(inputMessage);
-      if (response.success && response.data) {
-        setMessages(prev => [...prev, {
-          type: 'spirit',
-          content: response.data.message
-        }]);
-      }
+      // 使用流式API
+      await chatWithSpiritStream(inputMessage, (chunk) => {
+        currentMessageRef.current += chunk;
+        setMessages(prev => {
+          const newMessages = [...prev];
+          const lastMessage = newMessages[newMessages.length - 1];
+          if (lastMessage.type === 'spirit') {
+            lastMessage.content = currentMessageRef.current;
+          }
+          return newMessages;
+        });
+      });
+
     } catch (error) {
       console.error('发送消息失败:', error);
+      let errorMessage = '抱歉，我遇到了一些问题，请稍后再试。';
+      
+      if (error instanceof Error) {
+        if (error.message === '未登录') {
+          errorMessage = '请先登录后再试。';
+          // 可以在这里触发重新登录流程
+          window.dispatchEvent(new CustomEvent('authRequired'));
+        }
+      }
+      
+      setMessages(prev => {
+        const newMessages = [...prev];
+        const lastMessage = newMessages[newMessages.length - 1];
+        if (lastMessage.type === 'spirit') {
+          lastMessage.content = errorMessage;
+        }
+        return newMessages;
+      });
+    } finally {
+      setIsLoading(false);
+      currentMessageRef.current = '';
     }
   };
 
@@ -127,6 +163,9 @@ export const SpiritDialog: React.FC<SpiritDialogProps> = ({ isOpen, onClose }) =
             {messages.map((message, index) => (
               <div key={index} className={`${styles.message} ${styles[message.type]}`}>
                 {message.content}
+                {index === messages.length - 1 && message.type === 'spirit' && isLoading && (
+                  <span className={styles.typingIndicator}>▋</span>
+                )}
               </div>
             ))}
             <div ref={messagesEndRef} />
@@ -138,9 +177,18 @@ export const SpiritDialog: React.FC<SpiritDialogProps> = ({ isOpen, onClose }) =
               onChange={e => setInputMessage(e.target.value)}
               onKeyPress={e => e.key === 'Enter' && handleSendMessage()}
               placeholder="输入消息..."
+              disabled={isLoading}
             />
-            <button onClick={handleSendMessage}>发送</button>
-            <button className={styles.clearButton} onClick={handleClearChatHistory}>清除</button>
+            <button onClick={handleSendMessage} disabled={isLoading}>
+              {isLoading ? '发送中...' : '发送'}
+            </button>
+            <button 
+              className={styles.clearButton} 
+              onClick={handleClearChatHistory}
+              disabled={isLoading}
+            >
+              清除
+            </button>
           </div>
         </div>
       </div>

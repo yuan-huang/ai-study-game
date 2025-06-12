@@ -8,6 +8,9 @@ const controller = new CuriousTreeController();
 // 发送消息
 router.post('/chat', authenticateToken, controller.chat.bind(controller));
 
+// 流式发送消息
+router.post('/chat-stream', authenticateToken, controller.chatStream.bind(controller));
+
 // 获取对话历史
 router.get('/history', authenticateToken, controller.getConversationHistory.bind(controller));
 
@@ -15,6 +18,6 @@ router.get('/history', authenticateToken, controller.getConversationHistory.bind
 router.get('/growth', authenticateToken, controller.getGrowth.bind(controller));
 
 // 清空历史记录
-router.post('/history/clear', controller.clearHistory.bind(controller));
+router.post('/history/clear', authenticateToken, controller.clearHistory.bind(controller));
 
 export default router; 

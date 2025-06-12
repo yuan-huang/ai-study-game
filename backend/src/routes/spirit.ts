@@ -20,6 +20,9 @@ router.get('/user-info', authenticateToken, spiritController.getUserInfo.bind(sp
 // 连续对话模式
 router.post('/chat', authenticateToken, spiritController.chatWithSpirit.bind(spiritController));
 
+// 流式对话模式
+router.post('/chat-stream', authenticateToken, spiritController.chatWithSpiritStream.bind(spiritController));
+
 // 获取对话历史
 router.get('/chat-history', authenticateToken, spiritController.getChatHistory.bind(spiritController));
 

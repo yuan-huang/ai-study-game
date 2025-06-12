@@ -152,18 +152,22 @@ export class CuriousTreeDialog {
         
         // 显示加载提示
         const loadingMessage = this.addMessage('assistant', '', true);
+        let currentResponse = '';
         
         try {
-            // 发送消息到服务器
-            const response = await curiousTreeApi.chat(message);
-            if (response.success && response.data) {
-                // 移除加载提示
-                loadingMessage.remove();
-                // 添加AI回复
-                this.addMessage('assistant', response.data.message);
-                // 更新成长值
-                await this.updateGrowthValue();
-            }
+            // 使用流式API发送消息
+            await curiousTreeApi.chatStream(message, (chunk) => {
+                currentResponse += chunk;
+                loadingMessage.textContent = currentResponse;
+                this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+            });
+
+            // 移除加载提示
+            loadingMessage.remove();
+            // 添加完整的AI回复
+            this.addMessage('assistant', currentResponse);
+            // 更新成长值
+            await this.updateGrowthValue();
         } catch (error) {
             console.error('发送消息失败:', error);
             // 移除加载提示

@@ -366,4 +366,96 @@ export class SpiritController extends BaseController<ISpiritDoc> {
       return this.sendError(res, '清除对话历史失败');
     }
   }
+
+  // 流式对话模式
+  async chatWithSpiritStream(req: Request, res: Response) {
+    try {
+      const { message } = req.body;
+      const userId = req.user.userId;
+
+      if (!message) {
+        return res.status(400).json({ error: '缺少必要参数' });
+      }
+
+      // 设置响应头，启用流式传输
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+
+      // 获取历史对话记录
+      const chatHistory = await SpiritChatHistoryModel.findOne({ userId });
+      const history = chatHistory?.history || [];
+
+      // 构建历史对话记录
+      const messages: ChatMessage[] = [];
+      
+      // 添加系统角色
+      const fairyAssistant = getChatRole('fairyAssistant');
+      messages.push({
+        role: 'system',
+        content: fairyAssistant.initialPrompt
+      });
+
+      // 添加历史对话记录
+      history.forEach(msg => {
+        messages.push({
+          role: msg.role === 'model' ? 'assistant' : msg.role as 'user',
+          content: msg.content
+        });
+      });
+
+      // 添加当前用户消息
+      messages.push({
+        role: 'user',
+        content: message
+      });
+
+      let lastResponse = '';
+      // 调用Ollama进行流式对话
+      await this.ollamaService.chatStream(
+        {
+          model: process.env.OLLAMA_MODEL,
+          messages,
+          options: {
+            temperature: 0.8,
+            num_predict: 200
+          }
+        },
+        (chunk) => {
+          // 发送每个响应块
+          res.write(JSON.stringify({ content: chunk.message.content }) + '\n');
+          lastResponse = chunk.message.content;
+        }
+      );
+
+      // 保存对话记录到数据库
+      await SpiritChatHistoryModel.findOneAndUpdate(
+        { userId },
+        {
+          $push: {
+            history: [
+              { 
+                role: 'user', 
+                content: message,
+                timestamp: new Date()
+              },
+              { 
+                role: 'model', 
+                content: lastResponse,
+                timestamp: new Date()
+              }
+            ]
+          }
+        },
+        { upsert: true, new: true }
+      );
+
+      // 结束响应
+      res.end();
+
+    } catch (error) {
+      console.error('流式对话错误:', error);
+      res.status(500).json({ error: '对话处理失败' });
+    }
+  }
 } 

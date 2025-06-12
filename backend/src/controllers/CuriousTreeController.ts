@@ -175,16 +175,129 @@ export class CuriousTreeController extends BaseController<ICuriousTreeChat> {
         try {
             const userId = req.user.userId;
 
-            // 清空用户的对话历史
-            await CuriousTreeChatModel.updateOne(
-                { userId },
-                { $set: { chatHistory: [] } }
-            );
+            // 删除该用户的所有聊天记录
+            await CuriousTreeChatModel.deleteMany({ userId });
+
+            // 创建一个新的空记录
+            const newChat = new CuriousTreeChatModel({
+                userId,
+                chatHistory: []
+            });
+            await newChat.save();
 
             this.sendSuccess(res, { message: '历史记录已清空' });
         } catch (error) {
             console.error('清空历史记录错误:', error);
             this.sendError(res, '清空历史记录时发生错误', 500);
+        }
+    }
+
+    async chatStream(req: Request, res: Response): Promise<void> {
+        try {
+            const userId = req.user.userId;
+            const { message } = req.body;
+
+            if (!message) {
+                this.sendError(res, '缺少消息内容');
+                return;
+            }
+
+            // 设置响应头，启用流式传输
+            res.setHeader('Content-Type', 'text/event-stream');
+            res.setHeader('Cache-Control', 'no-cache');
+            res.setHeader('Connection', 'keep-alive');
+
+            // 获取或创建对话记录
+            let conversationModel = await CuriousTreeChatModel.findOne({ userId });
+            if (!conversationModel) {
+                conversationModel = new CuriousTreeChatModel({ userId, chatHistory: [] });
+            }
+
+            // 获取或创建成长值记录
+            let growthModel = await CuriousTreeGrowthModel.findOne({ userId });
+            if (!growthModel) {
+                growthModel = new CuriousTreeGrowthModel({ userId, growthValue: 0, level: 1 });
+            }
+
+            const chatRole = getChatRole('curiosityTree');
+
+            const userPrompt = `当前跟你对话的用户的ID是：${userId}，以下是用户的问题：${message}
+
+请评估这个问题的好奇程度（0-20分），并给出评分理由。然后回答这个问题。
+请按照以下格式返回：
+评分：X分
+评分理由：XXX
+回答：XXX`;
+
+            let lastResponse = '';
+            // 调用Ollama进行流式对话
+            await this.ollamaService.chatStream(
+                {
+                    model: process.env.OLLAMA_MODEL,
+                    messages: [
+                        {
+                            role: 'system',
+                            content: chatRole.initialPrompt
+                        },
+                        {
+                            role: 'user',
+                            content: userPrompt
+                        }
+                    ],
+                    options: {
+                        temperature: 0.8,
+                        num_predict: 200
+                    }
+                },
+                (chunk) => {
+                    // 发送每个响应块
+                    res.write(JSON.stringify({ content: chunk.message.content }) + '\n');
+                    lastResponse = chunk.message.content;
+                }
+            );
+
+            // 解析AI响应，提取评分和回答内容
+            const scoreMatch = lastResponse.match(/评分：(\d+)分/);
+            const score = scoreMatch ? parseInt(scoreMatch[1]) : 0;
+            
+            // 提取回答内容
+            const answerMatch = lastResponse.match(/回答：([\s\S]*)/);
+            const answer = answerMatch ? answerMatch[1].trim() : lastResponse;
+
+            // 更新成长值
+            growthModel.growthValue = Math.min(100, growthModel.growthValue + score);
+            // 每100分升一级
+            growthModel.level = Math.floor(growthModel.growthValue / 100) + 1;
+            await growthModel.save();
+
+            // 添加AI响应
+            conversationModel.chatHistory.push({
+                role: 'assistant',
+                question: message,
+                aiResponse: answer || lastResponse, // 确保aiResponse不为空
+                timestamp: new Date()
+            });
+
+            // 保存对话记录
+            await conversationModel.save();
+
+            // 结束响应
+            res.end();
+
+        } catch (error) {
+            console.error('流式聊天处理错误:', error);
+            // 检查响应是否已经发送
+            if (!res.headersSent) {
+                res.status(500).json({ error: '处理聊天请求时发生错误' });
+            } else {
+                // 如果响应已经开始发送，尝试发送错误消息
+                try {
+                    res.write(JSON.stringify({ error: '处理聊天请求时发生错误' }) + '\n');
+                    res.end();
+                } catch (e) {
+                    console.error('发送错误消息失败:', e);
+                }
+            }
         }
     }
 }
