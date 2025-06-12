@@ -10,21 +10,26 @@ import { GardenService } from '../services/GardenService';
 import { getUserIdFromRequest } from '../utils/authUtils';
 import { logger } from '../utils/logger';
 import { TowerDefenseRecordModel } from '../models/TowerDefenseRecord';
-import { GeminiService } from '../utils/GeminiService';
+import OllamaService, { ChatMessage } from '../services/OllamaService';
 import { getChatRole } from '../ai/roles/ChatRoles';
-import { Chat } from '@google/genai';
 import { SpiritChatHistoryModel } from '../models/SpiritChatHistory';
+
+import dotenv from 'dotenv';
+dotenv.config();
 
 interface ISpiritDoc extends Document {
   _id?: string;
 }
 
 export class SpiritController extends BaseController<ISpiritDoc> {
-  private geminiService: GeminiService;
+  private ollamaService: OllamaService;
 
   constructor() {
     super(Spirit);
-    this.geminiService = GeminiService.getInstance();
+    this.ollamaService = new OllamaService({
+      baseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
+      timeout: 30000
+    });
   }
 
   // 检查并更新花朵血量
@@ -224,10 +229,24 @@ export class SpiritController extends BaseController<ISpiritDoc> {
     `;
 
     try {
-      const response = await this.geminiService.generateContent(
-        fairyTutorChatRole.initialPrompt,
-        prompt);
-      return response;
+      const response = await this.ollamaService.chat({
+        model: process.env.OLLAMA_MODEL,
+        messages: [
+          {
+            role: 'system',
+            content: fairyTutorChatRole.initialPrompt
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        options: {
+          temperature: 0.7,
+          num_predict: 100
+        }
+      });
+      return response.message.content;
     } catch (error) {
       logger.error('生成欢迎语句失败:', error);
       return `欢迎回来，${username}！让我们一起继续学习吧！`;
@@ -249,18 +268,40 @@ export class SpiritController extends BaseController<ISpiritDoc> {
       const history = chatHistory?.history || [];
 
       // 构建历史对话记录
-      const formattedHistory = history.map(msg => ({
-        role: msg.role,
-        parts: [{ text: msg.content }]
-      }));
-
-      // 创建新的对话实例
+      const messages: ChatMessage[] = [];
+      
+      // 添加系统角色
       const fairyAssistant = getChatRole('fairyAssistant');
-      const responseMessage = await this.geminiService.chatWithHistory(
-        fairyAssistant.initialPrompt,
-        message,
-        formattedHistory
-      );
+      messages.push({
+        role: 'system',
+        content: fairyAssistant.initialPrompt
+      });
+
+      // 添加历史对话记录
+      history.forEach(msg => {
+        messages.push({
+          role: msg.role === 'model' ? 'assistant' : msg.role as 'user',
+          content: msg.content
+        });
+      });
+
+      // 添加当前用户消息
+      messages.push({
+        role: 'user',
+        content: message
+      });
+
+      // 调用Ollama进行对话
+      const response = await this.ollamaService.chat({
+        model: process.env.OLLAMA_MODEL,
+        messages,
+        options: {
+          temperature: 0.8,
+          num_predict: 200
+        }
+      });
+
+      const responseMessage = response.message.content;
 
 
       // 保存新的对话记录到数据库
@@ -325,9 +366,4 @@ export class SpiritController extends BaseController<ISpiritDoc> {
       return this.sendError(res, '清除对话历史失败');
     }
   }
-
-
-
-
-
 } 

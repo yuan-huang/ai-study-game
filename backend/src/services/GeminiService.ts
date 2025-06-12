@@ -36,9 +36,12 @@ export class GeminiService {
     }
 
 
-    public async generateContent(systemPrompt: string, prompt: string,model:string = "gemini-2.0-flash" ): Promise<string> {
+    public async generateContent(systemPrompt: string, prompt: string): Promise<string> {
+        //加载配置环境
+        const model = process.env.MODEL ||"gemma-3-12b-it"
+        console.log("启动模型调用", model);
         const params = {
-            model,
+            model:model,
             contents: prompt,
             config: {
                 systemInstruction: systemPrompt,

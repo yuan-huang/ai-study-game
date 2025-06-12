@@ -2,15 +2,20 @@ import { BaseController } from './BaseController';
 import { Request, Response } from 'express';
 import { CuriousTreeChatModel, ICuriousTreeChat } from '../models/CuriousTreeChat';
 import { CuriousTreeGrowthModel } from '../models/CuriousTreeGrowth';
-import { GeminiService } from '../utils/GeminiService';
+import OllamaService from '../services/OllamaService';
 import { getChatRole } from '../ai/roles/ChatRoles';
+import dotenv from 'dotenv';
+dotenv.config();
 
 export class CuriousTreeController extends BaseController<ICuriousTreeChat> {
-    private geminiService: GeminiService;
+    private ollamaService: OllamaService;
 
     constructor() {
         super(CuriousTreeChatModel);
-        this.geminiService = GeminiService.getInstance();
+        this.ollamaService = new OllamaService({
+            baseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
+            timeout: 30000
+        });
     }
 
     async chat(req: Request, res: Response): Promise<void> {
@@ -62,9 +67,9 @@ export class CuriousTreeController extends BaseController<ICuriousTreeChat> {
 评分理由：XXX
 回答：XXX`
 
-            const ai_model = "gemini-2.0-flash"
+
             // 获取AI响应
-            const aiResponse = await this.geminiService.generateContent(chatRole.initialPrompt, userPrompt, ai_model);
+            const aiResponse = await this.ollamaService.generateContent(chatRole.initialPrompt, userPrompt);
 
             // 解析AI响应，提取评分和回答内容
             const scoreMatch = aiResponse.match(/评分：(\d+)分/);
