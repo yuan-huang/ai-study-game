@@ -29,5 +29,7 @@ router.get('/chat-history', authenticateToken, spiritController.getChatHistory.b
 // 清除对话历史
 router.post('/clear-chat-history', authenticateToken, spiritController.clearChatHistory.bind(spiritController));
 
+// 切换 AI 模型
+router.post('/switch-model', authenticateToken, spiritController.switchModel.bind(spiritController));
 
 export default router; 

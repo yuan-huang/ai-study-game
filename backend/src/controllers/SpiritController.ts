@@ -13,6 +13,8 @@ import { TowerDefenseRecordModel } from '../models/TowerDefenseRecord';
 import OllamaService, { ChatMessage } from '../services/OllamaService';
 import { getChatRole } from '../ai/roles/ChatRoles';
 import { SpiritChatHistoryModel } from '../models/SpiritChatHistory';
+import { AIServiceFactory } from '../services/AIServiceFactory';
+import aiConfig from '../config/aiConfig';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -22,14 +24,10 @@ interface ISpiritDoc extends Document {
 }
 
 export class SpiritController extends BaseController<ISpiritDoc> {
-  private ollamaService: OllamaService;
+  private aiService = AIServiceFactory.getInstance().getService();
 
   constructor() {
     super(Spirit);
-    this.ollamaService = new OllamaService({
-      baseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
-      timeout: 30000
-    });
   }
 
   // 检查并更新花朵血量
@@ -229,24 +227,17 @@ export class SpiritController extends BaseController<ISpiritDoc> {
     `;
 
     try {
-      const response = await this.ollamaService.chat({
-        model: process.env.OLLAMA_MODEL,
-        messages: [
+      const response = await this.aiService.chat( [
           {
-            role: 'system',
-            content: fairyTutorChatRole.initialPrompt
+            role: 'model',
+            parts: [{ text: fairyTutorChatRole.initialPrompt }]
           },
           {
             role: 'user',
-            content: prompt
+            parts: [{ text: prompt }]
           }
-        ],
-        options: {
-          temperature: 0.7,
-          num_predict: 100
-        }
-      });
-      return response.message.content;
+        ]);
+      return response.content;
     } catch (error) {
       logger.error('生成欢迎语句失败:', error);
       return `欢迎回来，${username}！让我们一起继续学习吧！`;
@@ -273,35 +264,28 @@ export class SpiritController extends BaseController<ISpiritDoc> {
       // 添加系统角色
       const fairyAssistant = getChatRole('fairyAssistant');
       messages.push({
-        role: 'system',
-        content: fairyAssistant.initialPrompt
+        role: 'model',
+        parts: [{ text: fairyAssistant.initialPrompt }]
       });
 
       // 添加历史对话记录
       history.forEach(msg => {
         messages.push({
-          role: msg.role === 'model' ? 'assistant' : msg.role as 'user',
-          content: msg.content
+          role: msg.role === 'model' ? 'model' : 'user',
+          parts: [{ text: msg.content }]
         });
       });
 
       // 添加当前用户消息
       messages.push({
         role: 'user',
-        content: message
+        parts: [{ text: message }]
       });
 
       // 调用Ollama进行对话
-      const response = await this.ollamaService.chat({
-        model: process.env.OLLAMA_MODEL,
-        messages,
-        options: {
-          temperature: 0.8,
-          num_predict: 200
-        }
-      });
+      const response = await this.aiService.chat(messages);
 
-      const responseMessage = response.message.content;
+      const responseMessage = response.content;
 
 
       // 保存新的对话记录到数据库
@@ -368,13 +352,13 @@ export class SpiritController extends BaseController<ISpiritDoc> {
   }
 
   // 流式对话模式
-  async chatWithSpiritStream(req: Request, res: Response) {
+  async chatWithSpiritStream(req: Request, res: Response): Promise<void> {
     try {
       const { message } = req.body;
       const userId = req.user.userId;
 
       if (!message) {
-        return res.status(400).json({ error: '缺少必要参数' });
+        return this.sendError(res, '缺少必要参数');
       }
 
       // 设置响应头，启用流式传输
@@ -392,39 +376,34 @@ export class SpiritController extends BaseController<ISpiritDoc> {
       // 添加系统角色
       const fairyAssistant = getChatRole('fairyAssistant');
       messages.push({
-        role: 'system',
-        content: fairyAssistant.initialPrompt
+        role: 'model',
+        parts: [{ text: fairyAssistant.initialPrompt }]
       });
 
       // 添加历史对话记录
       history.forEach(msg => {
         messages.push({
-          role: msg.role === 'model' ? 'assistant' : msg.role as 'user',
-          content: msg.content
+          role: msg.role === 'model' ? 'model' : 'user',
+          parts: [{ text: msg.content }]
         });
       });
 
       // 添加当前用户消息
       messages.push({
         role: 'user',
-        content: message
+        parts: [{ text: message }]
       });
 
       let lastResponse = '';
-      // 调用Ollama进行流式对话
-      await this.ollamaService.chatStream(
-        {
-          model: process.env.OLLAMA_MODEL,
-          messages,
-          options: {
-            temperature: 0.8,
-            num_predict: 200
-          }
-        },
-        (chunk) => {
+      // 调用 AI 服务进行流式对话
+      await this.aiService.chatStream(
+        messages,
+        (response) => {
           // 发送每个响应块
-          res.write(JSON.stringify({ content: chunk.message.content }) + '\n');
-          lastResponse = chunk.message.content;
+          res.write(JSON.stringify({ content: response.content }) + '\n');
+          if (!response.done) {
+            lastResponse += response.content;
+          } 
         }
       );
 
@@ -456,6 +435,24 @@ export class SpiritController extends BaseController<ISpiritDoc> {
     } catch (error) {
       console.error('流式对话错误:', error);
       res.status(500).json({ error: '对话处理失败' });
+    }
+  }
+
+  // 切换 AI 模型
+  async switchModel(req: Request, res: Response) {
+    try {
+      const { modelType } = req.body;
+      
+      if (!modelType || !aiConfig.models[modelType]) {
+        return res.status(400).json({ error: '无效的模型类型' });
+      }
+
+      this.aiService = AIServiceFactory.getInstance().getService(aiConfig.models[modelType]);
+      
+      res.json({ message: '模型切换成功' });
+    } catch (error) {
+      console.error('切换模型错误:', error);
+      res.status(500).json({ error: '切换模型失败' });
     }
   }
 } 

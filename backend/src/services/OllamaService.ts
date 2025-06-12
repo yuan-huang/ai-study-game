@@ -1,3 +1,6 @@
+import { BaseAIService, AIServiceOptions, AIResponse } from './base/BaseAIService';
+import { ChatMessage } from '../ai/roles/BaseChatRole';
+
 interface OllamaConfig {
   baseUrl?: string;
   timeout?: number;
@@ -16,22 +19,26 @@ interface GenerateRequest {
   };
 }
 
-interface ChatMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
-
-interface ChatRequest {
+interface OllamaChatRequest {
   model: string;
-  messages: ChatMessage[];
+  messages: Array<{
+    role: 'system' | 'user' | 'assistant';
+    content: string;
+  }>;
   stream?: boolean;
   options?: {
     temperature?: number;
-    top_p?: number;
-    top_k?: number;
-    repeat_penalty?: number;
     num_predict?: number;
   };
+}
+
+interface OllamaChatResponse {
+  model: string;
+  message: {
+    role: 'assistant';
+    content: string;
+  };
+  done: boolean;
 }
 
 interface GenerateResponse {
@@ -79,134 +86,116 @@ interface TagsResponse {
   models: ModelInfo[];
 }
 
-class OllamaService {
+export class OllamaService extends BaseAIService {
   private baseUrl: string;
-  private timeout: number;
+  private modelName: string;
 
-  constructor(config: OllamaConfig = {}) {
-    this.baseUrl = config.baseUrl || 'http://localhost:11434';
-    this.timeout = config.timeout || 30000;
+  constructor(modelName: string, options: AIServiceOptions = {}) {
+    super(options);
+    this.baseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+    this.modelName = modelName || process.env.OLLAMA_MODEL || 'gemma3:1b';
   }
 
-  /**
-   * 发送HTTP请求的通用方法
-   */
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
-    
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
-    try {
-      const response = await fetch(url, {
-        ...options,
-        signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Ollama API错误 (${response.status}): ${errorText}`);
-      }
-
-      return await response.json() as T;
-    } catch (error) {
-      clearTimeout(timeoutId);
-      if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          throw new Error(`请求超时 (${this.timeout}ms)`);
-        }
-        throw new Error(`请求失败: ${error.message}`);
-      }
-      throw error;
+  private async request<T>(path: string, init?: RequestInit): Promise<T> {
+    const response = await fetch(`${this.baseUrl}${path}`, init);
+    if (!response.ok) {
+      throw new Error(`Ollama request failed: ${response.statusText}`);
     }
+    return response.json() as Promise<T>;
   }
 
-  /**
-   * 处理流式响应的通用方法
-   */
   private async streamRequest<T>(
-    endpoint: string,
-    options: RequestInit = {},
+    path: string,
+    init: RequestInit,
     onChunk: (chunk: T) => void
   ): Promise<void> {
-    const url = `${this.baseUrl}${endpoint}`;
-    
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+    const response = await fetch(`${this.baseUrl}${path}`, init);
+    if (!response.ok) {
+      throw new Error(`Ollama stream request failed: ${response.statusText}`);
+    }
 
-    try {
-      const response = await fetch(url, {
-        ...options,
-        signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
-      });
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('无法读取响应流');
+    }
 
-      clearTimeout(timeoutId);
+    const decoder = new TextDecoder();
+    let buffer = '';
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Ollama API错误 (${response.status}): ${errorText}`);
-      }
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('无法读取响应流');
-      }
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
 
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (line.trim()) {
-            try {
-              const chunk = JSON.parse(line) as T;
-              onChunk(chunk);
-            } catch (error) {
-              console.warn('解析流式响应失败:', line);
-            }
+      for (const line of lines) {
+        if (line.trim()) {
+          try {
+            const chunk = JSON.parse(line);
+            onChunk(chunk);
+          } catch (error) {
+            console.warn('解析流式响应失败:', line);
           }
         }
       }
-
-      // 处理剩余的buffer
-      if (buffer.trim()) {
-        try {
-          const chunk = JSON.parse(buffer) as T;
-          onChunk(chunk);
-        } catch (error) {
-          console.warn('解析最后的响应失败:', buffer);
-        }
-      }
-    } catch (error) {
-      clearTimeout(timeoutId);
-      if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          throw new Error(`请求超时 (${this.timeout}ms)`);
-        }
-        throw new Error(`流式请求失败: ${error.message}`);
-      }
-      throw error;
     }
+  }
+
+  async chat(messages: ChatMessage[]): Promise<AIResponse> {
+    const request: OllamaChatRequest = {
+      model: this.modelName,
+      messages: messages.map(msg => ({
+        role: msg.role === 'model' ? 'assistant' : 'user',
+        content: msg.parts[0].text
+      })),
+      options: {
+        temperature: this.options.temperature,
+        num_predict: this.options.maxTokens
+      }
+    };
+
+    const response = await this.request<OllamaChatResponse>('/api/chat', {
+      method: 'POST',
+      body: JSON.stringify({ ...request, stream: false }),
+    });
+
+    return {
+      content: response.message.content,
+      done: response.done
+    };
+  }
+
+  async chatStream(
+    messages: ChatMessage[],
+    onChunk: (response: AIResponse) => void
+  ): Promise<void> {
+    const request: OllamaChatRequest = {
+      model: this.modelName,
+      messages: messages.map(msg => ({
+        role: msg.role === 'model' ? 'assistant' : 'user',
+        content: msg.parts[0].text
+      })),
+      options: {
+        temperature: this.options.temperature,
+        num_predict: this.options.maxTokens
+      }
+    };
+
+    await this.streamRequest<OllamaChatResponse>(
+      '/api/chat',
+      {
+        method: 'POST',
+        body: JSON.stringify({ ...request, stream: true }),
+      },
+      (chunk) => {
+        onChunk({
+          content: chunk.message.content,
+          done: chunk.done
+        });
+      }
+    );
   }
 
   /**
@@ -216,25 +205,18 @@ class OllamaService {
     const model = process.env.OLLAMA_MODEL;
     
     try {
-      const response = await this.chat({
-        model,
-        messages: [
+      const response = await this.chat([
           {
-            role: 'system',
-            content: systemPrompt
+            role: 'user',
+            parts: [{ text: systemPrompt }]
           },
           {
             role: 'user',
-            content: userPrompt
+            parts: [{ text: userPrompt }]
           }
-        ],
-        options: {
-          temperature: 0.7,
-          num_predict: 500
-        }
-      });
+          ]);
       
-      return response.message.content;
+      return response.content;
     } catch (error) {
       console.error('Ollama生成内容失败:', error);
       throw error;
@@ -264,37 +246,6 @@ class OllamaService {
   ): Promise<void> {
     await this.streamRequest<GenerateResponse>(
       '/api/generate',
-      {
-        method: 'POST',
-        body: JSON.stringify({ ...request, stream: true }),
-      },
-      onChunk
-    );
-  }
-
-  /**
-   * 聊天对话
-   */
-  async chat(request: ChatRequest): Promise<ChatResponse> {
-    if (request.stream) {
-      throw new Error('流式聊天请使用 chatStream 方法');
-    }
-
-    return this.request<ChatResponse>('/api/chat', {
-      method: 'POST',
-      body: JSON.stringify({ ...request, stream: false }),
-    });
-  }
-
-  /**
-   * 流式聊天对话
-   */
-  async chatStream(
-    request: ChatRequest,
-    onChunk: (chunk: ChatResponse) => void
-  ): Promise<void> {
-    await this.streamRequest<ChatResponse>(
-      '/api/chat',
       {
         method: 'POST',
         body: JSON.stringify({ ...request, stream: true }),
@@ -379,7 +330,8 @@ export {
   OllamaConfig,
   GenerateRequest,
   ChatMessage,
-  ChatRequest,
+  OllamaChatRequest,
+  OllamaChatResponse,
   GenerateResponse,
   ChatResponse,
   ModelInfo,

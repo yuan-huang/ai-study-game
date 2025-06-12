@@ -15,9 +15,9 @@ export interface ICuriousTreeChat extends Document {
 const CuriousTreeChatSchema = new Schema<ICuriousTreeChat>({
     userId: { type: String, required: true },
     chatHistory: [{
-        role: { type: String, enum: ['user', 'assistant'], required: true, default: 'user' },
+        role: { type: String, enum: ['user', 'assistant', 'model'], required: true, default: 'user' },
         question: { type: String, required: true },
-        aiResponse: { type: String, required: true },
+        aiResponse: { type: String, required: false },
         timestamp: { type: Date, default: Date.now }
     }],
     createdAt: { type: Date, default: Date.now },

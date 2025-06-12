@@ -1,5 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import dotenv from 'dotenv';
+import { AIResponse, AIServiceOptions, BaseAIService } from "./base/BaseAIService";
+import { ChatMessage } from "../ai/roles/BaseChatRole";
 
 dotenv.config();
 
@@ -8,72 +10,61 @@ interface ChatHistory {
     parts: { text: string }[];
 }
 
-export class GeminiService {
+export class GeminiService extends BaseAIService {
+  private model: any;
+  ai: GoogleGenAI;
 
-    private static instance: GeminiService;
-    private ai: GoogleGenAI;
-    private baseUrl: string | undefined;
-
-    private constructor() {
-        this.baseUrl = process.env.GEMINI_URL_BASE;
-        this.ai = new GoogleGenAI({ 
-            apiKey: process.env.GEMINI_API_KEY || '',
-            httpOptions: {
-                baseUrl: this.baseUrl,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Proxy-Auth': `KnowledgeGarden`
-                }
-            }
-        });
-    }
-
-    public static getInstance(): GeminiService {
-        if (!GeminiService.instance) {
-            GeminiService.instance = new GeminiService();
+  constructor(apiKey: string, options: AIServiceOptions = {}) {
+    super(options);
+    const config = {
+      apiKey:  process.env.GEMINI_API_KEY || '',
+      httpOptions: {
+        baseUrl: process.env.GEMINI_BASE_URL,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Proxy-Auth': 'KnowledgeGarden'
         }
-        return GeminiService.instance;
+      }
     }
+    this.ai = new GoogleGenAI(config);
 
 
-    public async generateContent(systemPrompt: string, prompt: string): Promise<string> {
-        //加载配置环境
-        const model = process.env.MODEL ||"gemma-3-12b-it"
-        console.log("启动模型调用", model);
-        const params = {
-            model:model,
-            contents: prompt,
-            config: {
-                systemInstruction: systemPrompt,
-            },
-        }
-        try {
-            const response  = await this.ai.models.generateContent(params);
-            return response.text || '';
-        } catch (error) {
-            console.error('Gemini API调用错误:', error);
-            throw error;
-        }
-    }
-
-
-
-    async chatWithHistory(systemPrompt: string, prompt: string, history: ChatHistory[] = [], model: string = "gemini-2.0-flash") {
-        const chat = this.ai.chats.create({
-            model,
-            config: {
-                systemInstruction: systemPrompt,
-            },
-            history: history,
-        });
-
-        const response = await chat.sendMessage({
-            message: prompt,
-          });
-        return response.text;
-    }
-
+    console.log(config);
     
+    this.model = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+  }
 
+  async chat(messages: ChatMessage[]): Promise<AIResponse> {
+    const response = await this.ai.models.generateContent({ model: this.model,
+      contents: messages.map(msg => msg.parts[0].text).join('\n') });
     
+    return {
+      content: response.text,
+      done: true
+    };
+  }
+
+  async chatStream(
+    messages: ChatMessage[],
+    onChunk: (response: AIResponse) => void
+  ): Promise<void> {
+
+    const response = await this.ai.models.generateContentStream({
+      model: this.model,
+      contents: messages.map(msg => msg.parts[0].text).join('\n')
+    });
+
+    for await (const chunk of response) {
+      const chunkText = chunk.text;
+      onChunk({
+        content: chunkText,
+        done: false
+      });
+    }
+
+    onChunk({
+      content: '',
+      done: true
+    });
+  }
 } 

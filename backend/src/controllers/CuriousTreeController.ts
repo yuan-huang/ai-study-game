@@ -2,20 +2,16 @@ import { BaseController } from './BaseController';
 import { Request, Response } from 'express';
 import { CuriousTreeChatModel, ICuriousTreeChat } from '../models/CuriousTreeChat';
 import { CuriousTreeGrowthModel } from '../models/CuriousTreeGrowth';
-import OllamaService from '../services/OllamaService';
 import { getChatRole } from '../ai/roles/ChatRoles';
 import dotenv from 'dotenv';
+import { AIServiceFactory } from '../services/AIServiceFactory';
 dotenv.config();
 
 export class CuriousTreeController extends BaseController<ICuriousTreeChat> {
-    private ollamaService: OllamaService;
+    private aiService = AIServiceFactory.getInstance().getService();
 
     constructor() {
         super(CuriousTreeChatModel);
-        this.ollamaService = new OllamaService({
-            baseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
-            timeout: 30000
-        });
     }
 
     async chat(req: Request, res: Response): Promise<void> {
@@ -231,28 +227,21 @@ export class CuriousTreeController extends BaseController<ICuriousTreeChat> {
 
             let lastResponse = '';
             // 调用Ollama进行流式对话
-            await this.ollamaService.chatStream(
-                {
-                    model: process.env.OLLAMA_MODEL,
-                    messages: [
-                        {
-                            role: 'system',
-                            content: chatRole.initialPrompt
-                        },
-                        {
-                            role: 'user',
-                            content: userPrompt
-                        }
-                    ],
-                    options: {
-                        temperature: 0.8,
-                        num_predict: 200
+            await this.aiService.chatStream(
+                [
+                    {
+                        role: 'model',
+                        parts: [{ text: chatRole.initialPrompt }]
+                    },
+                    {
+                        role: 'user',
+                        parts: [{ text: userPrompt }]
                     }
-                },
+                ],
                 (chunk) => {
                     // 发送每个响应块
-                    res.write(JSON.stringify({ content: chunk.message.content }) + '\n');
-                    lastResponse = chunk.message.content;
+                    res.write(JSON.stringify({ content: chunk.content }) + '\n');
+                    lastResponse = chunk.content;
                 }
             );
 
