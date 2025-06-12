@@ -33,9 +33,14 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        manager: resolve(__dirname, 'manager.html')
+      },
       output: {
         manualChunks: {
-          phaser: ['phaser']
+          phaser: ['phaser'],
+          'react-vendor': ['react', 'react-dom']
         }
       }
     }

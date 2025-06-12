@@ -1,0 +1,132 @@
+[
+    {
+        "question": "HTML5 中，哪个标签用于定义页面的主要内容区域？",
+        "options": [
+            "<main>",
+            "<content>",
+            "<section>",
+            "<article>"
+        ],
+        "correctAnswer": 0,
+        "category": "前端开发",
+        "difficulty": "easy",
+        "explanation": "<main> 标签用于定义文档的主要内容区域，该内容在文档中应当是唯一的。"
+    },
+    {
+        "question": "CSS 中，display: flex 布局的主轴默认方向是？",
+        "options": [
+            "从上到下",
+            "从左到右",
+            "从右到左",
+            "从下到上"
+        ],
+        "correctAnswer": 1,
+        "category": "前端开发",
+        "difficulty": "medium",
+        "explanation": "Flexbox 布局的主轴（main axis）默认是水平方向，即从左到右。"
+    },
+    {
+        "question": "JavaScript 中，哪个方法可以用来创建一个新的 Promise？",
+        "options": [
+            "new Promise()",
+            "Promise.create()",
+            "Promise.new()",
+            "createPromise()"
+        ],
+        "correctAnswer": 0,
+        "category": "前端开发",
+        "difficulty": "medium",
+        "explanation": "使用 new Promise(executor) 构造函数可以创建一个新的 Promise 对象。"
+    },
+    {
+        "question": "React 中，以下哪个 Hook 用于管理组件的状态？",
+        "options": [
+            "useEffect",
+            "useState",
+            "useContext",
+            "useMemo"
+        ],
+        "correctAnswer": 1,
+        "category": "前端开发",
+        "difficulty": "easy",
+        "explanation": "useState 是 React Hook 中用于在函数组件中添加状态的方法。"
+    },
+    {
+        "question": "Python 中，以下哪个数据类型是可变的？",
+        "options": [
+            "tuple",
+            "string",
+            "list",
+            "int"
+        ],
+        "correctAnswer": 2,
+        "category": "后端开发",
+        "difficulty": "easy",
+        "explanation": "list（列表）是可变的数据类型，可以修改其内容。而 tuple、string、int 都是不可变的。"
+    },
+    {
+        "question": "在数据库设计中，什么是外键？",
+        "options": [
+            "用于唯一标识每一行的字段",
+            "引用另一个表主键的字段",
+            "不能为空的字段",
+            "自动递增的字段"
+        ],
+        "correctAnswer": 1,
+        "category": "数据库",
+        "difficulty": "medium",
+        "explanation": "外键是一个表中引用另一个表主键的字段，用于建立表与表之间的关联关系。"
+    },
+    {
+        "question": "算法时间复杂度 O(n²) 通常出现在哪种情况？",
+        "options": [
+            "线性搜索",
+            "二分搜索",
+            "冒泡排序",
+            "哈希查找"
+        ],
+        "correctAnswer": 2,
+        "category": "算法",
+        "difficulty": "medium",
+        "explanation": "冒泡排序使用嵌套循环，外层循环 n 次，内层循环最多 n 次，所以时间复杂度是 O(n²)。"
+    },
+    {
+        "question": "在计算机网络中，TCP 协议的主要特点是什么？",
+        "options": [
+            "无连接、不可靠",
+            "面向连接、可靠",
+            "无连接、可靠",
+            "面向连接、不可靠"
+        ],
+        "correctAnswer": 1,
+        "category": "计算机网络",
+        "difficulty": "easy",
+        "explanation": "TCP 是面向连接的可靠传输协议，提供数据的可靠传输和流量控制。"
+    },
+    {
+        "question": "设计模式中，单例模式的主要目的是？",
+        "options": [
+            "提高程序的执行效率",
+            "确保一个类只有一个实例",
+            "简化对象的创建过程",
+            "实现对象的继承"
+        ],
+        "correctAnswer": 1,
+        "category": "软件工程",
+        "difficulty": "medium",
+        "explanation": "单例模式确保一个类只有一个实例，并提供一个全局访问点。"
+    },
+    {
+        "question": "在 Git 版本控制中，以下哪个命令用于创建并切换到新分支？",
+        "options": [
+            "git branch new-branch",
+            "git checkout new-branch",
+            "git checkout -b new-branch",
+            "git switch new-branch"
+        ],
+        "correctAnswer": 2,
+        "category": "开发工具",
+        "difficulty": "easy",
+        "explanation": "git checkout -b new-branch 命令会创建一个新分支并立即切换到该分支。"
+    }
+]
