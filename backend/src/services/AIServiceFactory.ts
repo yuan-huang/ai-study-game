@@ -17,7 +17,11 @@ export class AIServiceFactory {
   }
 
   public getService(modelConfig: AIModelConfig = aiConfig.defaultModel): BaseAIService {
+
+  
     const serviceKey = `${modelConfig.type}-${modelConfig.modelName}`;
+  
+    console.log(serviceKey);
     
     if (!this.services.has(serviceKey)) {
       let service: BaseAIService;

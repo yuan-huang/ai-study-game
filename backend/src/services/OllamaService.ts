@@ -92,8 +92,11 @@ export class OllamaService extends BaseAIService {
 
   constructor(modelName: string, options: AIServiceOptions = {}) {
     super(options);
-    this.baseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
-    this.modelName = modelName || process.env.OLLAMA_MODEL || 'gemma3:1b';
+    this.baseUrl = process.env.OLLAMA_BASE_URL;
+    this.modelName = process.env.OLLAMA_MODEL;
+
+    console.log(this.baseUrl);
+    console.log(this.modelName);
   }
 
   private async request<T>(path: string, init?: RequestInit): Promise<T> {

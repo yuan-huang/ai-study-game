@@ -19,7 +19,7 @@ export interface AIConfig {
 const aiConfig: AIConfig = {
   defaultModel: {
     type: process.env.DEFAULT_AI_MODEL_TYPE as 'ollama' | 'gemini' || 'ollama',
-    modelName: process.env.DEFAULT_AI_MODEL_NAME || 'gemini-2.0-flash',
+    modelName: process.env.DEFAULT_AI_MODEL_NAME,
     temperature: Number(process.env.DEFAULT_AI_TEMPERATURE) || 0.8,
     maxTokens: Number(process.env.DEFAULT_MAX_TOKENS) || 200,
     apiKey: process.env.GEMINI_API_KEY
