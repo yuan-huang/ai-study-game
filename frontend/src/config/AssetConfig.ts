@@ -319,10 +319,10 @@ export const GameAssets: SceneAssets = {
 
     // 好奇树
     CuriousTree: [
-        //frontend\public\images\ui\main-ui\curious-tree.jpeg
+        //frontend\public\images\ui\main-ui\curious-tree.jpg
         {
             key: 'curious-tree-bg',
-            path: '/images/ui/main-ui/curious-tree-bg.jpeg',
+            path: '/images/ui/main-ui/curious-tree-bg.jpg',
             type: AssetType.IMAGE
         },
         // 好奇树背景音乐 - 好奇树场景的背景音乐
