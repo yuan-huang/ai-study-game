@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getSpiritWelcome, chatWithSpiritStream, getSpiritChatHistory, clearSpiritChatHistory } from '../api/spirteApi';
+import { getSpiritWelcome, chatWithSpirit, getSpiritChatHistory, clearSpiritChatHistory } from '../api/spirteApi';
 import styles from './SpiritDialog.module.css';
 import { ApiResponse } from '../utils/request';
 
@@ -29,7 +29,6 @@ export const SpiritDialog: React.FC<SpiritDialogProps> = ({ isOpen, onClose }) =
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const currentMessageRef = useRef<string>('');
 
   useEffect(() => {
     if (isOpen) {
@@ -76,27 +75,20 @@ export const SpiritDialog: React.FC<SpiritDialogProps> = ({ isOpen, onClose }) =
     setInputMessage('');
     setIsLoading(true);
 
-    // 添加一个空的精灵消息，用于流式更新
-    const spiritMessage: Message = {
-      type: 'spirit',
-      content: ''
-    };
-    setMessages(prev => [...prev, spiritMessage]);
-
     try {
-      // 使用流式API
-      await chatWithSpiritStream(inputMessage, (chunk) => {
-        currentMessageRef.current += chunk;
-        setMessages(prev => {
-          const newMessages = [...prev];
-          const lastMessage = newMessages[newMessages.length - 1];
-          if (lastMessage.type === 'spirit') {
-            lastMessage.content = currentMessageRef.current;
-          }
-          return newMessages;
-        });
-      });
-
+      // 使用普通对话API
+      const response = await chatWithSpirit(inputMessage);
+      
+      if (response.success && response.data) {
+        // 添加精灵回复
+        const spiritMessage: Message = {
+          type: 'spirit',
+          content: response.data.message
+        };
+        setMessages(prev => [...prev, spiritMessage]);
+      } else {
+        throw new Error(response.message || '对话失败');
+      }
     } catch (error) {
       console.error('发送消息失败:', error);
       let errorMessage = '抱歉，我遇到了一些问题，请稍后再试。';
@@ -104,22 +96,18 @@ export const SpiritDialog: React.FC<SpiritDialogProps> = ({ isOpen, onClose }) =
       if (error instanceof Error) {
         if (error.message === '未登录') {
           errorMessage = '请先登录后再试。';
-          // 可以在这里触发重新登录流程
           window.dispatchEvent(new CustomEvent('authRequired'));
         }
       }
       
-      setMessages(prev => {
-        const newMessages = [...prev];
-        const lastMessage = newMessages[newMessages.length - 1];
-        if (lastMessage.type === 'spirit') {
-          lastMessage.content = errorMessage;
-        }
-        return newMessages;
-      });
+      // 添加错误消息
+      const errorSpiritMessage: Message = {
+        type: 'spirit',
+        content: errorMessage
+      };
+      setMessages(prev => [...prev, errorSpiritMessage]);
     } finally {
       setIsLoading(false);
-      currentMessageRef.current = '';
     }
   };
 
