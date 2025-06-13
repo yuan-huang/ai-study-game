@@ -27,7 +27,7 @@ const aiConfig: AIConfig = {
   models: {
     ollama: {
       type: 'ollama',
-      modelName: process.env.OLLAMA_MODEL || 'gemma3:1b',
+      modelName: process.env.OLLAMA_MODEL || 'gemma3:4b',
       temperature: 0.8,
       maxTokens: 200
     },
