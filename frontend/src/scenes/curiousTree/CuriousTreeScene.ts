@@ -2,6 +2,7 @@ import { getAssetPath } from '@/config/AssetConfig';
 import { BaseScene } from '../BaseScene';
 import { CuriousTreeDialog } from '@/components/CuriousTreeDialog';
 import { curiousTreeApi, GrowthData } from '@/api/curiousTreeApi';
+import { gameEvents } from '@/utils/gameEvents';
 
 export class CuriousTreeScene extends BaseScene {
     private curiousTreeDialog?: CuriousTreeDialog;
@@ -72,6 +73,8 @@ export class CuriousTreeScene extends BaseScene {
         this.loadAndDisplayGrowth();
     }
 
+
+
     /**
      * 创建功能按钮
      */
@@ -111,22 +114,22 @@ export class CuriousTreeScene extends BaseScene {
         graphics.fillRoundedRect(-90, -40, 180, 80, radius);
         graphics.lineStyle(3, this.adjustColorBrightness(buttonColor, -0.2), 1);
         graphics.strokeRoundedRect(-90, -40, 180, 80, radius);
-        
+
         // 创建发光效果层
         const glowGraphics = this.add.graphics();
         glowGraphics.fillStyle(glowColor, 0);
         glowGraphics.fillRoundedRect(-90, -40, 180, 80, radius);
-        
+
         // 创建容器来组合图形和文本
         const container = this.add.container(x, y, [glowGraphics, graphics]);
-        
+
         // 创建交互区域
         const hitArea = new Phaser.Geom.Rectangle(-90, -40, 180, 80);
         container.setInteractive(hitArea, Phaser.Geom.Rectangle.Contains);
         if (container.input) {
             container.input.cursor = 'pointer';  // 只在这里设置指针样式
         }
-        
+
         const buttonText = this.createText(x, y, text, 'BUTTON_TEXT', {
             fontSize: '18px',
             color: '#ffffff',
@@ -239,6 +242,9 @@ export class CuriousTreeScene extends BaseScene {
             this.curiousTreeDialog.destroy();
         }
 
+        // 显示遮罩层
+        gameEvents.emit('overlay:show');
+
         this.curiousTreeDialog = new CuriousTreeDialog({
             scene: this,
             x: this.cameras.main.width / 2,
@@ -246,6 +252,8 @@ export class CuriousTreeScene extends BaseScene {
             width: 900,
             height: 700,
             onClose: () => {
+                // 关闭遮罩层
+                gameEvents.emit('overlay:hide');
                 this.curiousTreeDialog = undefined;
             }
         });
@@ -316,6 +324,7 @@ export class CuriousTreeScene extends BaseScene {
     shutdown(): void {
         // 移除事件监听
         window.removeEventListener('growthUpdated', this.handleGrowthUpdate as EventListener);
+
         super.shutdown();
     }
 } 

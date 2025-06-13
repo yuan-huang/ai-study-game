@@ -39,7 +39,7 @@ export class CuriousTreeDialog {
 
     constructor(config: DialogConfig) {
         this.scene = config.scene;
-        
+
         // 创建主对话框容器
         this.dialogElement = document.createElement('div');
         this.dialogElement.className = 'curious-tree-dialog';
@@ -146,28 +146,27 @@ export class CuriousTreeDialog {
         if (!message) return;
 
         this.inputBox.value = '';
-        
+
         // 添加用户消息
         this.addMessage('user', message);
-        
+
         // 显示加载提示
         const loadingMessage = this.addMessage('assistant', '', true);
-        let currentResponse = '';
-        
-        try {
-            // 使用流式API发送消息
-            await curiousTreeApi.chatStream(message, (chunk) => {
-                currentResponse += chunk;
-                loadingMessage.textContent = currentResponse;
-                this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
-            });
 
-            // 移除加载提示
-            loadingMessage.remove();
-            // 添加完整的AI回复
-            this.addMessage('assistant', currentResponse);
-            // 更新成长值
-            await this.updateGrowthValue();
+        try {
+            // 使用普通API发送消息
+            const response = await curiousTreeApi.chat(message);
+
+            if (response.success && response.data) {
+                // 移除加载提示
+                loadingMessage.remove();
+                // 添加AI回复
+                this.addMessage('assistant', response.data.message);
+                // 更新成长值
+                await this.updateGrowthValue();
+            } else {
+                throw new Error(response.message || '对话失败');
+            }
         } catch (error) {
             console.error('发送消息失败:', error);
             // 移除加载提示
@@ -176,7 +175,7 @@ export class CuriousTreeDialog {
         }
     }
 
-    private addMessage(role: 'user' | 'assistant', content: string, isLoading: boolean = false): HTMLDivElement {
+    private addMessage(role: 'user' | 'assistant' | 'model', content: string, isLoading: boolean = false): HTMLDivElement {
         const messageDiv = document.createElement('div');
         messageDiv.className = `curious-tree-message curious-tree-message-${role}`;
         if (isLoading) {
@@ -233,7 +232,7 @@ export class CuriousTreeDialog {
             if (response.success && response.data?.data?.messages) {
                 // 清空现有消息
                 this.messagesContainer.innerHTML = '';
-                
+
                 // 按时间戳正序排序消息（最早的在前）
                 const sortedMessages = response.data.data.messages.sort((a, b) => {
                     return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();

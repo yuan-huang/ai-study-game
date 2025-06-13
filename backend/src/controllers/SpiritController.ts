@@ -94,7 +94,7 @@ export class SpiritController extends BaseController<ISpiritDoc> {
 
       // 生成欢迎语句
       const welcomeMessage = await this.generateWelcomeMessage(
-        user,spirit
+        user, spirit
       );
 
       this.sendSuccess(res, {
@@ -178,7 +178,7 @@ export class SpiritController extends BaseController<ISpiritDoc> {
 
   private async createFlowerTasks(userId: string, flowers: any[]) {
     const tasks = await Task.find({ isActive: true });
-    
+
     for (const flower of flowers) {
       const task = tasks.find(t => t.type === 'FLOWER_HEAL');
       if (task) {
@@ -211,14 +211,14 @@ export class SpiritController extends BaseController<ISpiritDoc> {
     }));
   }
 
-    private async generateWelcomeMessage(user:IUser,spirit:ISpirit): Promise<string> {
-        const {username,level,loginHistory} = user;
-        const daysSinceLastLogin = Math.floor(
-            (new Date().getTime() - loginHistory.lastLogin.getTime()) / (1000 * 60 * 60 * 24)
-          );
+  private async generateWelcomeMessage(user: IUser, spirit: ISpirit): Promise<string> {
+    const { username, level, loginHistory } = user;
+    const daysSinceLastLogin = Math.floor(
+      (new Date().getTime() - loginHistory.lastLogin.getTime()) / (1000 * 60 * 60 * 24)
+    );
 
-        const fairyTutorChatRole = getChatRole('fairyTutor');
-    const prompt =  `
+    const fairyTutorChatRole = getChatRole('fairyTutor');
+    const prompt = `
     你的回复内容，控制在100字以内
     用户名：${username}
     精灵亲密度等级：${spirit.intimacyLevel}
@@ -227,16 +227,16 @@ export class SpiritController extends BaseController<ISpiritDoc> {
     `;
 
     try {
-      const response = await this.aiService.chat( [
-          {
-            role: 'model',
-            parts: [{ text: fairyTutorChatRole.initialPrompt }]
-          },
-          {
-            role: 'user',
-            parts: [{ text: prompt }]
-          }
-        ]);
+      const response = await this.aiService.chat([
+        {
+          role: 'model',
+          parts: [{ text: fairyTutorChatRole.initialPrompt }]
+        },
+        {
+          role: 'user',
+          parts: [{ text: prompt }]
+        }
+      ]);
       return response.content;
     } catch (error) {
       logger.error('生成欢迎语句失败:', error);
@@ -260,7 +260,7 @@ export class SpiritController extends BaseController<ISpiritDoc> {
 
       // 构建历史对话记录
       const messages: ChatMessage[] = [];
-      
+
       // 添加系统角色
       const fairyAssistant = getChatRole('fairyAssistant');
       messages.push({
@@ -294,13 +294,13 @@ export class SpiritController extends BaseController<ISpiritDoc> {
         {
           $push: {
             history: [
-              { 
-                role: 'user', 
+              {
+                role: 'user',
                 content: message,
                 timestamp: new Date()
               },
-              { 
-                role: 'model', 
+              {
+                role: 'model',
                 content: responseMessage,
                 timestamp: new Date()
               }
@@ -324,7 +324,7 @@ export class SpiritController extends BaseController<ISpiritDoc> {
   async getChatHistory(req: Request, res: Response) {
     try {
       const userId = req.user.userId;
-      
+
       const chatHistory = await SpiritChatHistoryModel.findOne({ userId })
         .sort({ 'history.timestamp': -1 })
         .limit(50);
@@ -372,7 +372,7 @@ export class SpiritController extends BaseController<ISpiritDoc> {
 
       // 构建历史对话记录
       const messages: ChatMessage[] = [];
-      
+
       // 添加系统角色
       const fairyAssistant = getChatRole('fairyAssistant');
       messages.push({
@@ -399,11 +399,11 @@ export class SpiritController extends BaseController<ISpiritDoc> {
       await this.aiService.chatStream(
         messages,
         (response) => {
-          // 发送每个响应块
-          res.write(JSON.stringify({ content: response.content }) + '\n');
+          // 发送每个响应块 (SSE格式)
+          res.write(`data: ${JSON.stringify({ content: response.content, done: response.done })}\n\n`);
           if (!response.done) {
             lastResponse += response.content;
-          } 
+          }
         }
       );
 
@@ -413,13 +413,13 @@ export class SpiritController extends BaseController<ISpiritDoc> {
         {
           $push: {
             history: [
-              { 
-                role: 'user', 
+              {
+                role: 'user',
                 content: message,
                 timestamp: new Date()
               },
-              { 
-                role: 'model', 
+              {
+                role: 'model',
                 content: lastResponse,
                 timestamp: new Date()
               }
@@ -442,13 +442,13 @@ export class SpiritController extends BaseController<ISpiritDoc> {
   async switchModel(req: Request, res: Response) {
     try {
       const { modelType } = req.body;
-      
+
       if (!modelType || !aiConfig.models[modelType]) {
         return res.status(400).json({ error: '无效的模型类型' });
       }
 
       this.aiService = AIServiceFactory.getInstance().getService(aiConfig.models[modelType]);
-      
+
       res.json({ message: '模型切换成功' });
     } catch (error) {
       console.error('切换模型错误:', error);

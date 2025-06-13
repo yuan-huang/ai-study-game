@@ -46,8 +46,7 @@ Thumbs.db
 .DS_Store
 desktop.ini
 
-# 包管理器文件
-package-lock.json
+# 包管理器文件 - yarn.lock 忽略，但保留 package-lock.json
 yarn.lock
 
 # Google OAuth credentials - NEVER commit these!

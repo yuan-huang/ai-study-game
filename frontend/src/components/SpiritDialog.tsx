@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getSpiritWelcome, chatWithSpirit, getSpiritChatHistory, clearSpiritChatHistory } from '../api/spirteApi';
+import { getSpiritWelcome, chatWithSpirit, getSpiritChatHistory, clearSpiritChatHistory, chatWithSpiritStream } from '../api/spirteApi';
 import styles from './SpiritDialog.module.css';
 import { ApiResponse } from '../utils/request';
 
@@ -28,6 +28,7 @@ export const SpiritDialog: React.FC<SpiritDialogProps> = ({ isOpen, onClose }) =
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -51,7 +52,7 @@ export const SpiritDialog: React.FC<SpiritDialogProps> = ({ isOpen, onClose }) =
                 }]);
               }
             });
-            
+
           }
         }
       });
@@ -66,48 +67,69 @@ export const SpiritDialog: React.FC<SpiritDialogProps> = ({ isOpen, onClose }) =
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
 
+    const messageToSend = inputMessage; // 保存消息内容
     // 添加用户消息
     const userMessage: Message = {
       type: 'user',
-      content: inputMessage
+      content: messageToSend
     };
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
     setIsLoading(true);
+    setIsStreaming(true);
+
+    // 添加一个空的精灵消息用于流式更新
+    const spiritMessage: Message = {
+      type: 'spirit',
+      content: ''
+    };
+    setMessages(prev => [...prev, spiritMessage]);
 
     try {
-      // 使用普通对话API
-      const response = await chatWithSpirit(inputMessage);
-      
-      if (response.success && response.data) {
-        // 添加精灵回复
-        const spiritMessage: Message = {
-          type: 'spirit',
-          content: response.data.message
-        };
-        setMessages(prev => [...prev, spiritMessage]);
-      } else {
-        throw new Error(response.message || '对话失败');
-      }
+      // 使用流式对话API
+      console.log('开始流式对话:', messageToSend);
+      await chatWithSpiritStream(messageToSend, (chunk) => {
+        console.log('收到流式数据块:', chunk);
+        // 更新精灵消息内容
+        setMessages(prev => {
+          const newMessages = [...prev];
+          const lastIndex = newMessages.length - 1;
+          if (newMessages[lastIndex] && newMessages[lastIndex].type === 'spirit') {
+            newMessages[lastIndex] = {
+              ...newMessages[lastIndex],
+              content: newMessages[lastIndex].content + chunk
+            };
+          }
+          return newMessages;
+        });
+      });
+      console.log('流式对话完成');
     } catch (error) {
       console.error('发送消息失败:', error);
       let errorMessage = '抱歉，我遇到了一些问题，请稍后再试。';
-      
+
       if (error instanceof Error) {
         if (error.message === '未登录') {
           errorMessage = '请先登录后再试。';
           window.dispatchEvent(new CustomEvent('authRequired'));
         }
       }
-      
-      // 添加错误消息
-      const errorSpiritMessage: Message = {
-        type: 'spirit',
-        content: errorMessage
-      };
-      setMessages(prev => [...prev, errorSpiritMessage]);
+
+      // 更新为错误消息
+      setMessages(prev => {
+        const newMessages = [...prev];
+        const lastIndex = newMessages.length - 1;
+        if (newMessages[lastIndex] && newMessages[lastIndex].type === 'spirit') {
+          newMessages[lastIndex] = {
+            ...newMessages[lastIndex],
+            content: errorMessage
+          };
+        }
+        return newMessages;
+      });
     } finally {
       setIsLoading(false);
+      setIsStreaming(false);
     }
   };
 
@@ -150,9 +172,16 @@ export const SpiritDialog: React.FC<SpiritDialogProps> = ({ isOpen, onClose }) =
           <div className={styles.messages}>
             {messages.map((message, index) => (
               <div key={index} className={`${styles.message} ${styles[message.type]}`}>
-                {message.content}
-                {index === messages.length - 1 && message.type === 'spirit' && isLoading && (
-                  <span className={styles.typingIndicator}>▋</span>
+                <div className={styles.messageContent}>
+                  {message.content}
+                  {index === messages.length - 1 && message.type === 'spirit' && isStreaming && (
+                    <span className={styles.typingIndicator}>▋</span>
+                  )}
+                </div>
+                {message.type === 'spirit' && (
+                  <div className={styles.messageTime}>
+                    {message.timestamp ? new Date(message.timestamp).toLocaleTimeString() : '刚刚'}
+                  </div>
                 )}
               </div>
             ))}
@@ -164,16 +193,17 @@ export const SpiritDialog: React.FC<SpiritDialogProps> = ({ isOpen, onClose }) =
               value={inputMessage}
               onChange={e => setInputMessage(e.target.value)}
               onKeyPress={e => e.key === 'Enter' && handleSendMessage()}
-              placeholder="输入消息..."
+              placeholder={isStreaming ? "精灵正在回复中..." : "输入消息..."}
               disabled={isLoading}
             />
             <button onClick={handleSendMessage} disabled={isLoading}>
               {isLoading ? '发送中...' : '发送'}
             </button>
-            <button 
-              className={styles.clearButton} 
+            <button
+              className={styles.clearButton}
               onClick={handleClearChatHistory}
               disabled={isLoading}
+              title="清除聊天记录"
             >
               清除
             </button>

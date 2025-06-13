@@ -1,4 +1,5 @@
 import { get, post, ApiResponse, getWithParams } from '../utils/request';
+import { SSEClient } from '../utils/sseClient';
 
 
 // 获取精灵欢迎语
@@ -27,64 +28,25 @@ export const chatWithSpiritStream = async (
   message: string,
   onChunk: (chunk: string) => void
 ): Promise<void> => {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    throw new Error('未登录');
-  }
+  console.log('初始化SSE客户端...');
+  const sseClient = SSEClient.createAuth('/api/spirit/chat-stream', { message });
 
-  const response = await fetch('/api/spirit/chat-stream', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify({ message }),
-  });
-
-  if (!response.ok) {
-    throw new Error('聊天请求失败');
-  }
-
-  const reader = response.body?.getReader();
-  if (!reader) {
-    throw new Error('无法读取响应流');
-  }
-
-  const decoder = new TextDecoder();
-  let buffer = '';
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
-
-    for (const line of lines) {
-      if (line.trim()) {
-        try {
-          const chunk = JSON.parse(line);
-          if (chunk.content) {
-            onChunk(chunk.content);
-          }
-        } catch (error) {
-          console.warn('解析流式响应失败:', line);
+  try {
+    await sseClient.connect(
+      (message) => {
+        console.log('SSE收到消息:', message);
+        if (message.type === 'message' && message.data.content) {
+          onChunk(message.data.content);
         }
+        return message.data.done;
+      },
+      (error) => {
+        console.error('精灵对话连接错误:', error);
+        throw error;
       }
-    }
-  }
-
-  // 处理剩余的buffer
-  if (buffer.trim()) {
-    try {
-      const chunk = JSON.parse(buffer);
-      if (chunk.content) {
-        onChunk(chunk.content);
-      }
-    } catch (error) {
-      console.warn('解析最后的响应失败:', buffer);
-    }
+    );
+  } finally {
+    sseClient.close();
   }
 };
 
